@@ -49,6 +49,8 @@
   #account { color: var(--muted); font-size: 12px; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
   #account img { width: 26px; height: 26px; border-radius: 50%; }
   #helpBtn { font-size: 15px; padding: 3px 9px; }
+  #layBtns { margin-left: auto; display: flex; gap: 6px; } #layBtns button { font-size: 12.5px; padding: 3px 9px; }
+  body:not(.pg-dash) #layBtns { display: none; }
   #demoBadge { background: #3d2a00; color: var(--gold); border: 1px solid #6b4a00; border-radius: 10px; font-size: 11px; font-weight: 700; padding: 1px 8px; }
 
   main { padding: 14px; max-width: 1500px; margin: 0 auto; }
@@ -271,6 +273,7 @@
     <button data-page="overlays">🎨 Overlays</button>
     <button data-page="settings">⚙ Instellingen</button>
   </nav>
+  <span id="layBtns" data-need-dash><button id="hdrTidy" title="Alle blokken netjes naast en onder elkaar zetten, zonder gaten">▦ Netjes schikken</button><button id="hdrLay" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button></span>
   <span id="demoBadge" hidden>DEMO</span>
   <button id="helpBtn" title="Hulp: wat kan R5 StreamerHub?">❓</button>
   <span id="account"></span>
@@ -288,12 +291,11 @@
   </div>
 
   <section class="page" id="page-overview">
-    <div class="bar" data-need-dash><span class="hint" id="ovFor"></span><span class="sp"></span><button data-tidy="overview" title="Alle blokken netjes naast en onder elkaar zetten, zonder gaten">▦ Netjes schikken</button><button data-layout="overview" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button></div>
+    <div class="bar" data-need-dash><span class="hint" id="ovFor"></span><span class="sp"></span></div>
     <div class="grid" id="grid-overview" data-need-dash></div>
   </section>
 
   <section class="page" id="page-live" hidden>
-    <div class="bar" data-need-dash><span class="hint">Tijdens je stream: chat, kijkers en wat er gebeurt.</span><span class="sp"></span><button data-tidy="live" title="Alle blokken netjes naast en onder elkaar zetten, zonder gaten">▦ Netjes schikken</button><button data-layout="live" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button></div>
     <div class="grid" id="grid-live" data-need-dash></div>
   </section>
 
@@ -1080,6 +1082,8 @@
     DEFAULT_LAYOUT[p].forEach((id) => { if (!l.order.includes(id)) l.order.push(id); });
     l.order = l.order.filter((id) => WIDGETS[id] && WIDGETS[id].page === p);
   });
+  // nieuwe standaardindeling voor Live (24-10): oude plekken eenmalig vergeten
+  if (!layout.liveV2) { layout.live.pos = {}; layout.live.size = {}; layout.liveV2 = true; store.set('layout', layout); }
   const saveLayout = () => store.set('layout', layout);
   const W = {};   // id -> kaart
   function buildGrid(page) {
@@ -1157,7 +1161,7 @@
     const fresh = ids.filter((id) => !l.pos[id]);
     g.classList.add('free', 'settling');
     ids.forEach((id) => { W[id].style.gridColumn = ''; freeRO.observe(W[id]); });
-    if (allNew) { fresh.forEach((id) => { l.pos[id] = meas[id]; }); compactUp(page); }
+    if (allNew) { fresh.forEach((id) => { l.pos[id] = meas[id]; }); defaultFree(page, g.clientWidth); compactUp(page); }
     else fresh.forEach((id) => {
       const m = meas[id], rects = ids.filter((o) => o !== id && l.pos[o]).map((o) => l.pos[o]);
       l.pos[id] = Object.assign(findSpot(m.w, m.h, rects, g.clientWidth), { w: m.w, h: m.h, auto: m.auto });
@@ -1186,6 +1190,19 @@
       applyPos(page, id);
     });
     return changed;
+  }
+  // standaardindeling van Live (zoals Dave hem wil): cijfers bovenaan, daaronder chat | activiteit | donaties + minispeler | kijkers
+  // [kolom-start, kolom-breedte (deel van de breedte), hoogte, onder blok]
+  const DEFAULT_FREE = { live: { lchat: [0, .29, 830], lfeed: [.29, .24, 830], ldon: [.53, .24, 464], lplayer: [.53, .24, 358, 'ldon'], lviewers: [.77, .23, 830] } };
+  function defaultFree(page, gw) {
+    const d = DEFAULT_FREE[page], l = layout[page];
+    if (!d) return;
+    const top = visIds(page).filter((id) => !d[id]).reduce((m, id) => Math.max(m, l.pos[id].y + l.pos[id].h + GRID), 0);
+    Object.entries(d).forEach(([id, [fx, fw, h, under]]) => {
+      if (!l.pos[id] || !W[id]) return;
+      const x = Math.round(fx * (gw + GRID) / GRID) * GRID, x2 = fx + fw >= 1 ? gw : Math.round((fx + fw) * (gw + GRID) / GRID) * GRID - GRID;
+      l.pos[id] = { x, y: under && l.pos[under] && W[under] ? l.pos[under].y + l.pos[under].h + GRID : top, w: x2 - x, h, auto: false };
+    });
   }
   // gaten dichten: elk blok schuift zo ver mogelijk omhoog (bij de eerste keer en bij netjes schikken)
   function compactUp(page) {
@@ -1451,7 +1468,7 @@
       const dons = !on ? [] : state.demo ? (cur ? cur.donations : []) : donOk() ? donList() : [];
       const cheers = ss && ss.cheers ? ss.cheers : [];
       const bitsSum = cheers.reduce((a, c) => a + c.bits, 0);
-      R(id, 'dsum').textContent = ss ? [on ? donTotal(ss.donations) : '', bitsSum ? nl(bitsSum) + ' bits' : ''].filter(Boolean).join(' + ') + (on || bitsSum ? (id === 'ldon' || ss === cur ? ' deze stream' : ' laatste stream') : '') : '';
+      R(id, 'dsum').textContent = ss ? [on ? donTotal(ss.donations) : '', bitsSum ? nl(bitsSum) + ' bits' : ''].filter(Boolean).join(' + ') + (on || bitsSum ? (id === 'ldon' ? '' : ss === cur ? ' deze stream' : ' laatste stream') : '') : '';
       const list = [...dons.map((d) => Object.assign({ k: 'don' }, d)), ...cheers.map((c) => Object.assign({ k: 'bits' }, c))].sort((x, y) => y.t - x.t).slice(0, 40);
       const note = !on ? '<div class="hint dnote">💰 Donaties zie je hier als je StreamElements of TipeeeStream koppelt bij ⚙ Instellingen.</div>'
         : !state.demo && !donOk() ? '<div class="hint dnote">' + (donErr() ? esc(donErr()) + '. Kijk bij ⚙ Instellingen.' : 'Donaties laden…') + '</div>' : '';
@@ -1636,7 +1653,8 @@
   });
   $('#layReset').onclick = () => { layout[layPage] = defLayout(layPage); saveLayout(); buildGrid(layPage); drawLayout(); toast('Standaardindeling hersteld.'); };
   document.querySelectorAll('[data-layout]').forEach((b) => { b.onclick = () => openLayout(b.dataset.layout); });
-  document.querySelectorAll('[data-tidy]').forEach((b) => { b.onclick = () => { tidyLayout(b.dataset.tidy); toast('Blokken netjes geschikt.'); }; });
+  $('#hdrTidy').onclick = () => { tidyLayout(state.page); toast('Blokken netjes geschikt.'); };
+  $('#hdrLay').onclick = () => openLayout(state.page);
 
   // ---------- demo ----------
   const DEMO_USERS = ['kaaskop99', 'PixelPiet', 'GamerGirl_NL', 'Henk_de_Tank', 'luna_moon', 'xXSniperXx', 'Bram', 'Nightbot', 'mia_plays', 'Sjoerd'];
@@ -1896,6 +1914,7 @@
   // ---------- navigatie, hulp, formulier ----------
   function showPage(p) {
     state.page = p; store.set('page', p);
+    document.body.classList.toggle('pg-dash', p === 'overview' || p === 'live');
     document.querySelectorAll('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.page === p));
     document.querySelectorAll('.page').forEach((s) => { s.hidden = s.id !== 'page-' + p; });
     $('#welcome').hidden = !!(state.me || state.demo) || !['overview', 'live'].includes(p);
