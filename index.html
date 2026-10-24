@@ -439,6 +439,7 @@
             <li><code>${random.1-100}</code> willekeurig getal · <code>${random.pick a|b|c}</code> willekeurig één van de keuzes</li>
             <li><code>${1}</code>, <code>${2}</code> … losse woorden na het command · <code>${args}</code> alles na het command</li>
             <li><code>${commands}</code> lijst met alle commands die aan staan</li>
+            <li>Vanuit de chat (jij en je mods): <code>!com add !naam antwoord</code> · <code>!com edit !naam nieuw antwoord</code> · <code>!com delete !naam</code>. In plaats van !com mag ook !cmd of !command.</li>
             <li>Over een ander kanaal (zoals bij StreamElements): <code>${channel ${1}}</code> naam · <code>${game ${1}}</code> laatst gespeelde categorie · <code>${title ${1}}</code> titel · <code>${url ${1}}</code> link naar het kanaal</li>
           </ul>
         </details>
@@ -646,6 +647,7 @@
             <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
             <li><b>Kijkers in de chat</b> nu gesplitst zoals in R5 ModHub: streamer, moderators, VIP's en kijkers (log opnieuw in voor de mods- en VIP-lijst). Smallere scrollbalken.</li>
             <li><b>Windows-app</b>: R5 StreamerHub als programma, met automatische updates (⚙ Instellingen → Windows-app). Nieuw logo: rode S.</li>
+            <li>Chat commands beheren vanuit de chat: <b>!com add/edit/delete</b> (ook !cmd en !command), voor jou en je mods.</li>
             <li>Live: nieuw blok <b>🎵 Verzoekjes</b>, zoals in R5 ModHub: wat er nu speelt, de wachtrij, en wat gespeeld of geweigerd is. Met ⏭ Volgende en ✕ Afwijzen (met reden).</li>
             <li>Tabblad heet nu <b>🧩 Modules</b>, met inklapbare modules: <b>💬 Chat commands</b> en nieuw <b>🔔 Chat alerts</b> (automatisch bedankje in de chat bij follow, sub, cadeau-subs, bits, raid en donatie, met eigen tekst en minimum).</li>
             <li>Nieuw tabblad <b>💬 Commands</b>: een eigen chatbot zoals bij StreamElements. Maak commands zoals !discord met een antwoord, andere namen, wie het mag gebruiken, wachttijden en variabelen (${user}, ${uptime}, ${game} …). Met standaard commands zoals !uptime, !game, !so en !lurk.</li>
@@ -1042,6 +1044,7 @@
     // eigen antwoorden niet opnieuw als command zien
     if (state.me && login === state.me.login && cmdSent.some((x) => x.text === text && Date.now() - x.t < 15000)) return;
     const parts = text.slice(1).trim().split(/\s+/), word = (parts.shift() || '').toLowerCase();
+    if (['com', 'cmd', 'command'].includes(word)) return manageCmd(login, name, badges, parts, text);
     const c = findCmd(word);
     if (!c) return;
     const lvl = userLevel(login, badges);
@@ -1059,6 +1062,33 @@
       sendChat(out);
       if (state.page === 'commands') renderCmds();
     });
+  }
+  // !com add|edit|delete !naam [antwoord] (ook !cmd en !command), alleen voor mods en jou
+  function manageCmd(login, name, badges, parts, text) {
+    if (userLevel(login, badges) < 3) return;
+    const sub = (parts[0] || '').toLowerCase(), n = (parts[1] || '').replace(/^!+/, '').toLowerCase();
+    const resp = text.replace(/^!\S+\s+\S+\s+\S+\s*/, '').trim();
+    const say = (t) => { cmdSent.push({ text: t, t: Date.now() }); sendChat(t); };
+    const who = '@' + (name || login);
+    const valid = /^[\w\u00C0-\u024F-]{1,25}$/.test(n);
+    const owner = (x) => cmds.find((c) => c.name === x || (c.aliases || []).includes(x));
+    if (!['add', 'edit', 'delete', 'del', 'remove'].includes(sub) || !valid) return say(who + ' gebruik: !com add !naam antwoord · !com edit !naam nieuw antwoord · !com delete !naam');
+    if (['com', 'cmd', 'command'].includes(n)) return say(who + ' !' + n + ' is gereserveerd.');
+    const c = owner(n);
+    if (sub === 'add') {
+      if (c) return say(who + ' !' + n + ' bestaat al. Gebruik !com edit !' + n + ' …');
+      if (!resp) return say(who + ' geef ook een antwoord: !com add !' + n + ' tekst');
+      cmds.push({ id: 'c' + Date.now().toString(36), name: n, aliases: [], resp: resp.slice(0, 480), level: 'all', cd: 5, ucd: 15, on: true, uses: 0 });
+      saveCmds(); say(who + ' command !' + n + ' is toegevoegd.');
+    } else if (sub === 'edit') {
+      if (!c) return say(who + ' !' + n + ' bestaat niet.');
+      if (!resp) return say(who + ' geef ook het nieuwe antwoord: !com edit !' + n + ' tekst');
+      c.resp = resp.slice(0, 480); saveCmds(); say(who + ' command !' + c.name + ' is aangepast.');
+    } else {
+      if (!c) return say(who + ' !' + n + ' bestaat niet.');
+      cmds = cmds.filter((x) => x !== c); saveCmds(); say(who + ' command !' + c.name + ' is verwijderd.');
+    }
+    if (state.page === 'commands') renderCmds();
   }
   let cmdFilter = 'all', cmdEdit = null;
   function renderCmds() {
