@@ -238,6 +238,22 @@
   .carow .cav { grid-column: 2 / -1; font-size: 11px; color: var(--muted); margin-top: -4px; }
   .carow .camin { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); } .carow .camin input { width: 70px; }
   @media (max-width: 700px) { .carow { grid-template-columns: 1fr; } .carow .cav { grid-column: 1; } }
+  .chat .m .u { cursor: pointer; } .chat .m .u:hover { text-decoration: underline; }
+  .chat .m .nt { font-size: 11px; margin-left: 2px; }
+  .twc { flex: 1; min-height: 120px; display: flex; } .twc iframe { flex: 1; border: 0; border-radius: 6px; background: #18181b; } .twc .empty { margin: auto; }
+  [data-r=twc].on { border-color: var(--accent); }
+  #ucard { position: fixed; z-index: 25; width: 330px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.5); padding: 10px; }
+  .uc-head { display: flex; align-items: center; gap: 10px; cursor: move; touch-action: none; user-select: none; }
+  .uc-head .grip { color: var(--muted); } .uc-head .avatar { width: 44px; height: 44px; border-radius: 50%; }
+  .uc-head .who { flex: 1; display: flex; flex-direction: column; min-width: 0; } .uc-head .who b { font-size: 16px; overflow: hidden; text-overflow: ellipsis; }
+  .uc-head .who small, .uc-info, .uc-label { color: var(--muted); font-size: 12px; }
+  .uc-info { margin-top: 6px; line-height: 1.5; } .uc-label { margin: 10px 0 4px; }
+  .uc-acts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+  .cbtn { min-height: 38px; padding: 4px; font-size: 13px; } .cbtn.mod { border-color: #5a3d99; } .cbtn.danger { border-color: var(--danger); }
+  .uc-note { width: 100%; box-sizing: border-box; resize: vertical; min-height: 44px; font: inherit; font-size: 13px; }
+  .uc-hist { font-size: 13px; background: var(--bg); border-radius: 6px; padding: 4px 6px; max-height: 160px; overflow-y: auto; }
+  .uc-hist:empty::before { content: 'Geen berichten in beeld.'; color: var(--muted); }
+  .uc-hist .hmsg { padding: 2px 0; word-wrap: break-word; } .uc-hist .time { color: var(--muted); font-size: 11px; } .uc-hist img { height: 22px; vertical-align: middle; }
   .sg-now { margin: 0 0 6px; padding: 8px 10px; border-radius: 8px; background: linear-gradient(135deg, #123d24, var(--panel2)); border: 1px solid #1f5c36; }
   .sg-now.idle { background: var(--panel2); border-color: var(--line); color: var(--muted); font-size: 13px; }
   .sg-now .lbl { font-size: 11px; font-weight: 700; letter-spacing: .04em; color: #7fe0a4; }
@@ -647,6 +663,7 @@
             <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
             <li><b>Kijkers in de chat</b> nu gesplitst zoals in R5 ModHub: streamer, moderators, VIP's en kijkers (log opnieuw in voor de mods- en VIP-lijst). Smallere scrollbalken.</li>
             <li><b>Windows-app</b>: R5 StreamerHub als programma, met automatische updates (⚙ Instellingen → Windows-app). Nieuw logo: rode S.</li>
+            <li>Chat in Live zoals in R5 ModHub: klik op een naam voor een <b>kaartje</b> (profielfoto, account-datum, volgt sinds, time-out, ban, unban, shoutout, @ noemen, notitie en laatste berichten). Met <b>🟣 Twitch-chat</b> wissel je naar de originele chat van Twitch. Log één keer opnieuw in voor time-outs, bans en shoutouts.</li>
             <li>Chat commands beheren vanuit de chat: <b>!com add/edit/delete</b> (ook !cmd en !command), voor jou en je mods.</li>
             <li>Live: nieuw blok <b>🎵 Verzoekjes</b>, zoals in R5 ModHub: wat er nu speelt, de wachtrij, en wat gespeeld of geweigerd is. Met ⏭ Volgende en ✕ Afwijzen (met reden).</li>
             <li>Tabblad heet nu <b>🧩 Modules</b>, met inklapbare modules: <b>💬 Chat commands</b> en nieuw <b>🔔 Chat alerts</b> (automatisch bedankje in de chat bij follow, sub, cadeau-subs, bits, raid en donatie, met eigen tekst en minimum).</li>
@@ -695,6 +712,7 @@
     <div class="row"><button class="primary" data-close>Sluiten</button></div>
   </div>
 </div>
+<div id="ucard" hidden></div>
 <div id="toasts"></div>
 
 <script>
@@ -703,9 +721,9 @@
   const VERSION = '1.0 + updates';
   // Client ID van de Twitch-app "R5 StreamerHub". Een Client ID is openbaar (geen wachtwoord).
   const CLIENT_ID = 'rjm1bqkmvmfpbqwn8wxvon05v8mu3d';
-  const SCOPES = ['moderator:read:followers', 'channel:read:subscriptions', 'bits:read', 'channel:read:redemptions', 'channel:manage:broadcast', 'moderator:read:chatters', 'user:write:chat', 'moderation:read', 'channel:read:vips'];
+  const SCOPES = ['moderator:read:followers', 'channel:read:subscriptions', 'bits:read', 'channel:read:redemptions', 'channel:manage:broadcast', 'moderator:read:chatters', 'user:write:chat', 'moderation:read', 'channel:read:vips', 'moderator:manage:banned_users', 'moderator:manage:shoutouts'];
   const SCOPE_LABEL = { 'moderator:read:followers': 'volgers', 'channel:read:subscriptions': 'abonnees', 'bits:read': 'bits',
-    'channel:read:redemptions': 'kanaalpunten', 'channel:manage:broadcast': 'titel en categorie', 'moderator:read:chatters': 'kijkerslijst', 'user:write:chat': 'chat sturen', 'moderation:read': 'mods', 'channel:read:vips': "VIP's" };
+    'channel:read:redemptions': 'kanaalpunten', 'channel:manage:broadcast': 'titel en categorie', 'moderator:read:chatters': 'kijkerslijst', 'user:write:chat': 'chat sturen', 'moderation:read': 'mods', 'channel:read:vips': "VIP's", 'moderator:manage:banned_users': 'time-outs en bans', 'moderator:manage:shoutouts': 'shoutouts' };
   const BOTS = ['nightbot', 'streamelements', 'streamlabs', 'moobot', 'fossabot', 'wizebot', 'soundalerts', 'sery_bot', 'kofistreambot', 'botrixoficial', 'commanderroot', 'pokemoncommunitygame'];
   const $ = (s, el) => (el || document).querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -918,6 +936,7 @@
 
   // ---------- chat in het Live-tabblad ----------
   const chatBuf = [];
+  const notes = store.get('notes', {});   // notities per kijker (alleen op dit apparaat)
   function chatLine(x) {
     x.t = x.t || Date.now();
     chatBuf.push(x);
@@ -933,12 +952,12 @@
   function chatRow(x) {
     if (x.ev) return '<div class="m ev"><span class="tm">' + hhmm(x.t) + '</span>' + esc(x.text) + '</div>';
     const bd = (x.badges || '').split(',').map((b) => BADGE[b.split('/')[0]]).filter(Boolean).map(([c, l]) => '<span class="bd ' + c + '">' + l + '</span>').join('');
-    return '<div class="m' + (x.bits ? ' hl' : '') + '"><span class="tm">' + hhmm(x.t) + '</span>' + bd + '<b style="color:' + esc(x.color || nameColor(x.name)) + '">' + esc(x.name) + '</b>: ' + chatHtml(x.text, x.emotes) + '</div>';
+    return '<div class="m' + (x.bits ? ' hl' : '') + '"><span class="tm">' + hhmm(x.t) + '</span>' + bd + '<b class="u" data-user="' + esc(x.login || String(x.name).toLowerCase()) + '" style="color:' + esc(x.color || nameColor(x.name)) + '">' + esc(x.name) + '</b>' + (notes[x.login || String(x.name).toLowerCase()] ? '<span class="nt" title="Je hebt een notitie bij deze kijker">📝</span>' : '') + ': ' + chatHtml(x.text, x.emotes) + '</div>';
   }
   function nameColor(n) { let h = 0; for (const c of String(n)) h = (h * 31 + c.charCodeAt(0)) % 360; return 'hsl(' + h + ',70%,65%)'; }
 
   function chatMsg(login, name, text, emTag, bits, color, badges) {
-    chatLine({ name: name || login, text, emotes: emTag, bits, color, badges });
+    chatLine({ name: name || login, login, text, emotes: emTag, bits, color, badges });
     runCmd(login, name, text, badges);
     if (!cur) return;
     cur.msgs++;
@@ -1468,7 +1487,7 @@
     vods:      { page: 'overview', title: '🎞 Video\'s op Twitch', span: 12, h: null, extra: '<span class="hint">laatste uitzendingen</span>', html: () => '<div class="tablewrap"><table data-r="vods"></table></div>' },
     ltiles:    { page: 'live', title: '🔢 Nu', span: 12, h: null, html: () => '<div class="tiles"></div>' },
     lplayer:   { page: 'live', title: '📺 Minispeler', span: 5, h: 330, html: () => '<div class="player"></div>' },
-    lchat:     { page: 'live', title: '💬 Chat', span: 4, h: 640, html: () => '<div class="chat" id="lchat"></div><form class="send"><input placeholder="Stuur een bericht…" maxlength="500" autocomplete="off"><button class="primary">Stuur</button></form>' },
+    lchat:     { page: 'live', title: '💬 Chat', span: 4, h: 640, extra: '<button class="icon" data-r="twc" title="Wisselen tussen deze chat en de originele Twitch-chat">🟣 Twitch-chat</button>', html: () => '<div class="twc" hidden></div><div class="chat" id="lchat"></div><form class="send"><input placeholder="Stuur een bericht…" maxlength="500" autocomplete="off"><button class="primary">Stuur</button></form>' },
     lfeed:     { page: 'live', title: '⚡ Activiteit', span: 3, h: 640, html: () => '<div class="filters"></div><div class="feed"></div>' },
     lviewers:  { page: 'live', title: '👥 Kijkers in de chat', span: 5, h: 300, extra: '<span class="hint" data-r="vcount"></span>', html: () => '<input class="vsearch" placeholder="Zoek kijker…" autocomplete="off"><div class="list" data-r="viewers"></div>' },
     ldon:      { page: 'live', title: '💰 Donaties + Bits', span: 4, h: 300, extra: '<span class="hint" data-r="dsum"></span>', html: () => '<div class="list" data-r="donations"></div>' },
@@ -1779,10 +1798,105 @@
         };
       }
       if (W.lviewers) $('.vsearch', W.lviewers).oninput = () => renderViewers();
+      if (W.lchat) { $('#lchat').onclick = (e) => { const u = e.target.closest('.u'); if (u) openUcard(u.dataset.user, u.textContent, e.clientX, e.clientY); }; R('lchat', 'twc').onclick = () => setTwChat(!store.get('twChat', false)); setTwChat(store.get('twChat', false)); }
       if (W.lplayer) renderPlayer(true);
       if (W.lsongs) wireSongs();
     }
   }
+
+  // ---------- originele Twitch-chat (wisselen in het chatblok) ----------
+  function setTwChat(on) {
+    if (!W.lchat) return;
+    const ch = state.me && !state.demo ? state.me.login : '';
+    store.set('twChat', on);
+    const tw = $('.twc', W.lchat);
+    tw.hidden = !on; $('#lchat').hidden = on; $('.send', W.lchat).hidden = on;
+    R('lchat', 'twc').textContent = on ? '💬 R5-chat' : '🟣 Twitch-chat';
+    R('lchat', 'twc').classList.toggle('on', on);
+    if (!on) return;
+    if (!ch) { tw.innerHTML = '<div class="empty">' + (state.demo ? 'In de demo is er geen Twitch-chat. Ingelogd zie je hier de originele chat van Twitch.' : 'Log in om de Twitch-chat te zien.') + '</div>'; return; }
+    const src = 'https://www.twitch.tv/embed/' + encodeURIComponent(ch) + '/chat?' + new URLSearchParams({ parent: location.hostname, darkpopout: '' });
+    if (!tw.querySelector('iframe') || tw.dataset.ch !== ch) { tw.dataset.ch = ch; tw.innerHTML = '<iframe title="Twitch-chat" src="' + esc(src) + '"></iframe>'; }
+  }
+
+  // ---------- kaartje van een kijker (klik op een naam in de chat), zoals in R5 ModHub ----------
+  let ucFor = null;
+  async function modAct(what, u, extra) {
+    if (state.demo) { toast('In de demo wordt er niets naar Twitch gestuurd.'); return; }
+    const need = what === 'so' ? 'moderator:manage:shoutouts' : 'moderator:manage:banned_users';
+    if (!hasScope(need)) { toast('Log opnieuw in om ' + SCOPE_LABEL[need] + ' te kunnen doen.', 'err'); return; }
+    if (!u.id) { toast('Kijker niet gevonden.', 'err'); return; }
+    const me = state.me.user_id;
+    try {
+      if (what === 'to' || what === 'ban') await helix('POST', 'moderation/bans', { broadcaster_id: me, moderator_id: me }, { data: Object.assign({ user_id: u.id, reason: extra.reason || '' }, what === 'to' ? { duration: extra.s } : {}) });
+      if (what === 'unban') await helix('DELETE', 'moderation/bans', { broadcaster_id: me, moderator_id: me, user_id: u.id });
+      if (what === 'so') await helix('POST', 'chat/shoutouts', { from_broadcaster_id: me, to_broadcaster_id: u.id, moderator_id: me });
+      toast({ to: u.name + ' heeft een time-out van ' + extra.label, ban: u.name + ' is verbannen', unban: u.name + ' mag weer chatten', so: 'Shoutout naar ' + u.name + ' verstuurd' }[what] + '.', 'ok');
+      closeUcard();
+    } catch (e) { toast('Lukt niet: ' + e.message, 'err'); }
+  }
+  function openUcard(login, shown, x, y) {
+    const card = $('#ucard'), last = [...chatBuf].reverse().find((m) => m.login === login) || {};
+    const u = { login, name: shown || login, id: '' };
+    ucFor = login;
+    const roles = (last.badges || '').split(',').map((b) => ({ broadcaster: 'streamer', moderator: 'moderator', vip: 'VIP', subscriber: 'abonnee', founder: 'abonnee' }[b.split('/')[0]])).filter(Boolean);
+    const self = state.me && login === state.me.login;
+    card.innerHTML = '<div class="uc-head" title="Sleep om te verplaatsen"><span class="grip">⠿</span><img class="avatar" alt="" hidden><div class="who"><b></b><small>' + esc([...new Set(roles)].join(', ')) + '</small></div><button class="icon" data-x title="Sluiten">✕</button></div>' +
+      '<div class="uc-info"></div>' +
+      (self ? '' : '<div class="uc-acts">' +
+        '<button class="cbtn mod" data-to="60" data-l="1 minuut">⏱ 1 min</button><button class="cbtn mod" data-to="600" data-l="10 minuten">⏱ 10 min</button><button class="cbtn mod" data-to="3600" data-l="1 uur">⏱ 1 uur</button>' +
+        '<button class="cbtn danger" data-ban>⛔ Ban</button><button class="cbtn" data-unban>✅ Unban</button><button class="cbtn" data-so>📣 Shoutout</button></div>') +
+      '<div class="uc-acts"><button class="cbtn" data-at>@ Noemen</button><button class="cbtn" data-prof>Profiel ↗</button><button class="cbtn" data-vc>Modlogs ↗</button></div>' +
+      '<div class="uc-label">Notitie (alleen voor jou)</div><textarea class="uc-note" rows="2" placeholder="bijv. vaste kijker, al 2x gewaarschuwd"></textarea>' +
+      '<div class="uc-label">Laatste berichten</div><div class="uc-hist"></div>';
+    const who = card.querySelector('.who b'); who.textContent = u.name; who.style.color = last.color || nameColor(u.name);
+    card.querySelector('[data-x]').onclick = closeUcard;
+    card.querySelectorAll('[data-to]').forEach((b) => (b.onclick = () => modAct('to', u, { s: +b.dataset.to, label: b.dataset.l })));
+    const q = (sel, fn) => { const b = card.querySelector(sel); if (b) b.onclick = fn; };
+    q('[data-ban]', () => { const why = prompt(u.name + ' verbannen? Reden (mag leeg blijven):', ''); if (why !== null) modAct('ban', u, { reason: why.trim() }); });
+    q('[data-unban]', () => modAct('unban', u, {}));
+    q('[data-so]', () => modAct('so', u, {}));
+    q('[data-at]', () => { closeUcard(); setTwChat(false); const inp = W.lchat && $('.send input', W.lchat); if (inp) { inp.value = '@' + u.name + ' ' + inp.value; inp.focus(); } });
+    q('[data-prof]', () => window.open('https://twitch.tv/' + login, '_blank'));
+    q('[data-vc]', () => window.open('https://www.twitch.tv/popout/' + ((state.me && state.me.login) || '') + '/viewercard/' + login, '_blank'));
+    const note = card.querySelector('.uc-note');
+    note.value = notes[login] || '';
+    note.oninput = () => { clearTimeout(note.t); note.t = setTimeout(() => { const v = note.value.trim(); if (v) notes[login] = v; else delete notes[login]; store.set('notes', notes); }, 400); };
+    const hist = chatBuf.filter((m) => m.login === login).slice(-8);
+    card.querySelector('.uc-hist').innerHTML = hist.map((m) => '<div class="hmsg"><span class="time">' + hhmm(m.t) + '</span> ' + chatHtml(m.text, m.emotes) + '</div>').join('');
+    // profielfoto, account-datum en sinds wanneer volger
+    const info = card.querySelector('.uc-info');
+    if (state.me && !state.demo) {
+      helix('GET', 'users', { login }).then(async (j) => {
+        const d = j.data[0];
+        if (!d || ucFor !== login) return;
+        u.id = d.id;
+        const img = card.querySelector('.avatar'); img.src = d.profile_image_url; img.hidden = false;
+        const lines = ['Account aangemaakt: ' + new Date(d.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })];
+        if (hasScope('moderator:read:followers') && !self) {
+          try { const f = await helix('GET', 'channels/followers', { broadcaster_id: state.me.user_id, user_id: d.id }); const fd = f.data[0];
+            lines.push(fd ? 'Volgt je sinds ' + new Date(fd.followed_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Volgt je (nog) niet'); } catch {}
+        }
+        if (ucFor === login) info.innerHTML = lines.map(esc).join('<br>');
+      }).catch(() => {});
+    } else if (state.demo) info.textContent = 'Account aangemaakt: 3 maart 2021 · Volgt je sinds 12 juni 2023 (demo)';
+    card.hidden = false;
+    const rr = card.getBoundingClientRect(), keep = store.get('ucardPos', null);
+    const px = keep ? keep.x : x + 8, py = keep ? keep.y : y + 8;
+    card.style.left = Math.max(0, Math.min(px, innerWidth - rr.width)) + 'px';
+    card.style.top = Math.max(0, Math.min(py, innerHeight - rr.height)) + 'px';
+    card.querySelector('.uc-head').addEventListener('pointerdown', dragUcard);
+  }
+  function dragUcard(e) {
+    if (e.button !== 0 || e.target.closest('button')) return;
+    e.preventDefault();
+    const card = $('#ucard'), r0 = card.getBoundingClientRect(), dx = e.clientX - r0.left, dy = e.clientY - r0.top;
+    const move = (ev) => { card.style.left = Math.max(-r0.width + 60, Math.min(ev.clientX - dx, innerWidth - 60)) + 'px'; card.style.top = Math.max(0, Math.min(ev.clientY - dy, innerHeight - 40)) + 'px'; };
+    const up = () => { removeEventListener('pointermove', move, true); removeEventListener('pointerup', up, true); store.set('ucardPos', { x: parseInt(card.style.left, 10), y: parseInt(card.style.top, 10) }); };
+    addEventListener('pointermove', move, true); addEventListener('pointerup', up, true);
+  }
+  function closeUcard() { $('#ucard').hidden = true; ucFor = null; }
+  document.addEventListener('mousedown', (e) => { if (!$('#ucard').hidden && !e.target.closest('#ucard') && !e.target.closest('.u')) closeUcard(); });
 
   // ---------- verzoekjes (zelfde als in R5 ModHub) ----------
   // Nummerverzoeken via kanaalpunten. Je verzoekjes-app zet elk verzoek met een nummer in de chat
