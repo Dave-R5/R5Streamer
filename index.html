@@ -228,6 +228,24 @@
 
   /* instellingen */
   .optrow { display: flex; align-items: center; gap: 8px; margin: 8px 0; cursor: pointer; font-size: 13px; }
+  .cmdbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 12px 0 8px; }
+  .cmdbar input { width: 200px; }
+  .cmdt { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .cmdt th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  .cmdt td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .cmdt td.n { font-weight: 700; white-space: nowrap; } .cmdt td.n small { display: block; font-weight: 400; color: var(--muted); }
+  .cmdt td.r { word-break: break-word; color: var(--text); }
+  .cmdt tr.off td { opacity: .45; }
+  .cmdt td.a { white-space: nowrap; text-align: right; } .cmdt td.a button { padding: 2px 8px; min-height: 0; }
+  .cmdt .lvl { font-size: 11px; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); white-space: nowrap; }
+  .cmded { border: 1px solid var(--accent); border-radius: 10px; padding: 12px; margin: 8px 0 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 12px; }
+  .cmded label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+  .cmded input, .cmded select, .cmded textarea { width: 100%; box-sizing: border-box; }
+  .cmded .wide { grid-column: 1 / -1; }
+  .cmded textarea { min-height: 60px; resize: vertical; font: inherit; }
+  .cmdtry { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; } .cmdtry input { width: 280px; }
+  .cmdvars { margin: 6px 0; padding-left: 20px; font-size: 13px; line-height: 1.7; } .cmdvars code { color: var(--accent2, #bf94ff); }
+  @media (max-width: 700px) { .cmdt th:nth-child(4), .cmdt td:nth-child(4), .cmdt th:nth-child(5), .cmdt td:nth-child(5) { display: none; } }
   .set .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
   .scopes { font-size: 12px; color: var(--muted); margin-top: 8px; }
   .scopes span { display: inline-block; margin: 2px 6px 2px 0; }
@@ -301,6 +319,7 @@
     <button data-page="overview" class="on">📊 Overzicht</button>
     <button data-page="live">🔴 Live<span class="ldot" id="navLive" hidden></span></button>
     <button data-page="overlays">🎨 Overlays</button>
+    <button data-page="commands">💬 Commands</button>
     <button data-page="settings">⚙ Instellingen</button>
   </nav>
   <span id="layBtns" data-need-dash><button id="hdrTidy" title="Alle blokken netjes naast en onder elkaar zetten, zonder gaten">▦ Netjes schikken</button><button id="hdrLay" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button><button id="hdrCustom" title="Je eigen vaste indeling ontwerpen; ▦ Netjes schikken gaat daarna altijd terug naar deze indeling">▣ Eigen indeling</button></span>
@@ -353,6 +372,41 @@
       </div>
       <div class="s12 ovtiles" id="ovTiles"></div>
       <div class="s12" id="ovEditor"></div>
+    </div>
+  </section>
+
+  <!-- ======== Commands ======== -->
+  <section class="page" id="page-commands" hidden>
+    <div class="grid">
+      <div class="card s12">
+        <div class="ovhead">
+          <h2 style="margin:0">💬 Commands</h2>
+          <label class="chk" style="margin:0"><input type="checkbox" id="cmdOn"> <b>Chatbot aan</b></label>
+          <span class="hint" id="cmdState"></span>
+        </div>
+        <p class="hint" style="margin:6px 0 0">Kijkers typen bijvoorbeeld <b>!discord</b> in je chat en R5 StreamerHub antwoordt meteen, als jij (met je eigen account). Dat werkt zolang de site of de Windows-app bij jou open staat. Gebruik je ook StreamElements of Nightbot? Zet dezelfde commands daar dan uit, anders krijg je dubbele antwoorden.</p>
+        <div class="cmdbar">
+          <input id="cmdQ" placeholder="Zoek command…" autocomplete="off">
+          <div class="filters" id="cmdF" style="margin:0"></div>
+          <button class="primary" id="cmdNew" style="margin-left:auto">＋ Nieuw command</button>
+        </div>
+        <div id="cmdEd" hidden></div>
+        <div id="cmdList"></div>
+        <div class="cmdtry"><input id="cmdTry" placeholder="Probeer hier een command, bijv. !uptime" autocomplete="off"><span id="cmdTryOut" class="hint"></span></div>
+        <details class="obs">
+          <summary class="hint">ℹ Variabelen die je in een antwoord kunt gebruiken</summary>
+          <ul class="cmdvars">
+            <li><code>${user}</code> wie het command typte</li>
+            <li><code>${touser}</code> de naam na het command (bijv. <i>!hug @piet</i>), anders wie het typte</li>
+            <li><code>${channel}</code> jouw kanaalnaam · <code>${game}</code> categorie · <code>${title}</code> streamtitel</li>
+            <li><code>${uptime}</code> hoe lang je live bent · <code>${viewers}</code> aantal kijkers</li>
+            <li><code>${count}</code> hoe vaak dit command is gebruikt</li>
+            <li><code>${random.1-100}</code> willekeurig getal · <code>${random.pick a|b|c}</code> willekeurig één van de keuzes</li>
+            <li><code>${1}</code>, <code>${2}</code> … losse woorden na het command · <code>${args}</code> alles na het command</li>
+            <li><code>${commands}</code> lijst met alle commands die aan staan</li>
+          </ul>
+        </details>
+      </div>
     </div>
   </section>
 
@@ -548,6 +602,7 @@
             <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
             <li><b>Kijkers in de chat</b> nu gesplitst zoals in R5 ModHub: streamer, moderators, VIP's en kijkers (log opnieuw in voor de mods- en VIP-lijst). Smallere scrollbalken.</li>
             <li><b>Windows-app</b>: R5 StreamerHub als programma, met automatische updates (⚙ Instellingen → Windows-app). Nieuw logo: rode S.</li>
+            <li>Nieuw tabblad <b>💬 Commands</b>: een eigen chatbot zoals bij StreamElements. Maak commands zoals !discord met een antwoord, andere namen, wie het mag gebruiken, wachttijden en variabelen (${user}, ${uptime}, ${game} …). Met standaard commands zoals !uptime, !game, !so en !lurk.</li>
             <li>Raid-clip speelt nu als gewone video af en start daardoor ook in OBS vanzelf.</li>
             <li><b>📡 Test live</b> naast Test: speelt de test af in OBS zelf. En bij Activiteit een <b>▶</b> om een raid, bits of donatie opnieuw af te spelen in OBS (beide via de Windows-app 1.2.5).</li>
             <li>Nieuwe overlays: <b>💎 Bits melding</b> en <b>💰 Donatie melding</b> (donaties via de Windows-app 1.2.0), met het bericht erbij en <b>voorlezen (TTS)</b> aan of uit. Ze doen ook mee in Alles in één.</li>
@@ -833,6 +888,7 @@
 
   function chatMsg(login, name, text, emTag, bits, color, badges) {
     chatLine({ name: name || login, text, emotes: emTag, bits, color, badges });
+    runCmd(login, name, text, badges);
     if (!cur) return;
     cur.msgs++;
     cur.chatters[login] = (cur.chatters[login] || [0, name || login]);
@@ -863,6 +919,131 @@
   }
   let dirtyT = null;
   function dirty() { saveSessions(); if (!dirtyT) dirtyT = setTimeout(() => { dirtyT = null; renderDash(); }, 700); }
+
+  // ---------- commands (chatbot) ----------
+  // Elk command: { id, name (zonder !), aliases [], resp, level all|sub|vip|mod|bc, cd (s, voor iedereen), ucd (s, per kijker), on, uses, def (standaard) }
+  const CMD_LEVELS = [['all', 'Iedereen'], ['sub', 'Abonnees'], ['vip', "VIP's"], ['mod', 'Moderators'], ['bc', 'Alleen jij']];
+  const DEFAULT_CMDS = [
+    { id: 'uptime', name: 'uptime', aliases: [], resp: '${channel} is al ${uptime} live!', level: 'all', cd: 10, ucd: 30, on: true, uses: 0, def: true },
+    { id: 'game', name: 'game', aliases: ['categorie'], resp: 'We spelen nu ${game}.', level: 'all', cd: 10, ucd: 30, on: true, uses: 0, def: true },
+    { id: 'title', name: 'title', aliases: ['titel'], resp: 'Titel: ${title}', level: 'all', cd: 10, ucd: 30, on: true, uses: 0, def: true },
+    { id: 'commands', name: 'commands', aliases: ['cmds'], resp: 'Commands: ${commands}', level: 'all', cd: 15, ucd: 60, on: true, uses: 0, def: true },
+    { id: 'so', name: 'so', aliases: ['shoutout'], resp: 'Ga zeker eens kijken bij ${touser}: https://twitch.tv/${touser} 💜', level: 'mod', cd: 5, ucd: 0, on: true, uses: 0, def: true },
+    { id: 'lurk', name: 'lurk', aliases: [], resp: 'Fijn dat je er bent, ${user}! Geniet van je lurk 👀', level: 'all', cd: 0, ucd: 60, on: true, uses: 0, def: true },
+    { id: 'dice', name: 'dobbel', aliases: ['dice'], resp: '${user} gooit een ${random.1-6} 🎲', level: 'all', cd: 3, ucd: 10, on: false, uses: 0, def: true },
+  ];
+  let cmds = store.get('cmds', null);
+  if (!Array.isArray(cmds)) cmds = DEFAULT_CMDS.map((c) => Object.assign({}, c));
+  let cmdOn = store.get('cmdOn', false);
+  const saveCmds = () => store.set('cmds', cmds);
+  const cmdLast = {}, cmdUserLast = {}, cmdSent = [];
+  const userLevel = (login, badges) => (state.me && login === state.me.login) || /broadcaster/.test(badges || '') ? 4 : /moderator/.test(badges || '') ? 3 : /vip/.test(badges || '') ? 2 : /subscriber|founder/.test(badges || '') ? 1 : 0;
+  const lvlNum = (l) => Math.max(0, CMD_LEVELS.findIndex((x) => x[0] === l));
+  const findCmd = (word) => cmds.find((c) => c.on && (c.name === word || (c.aliases || []).includes(word)));
+  function cmdVars(c, login, name, args) {
+    const live = !!cur, v = live && cur.vh.length ? cur.vh[cur.vh.length - 1][1] : 0;
+    const to = (args[0] || '').replace(/^@/, '') || name || login;
+    return c.resp.replace(/\$\{([^}]+)\}/g, (m, k) => {
+      k = k.trim();
+      if (k === 'user') return name || login;
+      if (k === 'touser') return to;
+      if (k === 'channel') return (state.user && state.user.display_name) || (state.me && state.me.login) || 'dit kanaal';
+      if (k === 'game') return (chanInfo && chanInfo.game_name) || (cur && cur.game) || 'nog niets';
+      if (k === 'title') return (chanInfo && chanInfo.title) || (cur && cur.title) || '';
+      if (k === 'uptime') return live ? sdur(Date.now() - cur.start) : 'nu niet';
+      if (k === 'viewers') return String(v);
+      if (k === 'count') return String(c.uses || 0);
+      if (k === 'args') return args.join(' ');
+      if (k === 'commands') return cmds.filter((x) => x.on && x.level === 'all').map((x) => '!' + x.name).join(' ');
+      if (/^\d+$/.test(k)) return args[+k - 1] || '';
+      let mm = /^random\.(\d+)-(\d+)$/.exec(k);
+      if (mm) { const a = +mm[1], b = +mm[2]; return String(a + Math.floor(Math.random() * (b - a + 1))); }
+      mm = /^random\.pick\s+(.+)$/.exec(k);
+      if (mm) { const o = mm[1].split('|').map((x) => x.trim()).filter(Boolean); return o[Math.floor(Math.random() * o.length)] || ''; }
+      return m;
+    }).slice(0, 480);
+  }
+  function runCmd(login, name, text, badges) {
+    if (!cmdOn || !text || text[0] !== '!') return;
+    // eigen antwoorden niet opnieuw als command zien
+    if (state.me && login === state.me.login && cmdSent.some((x) => x.text === text && Date.now() - x.t < 15000)) return;
+    const parts = text.slice(1).trim().split(/\s+/), word = (parts.shift() || '').toLowerCase();
+    const c = findCmd(word);
+    if (!c) return;
+    const lvl = userLevel(login, badges);
+    if (lvl < lvlNum(c.level)) return;
+    const now = Date.now();
+    if (lvl < 4) {
+      if (c.cd && now - (cmdLast[c.id] || 0) < c.cd * 1000) return;
+      if (c.ucd && now - (cmdUserLast[c.id + ':' + login] || 0) < c.ucd * 1000) return;
+    }
+    cmdLast[c.id] = now; cmdUserLast[c.id + ':' + login] = now;
+    c.uses = (c.uses || 0) + 1; saveCmds();
+    const out = cmdVars(c, login, name, parts);
+    if (!out.trim()) return;
+    cmdSent.push({ text: out, t: now }); if (cmdSent.length > 20) cmdSent.shift();
+    sendChat(out);
+    if (state.page === 'commands') renderCmds();
+  }
+  let cmdFilter = 'all', cmdEdit = null;
+  function renderCmds() {
+    $('#cmdOn').checked = cmdOn;
+    $('#cmdState').textContent = !cmdOn ? 'staat uit' : state.demo ? 'aan (demo: antwoorden komen in de demo-chat)' : !state.me ? 'log in om te antwoorden' : !hasScope('user:write:chat') ? 'log opnieuw in (chat sturen)' : '✓ antwoordt in je chat';
+    $('#cmdF').innerHTML = [['all', 'Alle'], ['own', 'Eigen'], ['def', 'Standaard']].map(([k, l]) => '<button data-cf="' + k + '" class="' + (cmdFilter === k ? 'on' : '') + '">' + l + '</button>').join('');
+    const q = $('#cmdQ').value.trim().toLowerCase().replace(/^!/, '');
+    const list = cmds.filter((c) => (cmdFilter === 'all' || (cmdFilter === 'def') === !!c.def) && (!q || c.name.includes(q) || (c.aliases || []).some((a) => a.includes(q)) || c.resp.toLowerCase().includes(q)));
+    $('#cmdList').innerHTML = list.length ? '<table class="cmdt"><thead><tr><th>Command</th><th>Antwoord</th><th>Wie</th><th>Wachttijd</th><th>Gebruikt</th><th></th></tr></thead><tbody>' +
+      list.map((c) => '<tr class="' + (c.on ? '' : 'off') + '"><td class="n">!' + esc(c.name) + ((c.aliases || []).length ? '<small>' + c.aliases.map((a) => '!' + esc(a)).join(' ') + '</small>' : '') + '</td><td class="r">' + esc(c.resp) + '</td>' +
+        '<td><span class="lvl">' + (CMD_LEVELS.find((x) => x[0] === c.level) || CMD_LEVELS[0])[1] + '</span></td><td class="hint">' + (c.cd || 0) + ' s · ' + (c.ucd || 0) + ' s p.p.</td><td class="hint">' + nl(c.uses || 0) + '×</td>' +
+        '<td class="a"><label class="chk" style="display:inline-flex;margin:0 6px 0 0" title="Aan/uit"><input type="checkbox" data-con="' + c.id + '"' + (c.on ? ' checked' : '') + '></label><button data-ced="' + c.id + '" title="Bewerken">✎</button> <button data-cdel="' + c.id + '" title="Verwijderen">🗑</button></td></tr>').join('') + '</tbody></table>'
+      : '<div class="empty">' + (q ? 'Geen command gevonden.' : 'Nog geen commands. Klik op ＋ Nieuw command.') + '</div>';
+    renderCmdEd();
+  }
+  function renderCmdEd() {
+    const ed = $('#cmdEd');
+    if (!cmdEdit) { ed.hidden = true; ed.innerHTML = ''; return; }
+    if (ed.dataset.for === cmdEdit.id && !ed.hidden) return;
+    const c = cmdEdit;
+    ed.hidden = false; ed.dataset.for = c.id;
+    ed.innerHTML = '<div class="cmded"><div><label>Command</label><input data-cf2="name" value="!' + esc(c.name) + '" maxlength="26" placeholder="!discord"></div>' +
+      '<div><label>Andere namen (met spatie ertussen)</label><input data-cf2="aliases" value="' + esc((c.aliases || []).map((a) => '!' + a).join(' ')) + '" placeholder="!dc"></div>' +
+      '<div><label>Wie mag het gebruiken</label><select data-cf2="level">' + CMD_LEVELS.map(([k, l]) => '<option value="' + k + '"' + (c.level === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></div>' +
+      '<div><label>Wachttijd voor iedereen (seconden)</label><input type="number" min="0" max="3600" data-cf2="cd" value="' + (c.cd || 0) + '"></div>' +
+      '<div><label>Wachttijd per kijker (seconden)</label><input type="number" min="0" max="3600" data-cf2="ucd" value="' + (c.ucd || 0) + '"></div>' +
+      '<div class="wide"><label>Antwoord (variabelen zoals ${user} staan onderaan)</label><textarea data-cf2="resp" maxlength="480" placeholder="Kom erbij op Discord: https://discord.gg/…">' + esc(c.resp) + '</textarea></div>' +
+      '<div class="wide acts" style="display:flex;gap:8px"><button class="primary" data-csave>Opslaan</button><button data-ccancel>Annuleren</button></div></div>';
+    ed.querySelector('[data-cf2=name]').focus();
+  }
+  $('#cmdOn').onchange = (e) => { cmdOn = e.target.checked; store.set('cmdOn', cmdOn); renderCmds(); };
+  $('#cmdQ').oninput = renderCmds;
+  $('#cmdNew').onclick = () => { cmdEdit = { id: 'c' + Date.now().toString(36), name: '', aliases: [], resp: '', level: 'all', cd: 5, ucd: 15, on: true, uses: 0, isNew: true }; $('#cmdEd').dataset.for = ''; renderCmds(); };
+  $('#page-commands').addEventListener('click', (e) => {
+    const t = e.target, f = t.closest('[data-cf]');
+    if (f) { cmdFilter = f.dataset.cf; renderCmds(); return; }
+    if (t.dataset.ced) { cmdEdit = Object.assign({}, cmds.find((c) => c.id === t.dataset.ced)); $('#cmdEd').dataset.for = ''; renderCmds(); $('#cmdEd').scrollIntoView({ block: 'nearest' }); return; }
+    if (t.dataset.cdel) { const c = cmds.find((x) => x.id === t.dataset.cdel); if (c && confirm('Command !' + c.name + ' verwijderen?')) { cmds = cmds.filter((x) => x !== c); saveCmds(); renderCmds(); } return; }
+    if (t.hasAttribute('data-ccancel')) { cmdEdit = null; renderCmds(); return; }
+    if (t.hasAttribute('data-csave')) {
+      const ed = $('#cmdEd'), g = (k) => ed.querySelector('[data-cf2=' + k + ']').value.trim();
+      const name = g('name').replace(/^!+/, '').toLowerCase();
+      if (!/^[\w\u00C0-\u024F-]{1,25}$/.test(name)) return toast('Geef het command een naam zonder spaties, bijv. !discord', 'err');
+      const aliases = [...new Set(g('aliases').toLowerCase().split(/[\s,]+/).map((a) => a.replace(/^!+/, '')).filter((a) => /^[\w\u00C0-\u024F-]{1,25}$/.test(a) && a !== name))];
+      const clash = cmds.find((c) => c.id !== cmdEdit.id && [c.name, ...(c.aliases || [])].some((n) => n === name || aliases.includes(n)));
+      if (clash) return toast('!' + name + ' (of een andere naam) bestaat al bij !' + clash.name + '.', 'err');
+      if (!g('resp')) return toast('Vul een antwoord in.', 'err');
+      const c = Object.assign(cmdEdit, { name, aliases, resp: g('resp'), level: g('level'), cd: Math.max(0, Math.min(3600, +g('cd') || 0)), ucd: Math.max(0, Math.min(3600, +g('ucd') || 0)) });
+      const isNew = c.isNew; delete c.isNew;
+      if (isNew) cmds.push(c); else cmds = cmds.map((x) => (x.id === c.id ? c : x));
+      saveCmds(); cmdEdit = null; renderCmds(); toast('!' + name + ' opgeslagen.', 'ok');
+    }
+  });
+  $('#page-commands').addEventListener('change', (e) => { const id = e.target.dataset.con; if (!id) return; const c = cmds.find((x) => x.id === id); if (c) { c.on = e.target.checked; saveCmds(); renderCmds(); } });
+  $('#cmdTry').oninput = (e) => {
+    const t = e.target.value.trim(), out = $('#cmdTryOut');
+    if (!t.startsWith('!')) { out.textContent = ''; return; }
+    const parts = t.slice(1).split(/\s+/), c = findCmd((parts.shift() || '').toLowerCase());
+    out.textContent = c ? '→ ' + cmdVars(c, (state.me && state.me.login) || 'jij', (state.user && state.user.display_name) || 'jij', parts) : 'Geen command met die naam (of hij staat uit).';
+  };
 
   async function sendChat(text) {
     if (state.demo) { chatMsg('demo', 'jij (demo)', text, '', 0, '#bf94ff', 'broadcaster/1'); return true; }
@@ -2402,6 +2583,7 @@
     $('#welcome').hidden = !!(state.me || state.demo) || !['overview', 'live'].includes(p);
     if (p === 'overview' || p === 'live') { if (!$('#grid-' + p).classList.contains('free')) placeFree(p); renderDash(); if (p === 'overview') drawGraph(shown()); if (p === 'live' && W.lchat) $('#lchat').scrollTop = 1e9; }
     if (p === 'overlays') renderOverlays();
+    if (p === 'commands') renderCmds();
   }
   $('#nav').onclick = (e) => { const b = e.target.closest('[data-page]'); if (b) showPage(b.dataset.page); };
   document.addEventListener('click', (e) => {
@@ -2451,7 +2633,7 @@
   setInterval(() => { if (cur && (state.page === 'overview' || state.page === 'live')) renderDash(); }, 30000);
   readTokenFromHash();
   buildGrid('overview'); buildGrid('live');
-  showPage(['overview', 'live', 'overlays', 'settings'].includes(state.page) ? state.page : 'overview');
+  showPage(['overview', 'live', 'overlays', 'commands', 'settings'].includes(state.page) ? state.page : 'overview');
   render();
   boot();
 })();
