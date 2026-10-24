@@ -23,6 +23,8 @@
   button:disabled { opacity: .5; cursor: default; }
   button.primary { background: var(--accent); border-color: var(--accent); }
   button.primary:hover { background: var(--accent2); }
+  button.icon { padding: 2px 7px; background: transparent; border-color: transparent; color: var(--muted); }
+  button.icon:hover { color: var(--text); border-color: var(--line); }
   a { color: #bf94ff; }
   a.btn { display: inline-block; text-decoration: none; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; }
   a.btn:hover { border-color: var(--accent); }
@@ -42,19 +44,38 @@
   nav { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
   nav button { background: transparent; border-color: transparent; color: var(--muted); padding: 6px 12px; border-radius: 8px; }
   nav button.on { color: var(--text); background: var(--panel2); border-color: var(--accent); }
+  nav button .ldot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--live); margin-left: 4px; vertical-align: 1px; }
+  nav button .ldot[hidden] { display: none; }
   #account { color: var(--muted); font-size: 12px; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
   #account img { width: 26px; height: 26px; border-radius: 50%; }
   #helpBtn { font-size: 15px; padding: 3px 9px; }
   #demoBadge { background: #3d2a00; color: var(--gold); border: 1px solid #6b4a00; border-radius: 10px; font-size: 11px; font-weight: 700; padding: 1px 8px; }
 
-  main { padding: 14px; max-width: 1400px; margin: 0 auto; }
-  .page[hidden] { display: none; }
-  .grid { display: grid; gap: 12px; grid-template-columns: repeat(12, 1fr); }
+  main { padding: 14px; max-width: 1500px; margin: 0 auto; }
+  .page[hidden], [hidden] { display: none !important; }
+  .bar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .bar .sp { flex: 1; }
+  .grid { display: grid; gap: 12px; grid-template-columns: repeat(12, 1fr); grid-auto-flow: row dense; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
   .card h2 { font-size: 13px; margin: 0 0 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; display: flex; align-items: center; gap: 8px; }
-  .card h2 .r { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .card h2 .r { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 400; display: flex; align-items: center; gap: 6px; }
   .s12 { grid-column: span 12; } .s8 { grid-column: span 8; } .s6 { grid-column: span 6; } .s4 { grid-column: span 4; }
   @media (max-width: 1000px) { .s8, .s6, .s4 { grid-column: span 12; } }
+
+  /* blokken: slepen om te verplaatsen, hoek om de grootte te veranderen */
+  .w { position: relative; display: flex; flex-direction: column; }
+  .w > .wb { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .w.fixed > .wb { overflow: auto; }
+  .w .grip { cursor: grab; color: var(--muted); font-size: 15px; line-height: 1; touch-action: none; user-select: none; margin-left: -4px; }
+  .w .rz { position: absolute; right: 2px; bottom: 2px; width: 16px; height: 16px; cursor: nwse-resize; touch-action: none;
+    background: linear-gradient(135deg, transparent 50%, var(--line) 50%, var(--line) 60%, transparent 60%, transparent 70%, var(--line) 70%, var(--line) 80%, transparent 80%); opacity: .8; }
+  .w .rz:hover { opacity: 1; filter: brightness(1.8); }
+  .w.dragging { opacity: .45; }
+  .w.drop-before { box-shadow: -4px 0 0 var(--accent); }
+  .w.drop-after { box-shadow: 4px 0 0 var(--accent); }
+  .w.sizing { outline: 2px dashed var(--accent); outline-offset: 2px; }
+  body.moving, body.moving * { cursor: grabbing !important; user-select: none; }
+  @media (max-width: 1000px) { .grid > .w { grid-column: span 12 !important; } }
 
   /* stream-kaart */
   .stream { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
@@ -69,16 +90,17 @@
   @media (max-width: 700px) { .edit { grid-template-columns: 1fr; } }
 
   /* cijfers */
-  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px; }
-  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+  .tile { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
   .tile .l { font-size: 12px; color: var(--muted); }
-  .tile .v { font-size: 26px; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .tile .v { font-size: 26px; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tile .d { font-size: 12px; color: var(--muted); }
   .tile .d.up { color: #3ecf6e; }
-  #tilesFor { margin: 0 0 6px; font-size: 12px; color: var(--muted); }
+  .tile.soon .v { color: var(--muted); }
+  .tilesFor { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
 
   /* grafiek */
-  .gbox { height: 240px; position: relative; }
+  .gbox { flex: 1; min-height: 160px; position: relative; }
   .gbox svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .gbox svg text { fill: var(--muted); font-size: 11px; }
   .gbox .gempty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; color: var(--muted); text-align: center; font-size: 13px; }
@@ -87,18 +109,19 @@
   .gsum i { font-style: normal; } .gsum i.up { color: #3ecf6e; } .gsum i.down { color: var(--pink); }
 
   /* activiteit en lijsten */
-  .feed, .list { max-height: 300px; overflow-y: auto; font-size: 13px; }
+  .feed, .list { flex: 1; min-height: 60px; overflow-y: auto; font-size: 13px; }
   .feed .it { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
   .feed .it .t { color: var(--muted); font-size: 11px; min-width: 38px; padding-top: 2px; }
-  .feed .it .w { flex: 1; word-break: break-word; }
-  .feed .it .w small { color: var(--muted); display: block; }
-  .feed .it.follow .ic { color: #3ecf6e; } .feed .it.raid .ic { color: var(--pink); } .feed .it.bits .ic { color: #c08cff; }
+  .feed .it .w2 { flex: 1; word-break: break-word; }
+  .feed .it .w2 small { color: var(--muted); display: block; }
   .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
   .list .row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
-  .list .row .n { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .list .row .bar { height: 4px; background: var(--accent); border-radius: 2px; opacity: .6; }
+  .list .row .n { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .list .row .bar2 { height: 4px; background: var(--accent); border-radius: 2px; opacity: .6; }
   .list .row img { height: 24px; }
   .list .row .rk { color: var(--muted); width: 18px; text-align: right; font-size: 12px; }
+  .list .row .dm { display: block; color: var(--muted); font-size: 12px; }
+  .list .row .amt { color: #3ecf6e; font-weight: 700; }
   .filters { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
   .filters button { font-size: 12px; padding: 2px 9px; border-radius: 12px; color: var(--muted); }
   .filters button.on { color: var(--text); border-color: var(--accent); }
@@ -108,6 +131,22 @@
   td.ti { white-space: normal; min-width: 180px; }
   .tablewrap { overflow-x: auto; }
 
+  /* live: chat, speler, kijkers */
+  .chat { flex: 1; min-height: 120px; overflow-y: auto; font-size: 13.5px; padding-right: 4px; }
+  .chat .m { padding: 2px 0; word-wrap: break-word; }
+  .chat .m .tm { color: var(--muted); font-size: 11px; margin-right: 4px; }
+  .chat .m .bd { font-size: 10px; font-weight: 700; border-radius: 3px; padding: 0 4px; margin-right: 3px; vertical-align: 1px; background: var(--line); }
+  .chat .m .bd.b { background: var(--live); } .chat .m .bd.md { background: #00a35c; } .chat .m .bd.v { background: #e005b9; } .chat .m .bd.s { background: var(--accent); }
+  .chat .m b { font-weight: 700; }
+  .chat .m img { height: 24px; vertical-align: middle; margin: -4px 1px; }
+  .chat .m.ev { color: var(--muted); font-style: italic; }
+  .chat .m.hl { background: rgba(145,71,255,.14); border-left: 3px solid var(--accent); padding-left: 6px; }
+  .send { display: flex; gap: 6px; margin-top: 8px; }
+  .player { flex: 1; min-height: 160px; position: relative; background: #000; border-radius: 8px; overflow: hidden; }
+  .player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .player .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); text-align: center; padding: 16px; font-size: 13px; }
+  .vsearch { margin-bottom: 6px; }
+
   /* welkom */
   .welcome { text-align: center; padding: 30px 16px; }
   .welcome h2 { font-size: 22px; text-transform: none; letter-spacing: 0; color: var(--text); justify-content: center; }
@@ -115,36 +154,64 @@
   .welcome .row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 
   /* overlays */
+  .ovtiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+  .ovtile { text-align: left; padding: 12px 14px; border-radius: 10px; background: var(--panel); display: flex; flex-direction: column; gap: 4px; min-height: 92px; }
+  .ovtile b { font-size: 15px; }
+  .ovtile small { color: var(--muted); font-size: 12px; line-height: 1.3; }
+  .ovtile.on { border-color: var(--accent); background: linear-gradient(135deg, #2a1f45, var(--panel)); }
   .ov { display: grid; grid-template-columns: 340px 1fr; gap: 14px; }
   @media (max-width: 900px) { .ov { grid-template-columns: 1fr; } }
   .ov h3 { margin: 0 0 4px; font-size: 16px; }
-  .ov .f label { display: block; margin: 10px 0 4px; font-size: 12px; color: var(--muted); }
-  .ov .f .rng { display: flex; align-items: center; gap: 8px; }
-  .ov .f .rng output { min-width: 46px; text-align: right; font-size: 12px; color: var(--muted); }
-  .ov .f .chk { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; cursor: pointer; }
+  .f label { display: block; margin: 10px 0 4px; font-size: 12px; color: var(--muted); }
+  .f .rng { display: flex; align-items: center; gap: 8px; }
+  .f .rng output { min-width: 46px; text-align: right; font-size: 12px; color: var(--muted); }
+  .f .chk { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; cursor: pointer; color: var(--text); }
+  .f .imgrow { display: flex; gap: 8px; align-items: center; }
+  .f .imgrow img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--bg); border: 1px solid var(--line); }
   .ov .pv { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: #000; }
   .ov .pv iframe { position: absolute; inset: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; }
-  .ov .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
-  .ov .link { font: 12px ui-monospace, Consolas, monospace; color: var(--muted); word-break: break-all; margin-top: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+  .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+  .link { font: 12px ui-monospace, Consolas, monospace; color: var(--muted); word-break: break-all; margin-top: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
   .ovchan { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .ovchan input { width: 220px; }
   .obs { font-size: 13px; color: var(--muted); }
   .obs ol { margin: 6px 0 0; padding-left: 20px; }
+  /* emotes beheren */
+  .emtools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+  .emtools input { width: 220px; }
+  .emgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; max-height: 520px; overflow-y: auto; padding: 2px; }
+  .em { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 4px 4px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
+  .em img { height: 36px; max-width: 72px; object-fit: contain; }
+  .em span { font-size: 11px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .em small { font-size: 9.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .em.off { opacity: .35; filter: grayscale(1); border-style: dashed; }
+  .em:hover { border-color: var(--accent); }
+  .drop { border: 2px dashed var(--line); border-radius: 10px; padding: 18px; text-align: center; color: var(--muted); margin-top: 10px; }
+  .drop b { color: var(--text); }
+  .soonpill { display: inline-block; font-size: 10.5px; font-weight: 700; color: var(--gold); background: #3d2a00; border: 1px solid #6b4a00; border-radius: 10px; padding: 0 7px; margin-left: 6px; vertical-align: 1px; }
 
   /* instellingen */
   .optrow { display: flex; align-items: center; gap: 8px; margin: 8px 0; cursor: pointer; font-size: 13px; }
   .set .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-  .scopes { font-size: 12px; color: var(--muted); }
+  .scopes { font-size: 12px; color: var(--muted); margin-top: 8px; }
   .scopes span { display: inline-block; margin: 2px 6px 2px 0; }
   .scopes .ok { color: #3ecf6e; } .scopes .no { color: #ff6b6b; }
+  code { font: 12px ui-monospace, Consolas, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+  .integ { padding: 4px 14px 12px; }
+  .integ ol { margin: 8px 0 4px; padding-left: 20px; font-size: 12px; color: var(--muted); }
+  .integ .st-ok { color: #3ecf6e; } .integ .st-err { color: #ff6b6b; }
+  .warn { font-size: 12px; color: var(--gold); margin: 6px 0 0; }
 
   /* modals, hulp, meldingen */
   .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 10; padding: 16px; }
   .modal-bg.open { display: flex; }
   .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
   .modal h2 { margin: 0 0 12px; font-size: 16px; }
+  .modal h3 { margin: 14px 0 4px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   .modal label { display: block; margin: 10px 0 4px; font-size: 12px; color: var(--muted); }
   .modal .row { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; flex-wrap: wrap; }
+  .modal .optrow { margin: 4px 0; color: var(--text); font-size: 13px; display: flex; }
+  .lay-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
   .help-intro { margin: 0 0 10px; }
   .help-sec { border: 1px solid var(--line); border-radius: 8px; background: var(--bg); margin: 6px 0; }
   .help-sec summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px; padding: 9px 12px; font-weight: 600; user-select: none; }
@@ -168,7 +235,7 @@
   .help-form { padding: 10px 14px 12px; }
   .help-form .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
   #toasts { position: fixed; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 20; }
-  .toast { background: var(--panel2); border: 1px solid var(--line); border-left: 4px solid var(--accent); padding: 8px 12px; border-radius: 6px; max-width: 360px; font-size: 13px; }
+  .toast { background: var(--panel2); border: 1px solid var(--line); border-left: 4px solid var(--accent); padding: 8px 12px; border-radius: 6px; max-width: 380px; font-size: 13px; }
   .toast.err { border-left-color: var(--danger); }
   .toast.ok { border-left-color: var(--ok); }
 </style>
@@ -178,6 +245,7 @@
   <div class="brand"><h1>R5 StreamerHub</h1><small>streamtool voor Twitch</small></div>
   <nav id="nav">
     <button data-page="overview" class="on">📊 Overzicht</button>
+    <button data-page="live">🔴 Live<span class="ldot" id="navLive" hidden></span></button>
     <button data-page="overlays">🎨 Overlays</button>
     <button data-page="settings">⚙ Instellingen</button>
   </nav>
@@ -187,64 +255,24 @@
 </header>
 
 <main>
-  <!-- ======== Overzicht ======== -->
+  <div id="welcome" class="card welcome" hidden>
+    <h2>Welkom bij R5 StreamerHub</h2>
+    <p>Jouw eigen kanaal in één overzicht: live-status, kijkers, volgers, subs, bits, raids, donaties en wat er in je chat gebeurt. Plus overlays voor OBS zoals een emote-wall en raid melding.</p>
+    <div class="row">
+      <button class="primary" data-act="login">Inloggen met Twitch</button>
+      <button data-act="demo">Bekijk de demo</button>
+    </div>
+    <p class="hint">Overlays werken ook zonder inloggen: kijk bij 🎨 Overlays.</p>
+  </div>
+
   <section class="page" id="page-overview">
-    <div id="welcome" class="card welcome" hidden>
-      <h2>Welkom bij R5 StreamerHub</h2>
-      <p>Jouw eigen kanaal in één overzicht: live-status, kijkers, volgers, subs, bits, raids en wat er in je chat gebeurt. Plus overlays voor OBS zoals een emote-wall en raid-melding.</p>
-      <div class="row">
-        <button class="primary" data-act="login">Inloggen met Twitch</button>
-        <button data-act="demo">Bekijk de demo</button>
-      </div>
-      <p class="hint">Overlays werken ook zonder inloggen: kijk bij 🎨 Overlays.</p>
-    </div>
+    <div class="bar" data-need-dash><span class="hint" id="ovFor"></span><span class="sp"></span><button data-layout="overview" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button></div>
+    <div class="grid" id="grid-overview" data-need-dash></div>
+  </section>
 
-    <div id="dash" class="grid" hidden>
-      <div class="card s12">
-        <div class="stream">
-          <img class="av" id="stAv" alt="">
-          <div class="info">
-            <div class="who"><b id="stName"></b><span class="badge" id="stBadge">OFFLINE</span><span class="meta" id="stMeta"></span>
-              <a class="btn" id="stOpen" target="_blank" rel="noopener" style="margin-left:auto">Open op Twitch ↗</a></div>
-            <div class="edit">
-              <input id="stTitle" placeholder="Titel van je stream" maxlength="140" autocomplete="off">
-              <input id="stGame" placeholder="Categorie / game" list="gameList" autocomplete="off">
-              <button class="primary" id="stSave">Opslaan</button>
-            </div>
-            <datalist id="gameList"></datalist>
-          </div>
-        </div>
-      </div>
-
-      <div class="s12">
-        <div id="tilesFor"></div>
-        <div class="tiles" id="tiles"></div>
-      </div>
-
-      <div class="card s8">
-        <h2>📈 Kijkers <span class="r hint" id="gNow"></span><button id="csvBtn" title="Exporteren naar Excel (CSV)" style="padding:2px 8px">⤓ CSV</button></h2>
-        <div class="gbox" id="gbox"></div>
-        <div class="gsum" id="gsum"></div>
-      </div>
-      <div class="card s4">
-        <h2>⚡ Activiteit <span class="r hint" id="feedCount"></span></h2>
-        <div class="filters" id="feedFilters"></div>
-        <div class="feed" id="feed"></div>
-      </div>
-
-      <div class="card s4"><h2>💬 Top-chatters</h2><div class="list" id="topChat"></div></div>
-      <div class="card s4"><h2>😀 Meest gebruikte emotes</h2><div class="list" id="topEmo"></div></div>
-      <div class="card s4"><h2>💜 Nieuwste volgers <span class="r hint" id="folTotal"></span></h2><div class="list" id="followers"></div></div>
-
-      <div class="card s12">
-        <h2>🗓 Vorige streams <span class="r hint">cijfers die R5 StreamerHub heeft bijgehouden</span></h2>
-        <div class="tablewrap"><table id="history"></table></div>
-      </div>
-      <div class="card s12">
-        <h2>🎞 Video's op Twitch <span class="r hint">laatste uitzendingen (VOD's)</span></h2>
-        <div class="tablewrap"><table id="vods"></table></div>
-      </div>
-    </div>
+  <section class="page" id="page-live" hidden>
+    <div class="bar" data-need-dash><span class="hint">Tijdens je stream: chat, kijkers en wat er gebeurt.</span><span class="sp"></span><button data-layout="live" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button></div>
+    <div class="grid" id="grid-live" data-need-dash></div>
   </section>
 
   <!-- ======== Overlays ======== -->
@@ -259,14 +287,15 @@
         </div>
         <div class="obs">
           <ol>
-            <li>Stel de overlay hieronder in en kijk in het voorbeeld hoe het eruitziet (▶ Test).</li>
+            <li>Kies hieronder een overlay, stel hem in en kijk in het voorbeeld hoe het eruitziet (▶ Test).</li>
             <li>Klik op <b>📋 Kopieer OBS-link</b>.</li>
             <li>In OBS: <b>Bronnen → + → Browser</b>, plak de link bij <b>URL</b>, breedte <b>1920</b>, hoogte <b>1080</b>.</li>
           </ol>
           <p class="hint">De overlays lezen alleen je openbare chat. Er staat geen inlogcode in de link, dus je kunt hem gerust gebruiken.</p>
         </div>
       </div>
-      <div id="ovList" class="s12" style="display:grid;gap:12px"></div>
+      <div class="s12 ovtiles" id="ovTiles"></div>
+      <div class="s12" id="ovEditor"></div>
     </div>
   </section>
 
@@ -281,18 +310,61 @@
           <button id="logoutBtn">Uitloggen</button>
         </div>
         <div class="scopes" id="scopes"></div>
+        <details style="margin-top:8px"><summary class="hint" style="cursor:pointer">Lukt inloggen niet?</summary>
+          <p class="hint">Twitch stuurt je na het inloggen terug naar <code id="redirUri"></code>. Dit adres moet precies zo (met https en de / aan het eind) bij <b>OAuth-omleidings-URL's</b> staan in de Twitch dev console van de app R5 StreamerHub. Krijg je een foutmelding van Twitch, stuur dan een screenshot via ❓.</p>
+        </details>
       </div>
       <div class="card s6">
         <h2>🧪 Demo</h2>
         <label class="optrow"><input type="checkbox" id="demoOn"> Demo-modus: nepstream met nepchat, om alles uit te proberen</label>
         <p class="hint">In de demo wordt niets opgeslagen en gaat er niets naar Twitch.</p>
       </div>
+      <div class="card s12">
+        <h2>🔌 Koppelingen</h2>
+        <label class="optrow"><input type="checkbox" id="intOn"> Koppelingen met andere diensten gebruiken (bijv. voor donaties)</label>
+        <div id="intBox" hidden>
+          <details class="help-sec" id="seBox">
+            <summary><span class="hi">🟢</span>StreamElements<small id="seSum">niet gekoppeld</small></summary>
+            <div class="integ f">
+              <label class="chk"><input type="checkbox" id="seOn"> StreamElements gebruiken voor donaties (tips)</label>
+              <label for="seId">Account ID</label>
+              <input id="seId" placeholder="bijv. 5f1a2b3c4d5e6f7a8b9c0d1e" autocomplete="off" spellcheck="false">
+              <label for="seJwt">JWT Token</label>
+              <input id="seJwt" type="password" placeholder="eyJhbGciOi…" autocomplete="off" spellcheck="false">
+              <div class="acts"><button class="primary" id="seTest">Verbinding testen</button><button id="seClear">Wissen</button><span class="hint" id="seState"></span></div>
+              <ol>
+                <li>Log in op <a href="https://streamelements.com/dashboard/account/channels" target="_blank" rel="noopener">streamelements.com → Account → Channels</a> (met je Twitch-account).</li>
+                <li>Zet rechtsboven <b>Show secrets</b> aan.</li>
+                <li>Kopieer <b>Account ID</b> en <b>JWT Token</b> en plak ze hierboven. Klik op <b>Verbinding testen</b>.</li>
+              </ol>
+              <p class="warn">⚠ De JWT Token is geheim, net als een wachtwoord: deel hem met niemand. Hij blijft alleen op dit apparaat en gaat alleen naar StreamElements. Bij exporteren gaat hij niet mee.</p>
+            </div>
+          </details>
+          <details class="help-sec" id="tpBox">
+            <summary><span class="hi">🟣</span>TipeeeStream<small id="tpSum">niet gekoppeld</small></summary>
+            <div class="integ f">
+              <label class="chk"><input type="checkbox" id="tpOn"> TipeeeStream gebruiken voor donaties</label>
+              <label for="tpKey">API key</label>
+              <input id="tpKey" type="password" placeholder="bijv. 3f9a1c…" autocomplete="off" spellcheck="false">
+              <div class="acts"><button class="primary" id="tpTest">Verbinding testen</button><button id="tpClear">Wissen</button><span class="hint" id="tpState"></span></div>
+              <ol>
+                <li>Log in op <a href="https://www.tipeeestream.com/dashboard/api-key" target="_blank" rel="noopener">tipeeestream.com → Dashboard → API key</a> (met je Twitch-account).</li>
+                <li>Staat er nog geen key, klik dan op <b>Generate</b> (of <b>Genereren</b>).</li>
+                <li>Kopieer de <b>API key</b>, plak hem hierboven en klik op <b>Verbinding testen</b>.</li>
+              </ol>
+              <p class="warn">⚠ De API key is geheim, net als een wachtwoord: deel hem met niemand. Hij blijft alleen op dit apparaat en gaat alleen naar TipeeeStream. Bij exporteren gaat hij niet mee.</p>
+            </div>
+          </details>
+          <p class="hint">Gebruik je beide? Dan worden de donaties samengevoegd. Meer koppelingen (bijv. Streamlabs of Ko-fi) komen later.</p>
+        </div>
+      </div>
       <div class="card s6">
-        <h2>📊 Overzicht</h2>
+        <h2>📊 Overzicht en Live</h2>
         <label class="optrow"><input type="checkbox" id="optBots" checked> Bekende bots niet meetellen bij top-chatters (Nightbot, StreamElements, …)</label>
         <label for="optBotList" class="hint">Extra namen om niet mee te tellen (komma's ertussen)</label>
         <input id="optBotList" placeholder="bijv. mijnbot, soundalerts" autocomplete="off">
         <label class="optrow"><input type="checkbox" id="optTitle"> Kijkers en live-tijd in de titel van het browsertabblad</label>
+        <p class="hint">Blokken verplaats je door ze aan ⠿ te slepen; met de hoek rechtsonder maak je ze groter of kleiner. Aan- of uitzetten doe je met <b>✎ Indeling</b>.</p>
       </div>
       <div class="card s6">
         <h2>💾 Gegevens</h2>
@@ -312,6 +384,22 @@
   </section>
 </main>
 
+<!-- Indeling -->
+<div class="modal-bg" id="layModal">
+  <div class="modal">
+    <h2 id="layTitle">Indeling</h2>
+    <p class="hint" style="margin:0">Zet blokken en tegels aan of uit. Verplaatsen doe je door een blok aan ⠿ te slepen, de grootte met de hoek rechtsonder (dubbelklik op de hoek zet hem terug).</p>
+    <h3>Blokken</h3>
+    <div class="lay-list" id="layBlocks"></div>
+    <h3>Tegels met cijfers</h3>
+    <div class="lay-list" id="layTiles"></div>
+    <div class="row">
+      <button id="layReset" style="margin-right:auto">Standaard herstellen</button>
+      <button class="primary" data-close>Klaar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Hulp -->
 <div class="modal-bg" id="helpModal">
   <div class="modal">
@@ -321,7 +409,7 @@
       <summary><span class="hi">🚀</span>Starten<small>inloggen en uitproberen</small></summary>
       <ul>
         <li><b>Inloggen</b>: klik op <b>Inloggen met Twitch</b>. Je logt in met je eigen streamaccount; R5 StreamerHub laat dan jouw kanaal zien.</li>
-        <li><b>Uitproberen</b>: zet bij ⚙ Instellingen de <b>demo</b> aan voor een nepstream met nepchat.</li>
+        <li><b>Uitproberen</b>: klik op <b>Bekijk de demo</b> of zet bij ⚙ Instellingen de <b>demo</b> aan voor een nepstream met nepchat.</li>
         <li>R5 StreamerHub houdt de cijfers bij <b>zolang de pagina open staat</b>. Twitch geeft geen kijkcijfers van vroeger, dus laat hem tijdens je stream openstaan.</li>
       </ul>
     </details>
@@ -329,39 +417,61 @@
       <summary><span class="hi">📊</span>Overzicht<small>jouw stream in cijfers</small></summary>
       <ul>
         <li><b>Stream</b>: live-status, live-tijd, en je <b>titel en categorie</b> direct aanpassen.</li>
-        <li><b>Cijfers</b>: kijkers nu, piek en gemiddeld, nieuwe volgers en subs, bits, raids, chatberichten en unieke chatters van deze stream. Offline zie je de cijfers van je laatste stream.</li>
+        <li><b>Cijfers</b>: kijkers nu, piek en gemiddeld, nieuwe volgers en subs, bits, raids, chatberichten, unieke chatters en <b>donaties</b> (via StreamElements of TipeeeStream). Offline zie je de cijfers van je laatste stream.</li>
         <li><b>Kijkersgrafiek</b> met gamewissels en raids, te exporteren naar Excel (CSV).</li>
-        <li><b>Activiteit</b>: volgers, subs, gifts, bits, raids en kanaalpunten op een rij, te filteren.</li>
-        <li><b>Top-chatters</b>, <b>meest gebruikte emotes</b> (ook 7TV, BTTV en FFZ) en je <b>nieuwste volgers</b>.</li>
-        <li><b>Vorige streams</b>: per stream piek, gemiddelde, duur, berichten en nieuwe volgers. Plus je laatste video's op Twitch.</li>
+        <li><b>Activiteit</b>, <b>top-chatters</b>, <b>meest gebruikte emotes</b>, <b>nieuwste volgers</b>, <b>vorige streams</b> en je video's op Twitch.</li>
+        <li><b>Zelf indelen</b>: sleep een blok aan ⠿, maak het groter of kleiner met de hoek rechtsonder, en zet blokken of tegels aan en uit met <b>✎ Indeling</b>.</li>
+      </ul>
+    </details>
+    <details class="help-sec">
+      <summary><span class="hi">🔴</span>Live<small>tijdens je stream</small></summary>
+      <ul>
+        <li><b>Chat</b> van je kanaal, en zelf berichten sturen.</li>
+        <li><b>Minispeler</b> van je eigen stream. Hij staat standaard op pauze, zodat je jezelf niet dubbel hoort.</li>
+        <li><b>Kijkerslijst</b> met zoeken, <b>activiteit</b> (volgers, subs, bits, raids, kanaalpunten, donaties) en een blok met <b>donaties</b>.</li>
+        <li>Net als het overzicht helemaal zelf in te delen.</li>
       </ul>
     </details>
     <details class="help-sec">
       <summary><span class="hi">🎨</span>Overlays<small>voor OBS</small></summary>
       <ul>
+        <li>Kies bovenaan een overlay; daaronder opent de editor met een voorbeeld.</li>
         <li><b>Emote-wall</b>: emotes uit je chat vliegen omhoog, regenen naar beneden, ploppen op of stuiteren over je scherm.</li>
         <li><b>Emote-combo</b>: spamt je chat dezelfde emote, dan verschijnt een grote teller (bijv. <b>PogChamp × 12</b>).</li>
-        <li><b>Raid-melding</b>: een melding met naam, profielfoto en aantal kijkers, met geluid als je wilt.</li>
-        <li>Instellen, voorbeeld bekijken met <b>▶ Test</b>, en dan <b>📋 Kopieer OBS-link</b>. In OBS: Bronnen → + → Browser, plak de link, 1920 × 1080.</li>
-        <li>De overlays werken zonder inloggen en zonder dat R5 StreamerHub open staat.</li>
+        <li><b>Raid melding</b>: naam, profielfoto (of je eigen afbeelding) en aantal kijkers, met geluid als je wilt.</li>
+        <li><b>Emotes</b>: alle emotes van je kanaal (Twitch, 7TV, BTTV, FFZ). Klik op een emote om hem uit of aan te zetten voor de emote-wall en combo. Zelf emotes uploaden komt later.</li>
+        <li>Klik op <b>📋 Kopieer OBS-link</b> en plak hem in OBS als Browserbron (1920 × 1080). De overlays werken zonder inloggen en zonder dat R5 StreamerHub open staat.</li>
       </ul>
     </details>
     <details class="help-sec">
-      <summary><span class="hi">⚙</span>Instellingen<small>account en gegevens</small></summary>
+      <summary><span class="hi">⚙</span>Instellingen<small>account, koppelingen en gegevens</small></summary>
       <ul>
         <li>In- en uitloggen, en zien welke rechten R5 StreamerHub van Twitch heeft.</li>
+        <li><b>Koppelingen</b>: zet het vinkje aan en klap <b>StreamElements</b> of <b>TipeeeStream</b> open. Vul je gegevens in (met uitleg waar je ze vindt); dan zie je je donaties in het overzicht en bij Live.</li>
         <li>Bots niet meetellen bij de top-chatters.</li>
-        <li><b>Exporteren / importeren</b> van je instellingen en streamcijfers.</li>
+        <li><b>Exporteren / importeren</b> van je instellingen, indeling en streamcijfers.</li>
       </ul>
     </details>
     <details class="help-sec">
       <summary><span class="hi">📜</span>Changelog<small>wat is er veranderd</small></summary>
       <div class="cl">
         <details class="cl-ver" open>
+          <summary>Nieuw sinds 1.0 <small>24 okt 2026</small></summary>
+          <ul>
+            <li><b>Nieuw tabblad Live</b>: chat (ook zelf sturen), minispeler die op pauze start, kijkerslijst, activiteit en donaties.</li>
+            <li><b>Zelf indelen</b>: blokken op Overzicht en Live verslepen, groter of kleiner maken, en blokken en tegels aan of uit zetten met ✎ Indeling.</li>
+            <li><b>Donaties via StreamElements en TipeeeStream</b>: nieuwe koppelingen bij ⚙ Instellingen → Koppelingen. Donaties komen in een tegel, in de activiteit en in een eigen blok.</li>
+            <li><b>Overlays</b>: blokken bovenaan per overlay, die de editor openen.</li>
+            <li><b>Raid melding</b> (zonder streepje) met keuze voor profielfoto, eigen afbeelding of geen afbeelding.</li>
+            <li><b>Emotes</b>: alle emotes van je kanaal bekijken en per emote aan of uit zetten voor de overlays. Uploaden staat er al, maar werkt nog niet.</li>
+            <li><b>Inloggen</b>: duidelijke melding als Twitch een fout teruggeeft, en het terugstuuradres staat bij Instellingen.</li>
+          </ul>
+        </details>
+        <details class="cl-ver">
           <summary>Versie 1.0 <small>24 okt 2026</small></summary>
           <ul>
             <li>Eerste versie: <b>Overzicht</b> met live-status, titel en categorie aanpassen, cijfers van deze stream, kijkersgrafiek, activiteit, top-chatters, top-emotes, nieuwste volgers en vorige streams.</li>
-            <li><b>Overlays</b> voor OBS: emote-wall, emote-combo en raid-melding, met voorbeeld en kopieerbare link.</li>
+            <li><b>Overlays</b> voor OBS: emote-wall, emote-combo en raid melding, met voorbeeld en kopieerbare link.</li>
             <li><b>Instellingen</b>, demo-modus, exporteren/importeren en dit hulpmenu.</li>
           </ul>
         </details>
@@ -389,20 +499,21 @@
 <script>
 (() => {
   'use strict';
-  const VERSION = '1.0';
+  const VERSION = '1.0 + updates';
   // Client ID van de Twitch-app "R5 StreamerHub". Een Client ID is openbaar (geen wachtwoord).
   const CLIENT_ID = 'rjm1bqkmvmfpbqwn8wxvon05v8mu3d';
-  const SCOPES = ['moderator:read:followers', 'channel:read:subscriptions', 'bits:read', 'channel:read:redemptions', 'channel:manage:broadcast'];
+  const SCOPES = ['moderator:read:followers', 'channel:read:subscriptions', 'bits:read', 'channel:read:redemptions', 'channel:manage:broadcast', 'moderator:read:chatters', 'user:write:chat'];
   const SCOPE_LABEL = { 'moderator:read:followers': 'volgers', 'channel:read:subscriptions': 'abonnees', 'bits:read': 'bits',
-    'channel:read:redemptions': 'kanaalpunten', 'channel:manage:broadcast': 'titel en categorie' };
+    'channel:read:redemptions': 'kanaalpunten', 'channel:manage:broadcast': 'titel en categorie', 'moderator:read:chatters': 'kijkerslijst', 'user:write:chat': 'chat sturen' };
   const BOTS = ['nightbot', 'streamelements', 'streamlabs', 'moobot', 'fossabot', 'wizebot', 'soundalerts', 'sery_bot', 'kofistreambot', 'botrixoficial', 'commanderroot', 'pokemoncommunitygame'];
-  const $ = (s) => document.querySelector(s);
+  const $ = (s, el) => (el || document).querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const nl = (n) => (n == null || !isFinite(n) ? '—' : Math.round(n).toLocaleString('nl-NL'));
   const d2 = (n) => String(n).padStart(2, '0');
   const hhmm = (t) => { const d = new Date(t); return d2(d.getHours()) + ':' + d2(d.getMinutes()); };
   const dur = (ms) => { const m = Math.max(0, Math.floor(ms / 60000)); return m >= 60 ? Math.floor(m / 60) + ' u ' + d2(m % 60) + ' min' : m + ' min'; };
   const dateNl = (t) => new Date(t).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
+  const money = (a, c) => { try { return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: c || 'EUR' }).format(a); } catch { return a + ' ' + (c || ''); } };
 
   // ---------- opslag ----------
   const store = {
@@ -419,7 +530,7 @@
     el.className = 'toast' + (kind ? ' ' + kind : '');
     el.textContent = text;
     $('#toasts').appendChild(el);
-    setTimeout(() => el.remove(), kind === 'err' ? 6000 : 3000);
+    setTimeout(() => el.remove(), kind === 'err' ? 9000 : 3000);
   }
 
   // ---------- streams (sessies) ----------
@@ -435,18 +546,27 @@
   }
   function newSession(id, start, title, game) {
     return { id, start, end: start, title, game, vh: [], raidsIn: [], msgs: 0, chatters: {}, emotes: {}, bits: 0, subs: 0, gifts: 0,
-      follows: 0, redeems: 0, feed: [], folStart: state.followers, subStart: state.subs };
+      follows: 0, redeems: 0, feed: [], donations: [], folStart: state.followers, subStart: state.subs };
   }
   function shown() { return cur || (state.demo ? null : sessions[0]) || null; }
 
   // ---------- inloggen ----------
   const redirectUri = location.origin + location.pathname.replace(/index\.html$/, '');
   function readTokenFromHash() {
-    if (!location.hash.includes('access_token=')) return;
-    const p = new URLSearchParams(location.hash.slice(1));
-    state.token = p.get('access_token');
+    const h = new URLSearchParams(location.hash.slice(1)), q = new URLSearchParams(location.search);
+    const err = h.get('error') || q.get('error');
+    if (err) {
+      const d = (h.get('error_description') || q.get('error_description') || '').replace(/\+/g, ' ');
+      const nice = { access_denied: 'je hebt de toegang geweigerd', redirect_mismatch: 'het terugstuuradres klopt niet met de Twitch-app' }[err] || err;
+      setTimeout(() => toast('Inloggen bij Twitch mislukt: ' + nice + (d && d !== nice ? ' (' + d + ')' : '') + '. Kijk bij ⚙ Instellingen → "Lukt inloggen niet?".', 'err'), 300);
+      history.replaceState(null, '', location.pathname);
+      return;
+    }
+    if (!h.get('access_token')) return;
+    state.token = h.get('access_token');
     store.set('token', state.token);
     history.replaceState(null, '', location.pathname + location.search);
+    setTimeout(() => toast('Ingelogd bij Twitch.', 'ok'), 300);
   }
   async function validate() {
     if (!state.token) { state.me = null; return; }
@@ -454,7 +574,8 @@
       const r = await fetch('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: 'OAuth ' + state.token } });
       if (!r.ok) throw new Error('je login is verlopen, log opnieuw in');
       state.me = await r.json();
-    } catch (e) { state.me = null; toast('Inloggen mislukt: ' + e.message, 'err'); }
+      if (state.me.client_id && state.me.client_id !== CLIENT_ID) throw new Error('deze login hoort bij een andere app, log opnieuw in');
+    } catch (e) { state.me = null; state.token = ''; store.del('token'); toast('Inloggen mislukt: ' + e.message, 'err'); }
   }
   function login() {
     if (location.protocol === 'file:') return toast('Inloggen werkt alleen online. Open r5streamer.daver5.nl.', 'err');
@@ -479,35 +600,62 @@
   }
   const hasScope = (s) => !!(state.me && (state.me.scopes || []).includes(s));
 
-  // ---------- emotes (voor de top-emotes) ----------
+  // ---------- emotes ----------
+  // naam -> {url, src, ch}; src = twitch | 7tv | bttv | ffz; ch = van je kanaal (anders globaal)
   const emo = {};
   const getJson = (u) => fetch(u).then((r) => r.ok ? r.json() : null).catch(() => null);
   const BTTV = 'https://api.betterttv.net/3/cached/';
-  const addStv = (l) => (l || []).forEach((e) => { const h = e.data && e.data.host; if (h && h.url) emo[e.name] = 'https:' + h.url + '/2x.webp'; });
-  const addBttv = (l) => (l || []).forEach((e) => { emo[e.code] = 'https://cdn.betterttv.net/emote/' + e.id + '/2x'; });
-  const addFfz = (l) => (l || []).forEach((e) => { const i = e.images || {}; const u = i['2x'] || i['1x']; if (u) emo[e.code] = u; });
+  const put = (n, url, src, ch) => { if (!emo[n] || ch) emo[n] = { url, src, ch: !!ch }; };
+  const addStv = (l, ch) => (l || []).forEach((e) => { const h = e.data && e.data.host; if (h && h.url) put(e.name, 'https:' + h.url + '/2x.webp', '7tv', ch); });
+  const addBttv = (l, ch) => (l || []).forEach((e) => put(e.code, 'https://cdn.betterttv.net/emote/' + e.id + '/2x', 'bttv', ch));
+  const addFfz = (l, ch) => (l || []).forEach((e) => { const i = e.images || {}; const u = i['2x'] || i['1x']; if (u) put(e.code, u, 'ffz', ch); });
+  const twEmoteUrl = (id) => 'https://static-cdn.jtvnw.net/emoticons/v2/' + id + '/default/dark/2.0';
+  let emotesLoaded = false;
   async function loadEmotes(roomId) {
     const [sg, bg, fg, s, b, f] = await Promise.all([getJson('https://7tv.io/v3/emote-sets/global'), getJson(BTTV + 'emotes/global'), getJson(BTTV + 'frankerfacez/emotes/global'),
       roomId ? getJson('https://7tv.io/v3/users/twitch/' + roomId) : null, roomId ? getJson(BTTV + 'users/twitch/' + roomId) : null, roomId ? getJson(BTTV + 'frankerfacez/users/twitch/' + roomId) : null]);
     if (sg) addStv(sg.emotes); if (Array.isArray(bg)) addBttv(bg); if (Array.isArray(fg)) addFfz(fg);
-    if (b) addBttv([...(b.channelEmotes || []), ...(b.sharedEmotes || [])]); if (Array.isArray(f)) addFfz(f); if (s && s.emote_set) addStv(s.emote_set.emotes);
+    if (b) addBttv([...(b.channelEmotes || []), ...(b.sharedEmotes || [])], true); if (Array.isArray(f)) addFfz(f, true); if (s && s.emote_set) addStv(s.emote_set.emotes, true);
+    if (state.me && roomId) {
+      try { (await helix('GET', 'chat/emotes', { broadcaster_id: roomId })).data.forEach((e) => put(e.name, twEmoteUrl(e.id), 'twitch', true)); } catch {}
+      try { (await helix('GET', 'chat/emotes/global')).data.forEach((e) => put(e.name, twEmoteUrl(e.id), 'twitch')); } catch {}
+    }
+    emotesLoaded = true;
+    if (ovSel === 'emotes' && state.page === 'overlays') renderOvEditor();
+  }
+  function parseTwTag(tag) {
+    const tw = {};
+    if (tag) tag.split('/').forEach((e) => { const [id, pos] = e.split(':'); if (pos) pos.split(',').forEach((p) => { const [a, b] = p.split('-').map(Number); tw[a] = { b, id }; }); });
+    return tw;
   }
   function emotesIn(text, tag) {
-    const out = [], chars = Array.from(text), tw = {};
-    if (tag) tag.split('/').forEach((e) => { const [id, pos] = e.split(':'); if (pos) pos.split(',').forEach((p) => { const [a, b] = p.split('-').map(Number); tw[a] = { b, id }; }); });
+    const out = [], chars = Array.from(text), tw = parseTwTag(tag);
     let i = 0;
     while (i < chars.length) {
-      if (tw[i]) { out.push([chars.slice(i, tw[i].b + 1).join(''), 'https://static-cdn.jtvnw.net/emoticons/v2/' + tw[i].id + '/default/dark/2.0']); i = tw[i].b + 1; continue; }
+      if (tw[i]) { out.push([chars.slice(i, tw[i].b + 1).join(''), twEmoteUrl(tw[i].id)]); i = tw[i].b + 1; continue; }
       if (/\s/.test(chars[i])) { i++; continue; }
       let j = i; while (j < chars.length && !/\s/.test(chars[j]) && !tw[j]) j++;
       const w = chars.slice(i, j).join('');
-      if (emo[w]) out.push([w, emo[w]]);
+      if (emo[w]) out.push([w, emo[w].url]);
       i = j;
     }
     return out;
   }
+  // chattekst als html, met emotes als plaatjes
+  function chatHtml(text, tag) {
+    const chars = Array.from(text), tw = parseTwTag(tag);
+    let out = '', i = 0, word = '';
+    const flush = () => { if (word) out += emo[word] ? '<img src="' + esc(emo[word].url) + '" alt="' + esc(word) + '" title="' + esc(word) + '">' : esc(word); word = ''; };
+    while (i < chars.length) {
+      if (tw[i]) { flush(); const n = chars.slice(i, tw[i].b + 1).join(''); out += '<img src="' + twEmoteUrl(tw[i].id) + '" alt="' + esc(n) + '" title="' + esc(n) + '">'; i = tw[i].b + 1; continue; }
+      if (/\s/.test(chars[i])) { flush(); out += ' '; i++; continue; }
+      word += chars[i]; i++;
+    }
+    flush();
+    return out;
+  }
 
-  // ---------- chat lezen (anoniem; alleen tellen, niets versturen) ----------
+  // ---------- chat lezen (anoniem) ----------
   const irc = {
     ws: null, ch: '', retry: 1000,
     open(ch) {
@@ -536,13 +684,14 @@
     if (ti >= 0) m.params.push(rest.slice(ti + 2));
     return m;
   }
+  const giftBatch = {};
   function onIrc(line, ws) {
     const m = parseLine(line), t = m.tags;
     if (m.command === 'PING') return ws.send('PONG :' + (m.params[0] || 'tmi.twitch.tv'));
     if (m.command === 'PRIVMSG') {
       let text = m.params[1] || '';
       if (text.startsWith('\u0001ACTION ')) text = text.slice(8, -1);
-      chatMsg(m.prefix.split('!')[0], t['display-name'], text, t.emotes || '', +t.bits || 0);
+      chatMsg(m.prefix.split('!')[0], t['display-name'], text, t.emotes || '', +t.bits || 0, t.color, t.badges || '');
     } else if (m.command === 'USERNOTICE') {
       const who = t['display-name'] || t.login || '';
       const id = t['msg-id'];
@@ -551,19 +700,38 @@
         event('sub', '⭐', who + (id === 'resub' ? ' is opnieuw geabonneerd' + (mo > 1 ? ' (' + mo + ' maanden)' : '') : ' is geabonneerd'), m.params[1] || '', { subs: 1 });
       } else if (id === 'subgift') {
         if (!t['msg-param-origin-id'] || !giftBatch[t['msg-param-origin-id']]) event('sub', '🎁', who + ' geeft een abonnement aan ' + (t['msg-param-recipient-display-name'] || ''), '', { gifts: 1, subs: 1 });
-        else cur && (cur.subs++, cur.gifts++);
+        else if (cur) { cur.subs++; cur.gifts++; }
       } else if (id === 'submysterygift') {
         const n = +t['msg-param-mass-gift-count'] || 0;
         if (t['msg-param-origin-id']) giftBatch[t['msg-param-origin-id']] = 1;
         event('sub', '🎁', who + ' geeft ' + n + ' abonnementen weg', '', {});
-      } else if (id === 'raid') {
-        raidIn(t['msg-param-displayName'] || who, +t['msg-param-viewerCount'] || 0);
-      }
-    }
+      } else if (id === 'raid') raidIn(t['msg-param-displayName'] || who, +t['msg-param-viewerCount'] || 0);
+    } else if (m.command === 'CLEARCHAT' && !m.tags['target-user-id']) chatLine({ ev: true, text: 'Chat is gewist' });
   }
-  const giftBatch = {};
 
-  function chatMsg(login, name, text, emTag, bits) {
+  // ---------- chat in het Live-tabblad ----------
+  const chatBuf = [];
+  function chatLine(x) {
+    x.t = x.t || Date.now();
+    chatBuf.push(x);
+    if (chatBuf.length > 250) chatBuf.shift();
+    const box = $('#lchat');
+    if (!box) return;
+    const stick = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+    box.insertAdjacentHTML('beforeend', chatRow(x));
+    while (box.childElementCount > 250) box.firstElementChild.remove();
+    if (stick) box.scrollTop = box.scrollHeight;
+  }
+  const BADGE = { broadcaster: ['b', 'STREAMER'], moderator: ['md', 'MOD'], vip: ['v', 'VIP'], subscriber: ['s', 'SUB'] };
+  function chatRow(x) {
+    if (x.ev) return '<div class="m ev"><span class="tm">' + hhmm(x.t) + '</span>' + esc(x.text) + '</div>';
+    const bd = (x.badges || '').split(',').map((b) => BADGE[b.split('/')[0]]).filter(Boolean).map(([c, l]) => '<span class="bd ' + c + '">' + l + '</span>').join('');
+    return '<div class="m' + (x.bits ? ' hl' : '') + '"><span class="tm">' + hhmm(x.t) + '</span>' + bd + '<b style="color:' + esc(x.color || nameColor(x.name)) + '">' + esc(x.name) + '</b>: ' + chatHtml(x.text, x.emotes) + '</div>';
+  }
+  function nameColor(n) { let h = 0; for (const c of String(n)) h = (h * 31 + c.charCodeAt(0)) % 360; return 'hsl(' + h + ',70%,65%)'; }
+
+  function chatMsg(login, name, text, emTag, bits, color, badges) {
+    chatLine({ name: name || login, text, emotes: emTag, bits, color, badges });
     if (!cur) return;
     cur.msgs++;
     cur.chatters[login] = (cur.chatters[login] || [0, name || login]);
@@ -572,11 +740,13 @@
     if (bits) event('bits', '💎', (name || login) + ' gaf ' + bits + ' bits', text.replace(/\b[a-z]+\d+\b/gi, '').trim(), { bits });
     dirty();
   }
-  function event(kind, ic, text, sub, add) {
+  function event(kind, ic, text, sub, add, t) {
     if (!cur) return;
     Object.entries(add || {}).forEach(([k, v]) => { cur[k] = (cur[k] || 0) + v; });
-    cur.feed.unshift({ t: Date.now(), kind, ic, text, sub });
+    cur.feed.push({ t: t || Date.now(), kind, ic, text, sub });
+    cur.feed.sort((a, b) => b.t - a.t);
     cur.feed.length = Math.min(cur.feed.length, 300);
+    if (kind !== 'bits') chatLine({ ev: true, text: ic + ' ' + text });
     dirty();
   }
   function raidIn(name, n) {
@@ -586,6 +756,113 @@
   }
   let dirtyT = null;
   function dirty() { saveSessions(); if (!dirtyT) dirtyT = setTimeout(() => { dirtyT = null; renderDash(); }, 700); }
+
+  async function sendChat(text) {
+    if (state.demo) { chatMsg('demo', 'jij (demo)', text, '', 0, '#bf94ff', 'broadcaster/1'); return true; }
+    if (!hasScope('user:write:chat')) { toast('Log opnieuw in om berichten te kunnen sturen.', 'err'); return false; }
+    try {
+      const j = await helix('POST', 'chat/messages', null, { broadcaster_id: state.me.user_id, sender_id: state.me.user_id, message: text });
+      const r = j && j.data && j.data[0];
+      if (r && !r.is_sent) throw new Error((r.drop_reason && r.drop_reason.message) || 'niet verstuurd');
+      return true;
+    } catch (e) { toast('Versturen mislukt: ' + e.message, 'err'); return false; }
+  }
+
+  // ---------- koppelingen: StreamElements (donaties) ----------
+  // De JWT Token blijft op dit apparaat en gaat alleen naar api.streamelements.com.
+  const integ = Object.assign({ on: false }, store.get('integ', {}));
+  integ.se = Object.assign({ on: false, id: '', jwt: '' }, integ.se || {});
+  integ.tp = Object.assign({ on: false, key: '' }, integ.tp || {});
+  const saveInteg = () => store.set('integ', integ);
+  const se = { tips: null, status: '', ok: false, seen: new Set() };
+  const seActive = () => !!(integ.on && integ.se.on && integ.se.id && integ.se.jwt);
+  // TipeeeStream: de API key blijft op dit apparaat en gaat alleen naar api.tipeeestream.com.
+  const tp = { tips: null, status: '', ok: false };
+  const tpActive = () => !!(integ.on && integ.tp.on && integ.tp.key);
+  const donActive = () => seActive() || tpActive();
+  // alle donaties van de actieve koppelingen samen, nieuwste eerst
+  const donList = () => [...(seActive() && se.tips || []), ...(tpActive() && tp.tips || [])].sort((a, b) => b.t - a.t);
+  const donOk = () => (seActive() && se.ok) || (tpActive() && tp.ok);
+  const donErr = () => [seActive() && !se.ok && se.status ? 'StreamElements: ' + se.status : '', tpActive() && !tp.ok && tp.status ? 'TipeeeStream: ' + tp.status : ''].filter(Boolean).join(' · ');
+  async function tpFetch() {
+    const r = await fetch('https://api.tipeeestream.com/v1.0/events.json?apiKey=' + encodeURIComponent(integ.tp.key) + '&type[]=donation&limit=25', { headers: { Accept: 'application/json' } });
+    if (r.status === 401 || r.status === 403) throw new Error('API key klopt niet');
+    if (!r.ok) throw new Error('fout ' + r.status);
+    const j = await r.json();
+    if (j.message && j.message !== 'success' && !j.datas) throw new Error(j.message);
+    const items = (j.datas && j.datas.items) || [];
+    return items.map((d) => {
+      const p = d.parameters || {};
+      // TipeeeStream geeft tijden als 2026-10-24T03:12:00+0200
+      const t = Date.parse(String(d.created_at || d.inserted_at || '').replace(/([+-]\d\d)(\d\d)$/, '$1:$2')) || Date.now();
+      return { id: 'tp:' + d.id, src: 'tp', t, name: p.username || (d.user && d.user.username) || 'iemand', amount: +p.amount || 0, cur: p.currency || 'EUR', msg: p.message || '' };
+    });
+  }
+  async function seFetch() {
+    const r = await fetch('https://api.streamelements.com/kappa/v2/tips/' + encodeURIComponent(integ.se.id) + '?limit=25&offset=0&sort=-createdAt',
+      { headers: { Authorization: 'Bearer ' + integ.se.jwt, Accept: 'application/json' } });
+    if (r.status === 401 || r.status === 403) throw new Error('JWT Token klopt niet of is verlopen');
+    if (r.status === 404) throw new Error('Account ID niet gevonden');
+    if (!r.ok) throw new Error('fout ' + r.status);
+    const j = await r.json();
+    return (j.docs || []).map((d) => {
+      const dn = d.donation || {};
+      return { id: d._id, src: 'se', t: Date.parse(d.createdAt), name: (dn.user && (dn.user.username || dn.user.name)) || 'iemand', amount: +dn.amount || 0, cur: dn.currency || 'EUR', msg: dn.message || '' };
+    });
+  }
+  async function donPoll() {
+    if (state.demo || !donActive()) return;
+    if (seActive()) { try { se.tips = await seFetch(); se.ok = true; se.status = 'gekoppeld'; } catch (e) { se.ok = false; se.status = e.message; } }
+    if (tpActive()) { try { tp.tips = await tpFetch(); tp.ok = true; tp.status = 'gekoppeld'; } catch (e) { tp.ok = false; tp.status = e.message; } }
+    if (cur) {
+      const have = new Set(cur.donations.map((d) => d.id));
+      donList().filter((d) => d.t >= cur.start && !have.has(d.id)).reverse().forEach((d) => {
+        cur.donations.push(d);
+        event('donation', '💰', d.name + ' doneerde ' + money(d.amount, d.cur), d.msg, {}, d.t);
+      });
+    }
+    renderInteg(); renderDash();
+  }
+  setInterval(donPoll, 30000);
+  function renderInteg() {
+    $('#intOn').checked = integ.on;
+    $('#intBox').hidden = !integ.on;
+    $('#seOn').checked = integ.se.on;
+    if (document.activeElement !== $('#seId')) $('#seId').value = integ.se.id;
+    if (document.activeElement !== $('#seJwt')) $('#seJwt').value = integ.se.jwt;
+    const st = !integ.se.on ? 'uit' : !integ.se.id || !integ.se.jwt ? 'vul je gegevens in' : se.ok ? '✓ gekoppeld' : se.status ? '✗ ' + se.status : 'nog niet getest';
+    $('#seSum').textContent = st;
+    $('#tpOn').checked = integ.tp.on;
+    if (document.activeElement !== $('#tpKey')) $('#tpKey').value = integ.tp.key;
+    $('#tpSum').textContent = !integ.tp.on ? 'uit' : !integ.tp.key ? 'vul je API key in' : tp.ok ? '✓ gekoppeld' : tp.status ? '✗ ' + tp.status : 'nog niet getest';
+    $('#tpState').innerHTML = tp.status ? '<span class="' + (tp.ok ? 'st-ok' : 'st-err') + '">' + esc(tp.ok ? '✓ Verbonden met TipeeeStream' : '✗ ' + tp.status) + '</span>' : '';
+    $('#seState').innerHTML = se.status ? '<span class="' + (se.ok ? 'st-ok' : 'st-err') + '">' + esc(se.ok ? '✓ Verbonden met StreamElements' : '✗ ' + se.status) + '</span>' : '';
+  }
+  $('#intOn').onchange = (e) => { integ.on = e.target.checked; saveInteg(); renderInteg(); if (integ.on && !integ.se.id && !integ.tp.key) $('#seBox').open = true; donPoll(); renderDash(); };
+  $('#seOn').onchange = (e) => { integ.se.on = e.target.checked; saveInteg(); renderInteg(); donPoll(); renderDash(); };
+  $('#seId').oninput = (e) => { integ.se.id = e.target.value.trim(); se.ok = false; se.status = ''; saveInteg(); renderInteg(); };
+  $('#seJwt').oninput = (e) => { integ.se.jwt = e.target.value.trim().replace(/^Bearer\s+/i, ''); se.ok = false; se.status = ''; saveInteg(); renderInteg(); };
+  $('#seTest').onclick = async () => {
+    if (!integ.se.id || !integ.se.jwt) return toast('Vul eerst je Account ID en JWT Token in.', 'err');
+    if (!integ.se.on) { integ.se.on = true; saveInteg(); }
+    $('#seState').textContent = 'Bezig met testen…';
+    try { const t = await seFetch(); se.tips = t; se.ok = true; se.status = 'gekoppeld'; toast('Verbonden met StreamElements (' + t.length + ' recente donaties gevonden).', 'ok'); }
+    catch (e) { se.ok = false; se.status = e.message; toast('StreamElements: ' + e.message, 'err'); }
+    renderInteg(); renderDash();
+  };
+  $('#seClear').onclick = () => { integ.se = { on: false, id: '', jwt: '' }; se.tips = null; se.ok = false; se.status = ''; saveInteg(); renderInteg(); renderDash(); toast('StreamElements-gegevens gewist.'); };
+
+  $('#tpOn').onchange = (e) => { integ.tp.on = e.target.checked; saveInteg(); renderInteg(); donPoll(); renderDash(); };
+  $('#tpKey').oninput = (e) => { integ.tp.key = e.target.value.trim(); tp.ok = false; tp.status = ''; saveInteg(); renderInteg(); };
+  $('#tpTest').onclick = async () => {
+    if (!integ.tp.key) return toast('Vul eerst je API key in.', 'err');
+    if (!integ.tp.on) { integ.tp.on = true; saveInteg(); }
+    $('#tpState').textContent = 'Bezig met testen…';
+    try { const t = await tpFetch(); tp.tips = t; tp.ok = true; tp.status = 'gekoppeld'; toast('Verbonden met TipeeeStream (' + t.length + ' recente donaties gevonden).', 'ok'); }
+    catch (e) { tp.ok = false; tp.status = /fetch/i.test(e.message) ? 'geen verbinding met TipeeeStream' : e.message; toast('TipeeeStream: ' + tp.status, 'err'); }
+    renderInteg(); renderDash();
+  };
+  $('#tpClear').onclick = () => { integ.tp = { on: false, key: '' }; tp.tips = null; tp.ok = false; tp.status = ''; saveInteg(); renderInteg(); renderDash(); toast('TipeeeStream-gegevens gewist.'); };
 
   // ---------- EventSub: volgers, kanaalpunten, live/offline ----------
   const esub = { ws: null, session: null, retry: 2000, last: 0 };
@@ -631,15 +908,14 @@
     } else if (type === 'channel.channel_points_custom_reward_redemption.add') {
       event('redeem', '🎁', ev.user_name + ' wisselde in: ' + ((ev.reward || {}).title || 'beloning') + ((ev.reward || {}).cost ? ' (' + nl(ev.reward.cost) + ' punten)' : ''), ev.user_input || '', { redeems: 1 });
     } else if (type === 'channel.raid') {
-      // binnenkomende raid komt ook via de chat; alleen gebruiken als de chat hem mist
       const n = ev.viewers || 0, name = ev.from_broadcaster_user_name;
       if (cur && !cur.raidsIn.some((r) => Date.now() - r[0] < 60000 && r[2] === name)) raidIn(name, n);
     } else if (type === 'stream.online' || type === 'stream.offline') setTimeout(poll, 4000);
-    else if (type === 'channel.update') { if (cur) { cur.title = ev.title; cur.game = ev.category_name; } if (document.activeElement !== $('#stTitle')) fillEdit(ev.title, ev.category_name); renderDash(); }
+    else if (type === 'channel.update') { if (cur) { cur.title = ev.title; cur.game = ev.category_name; } if (chanInfo) { chanInfo.title = ev.title; chanInfo.game_name = ev.category_name; } editFilled = false; renderDash(); }
   }
 
   // ---------- elke minuut: live-status, kijkers, volgers, subs ----------
-  let recentFollows = [], vods = null, chanInfo = null;
+  let recentFollows = [], vods = null, chanInfo = null, chatters = null;
   async function poll() {
     if (state.demo) return demoTick(true);
     if (!state.me) return;
@@ -653,13 +929,14 @@
         if (!cur || cur.id !== s.id) {
           cur = sessions.find((x) => x.id === s.id) || null;
           if (!cur) { cur = newSession(s.id, Date.parse(s.started_at), s.title, s.game_name); sessions.unshift(cur); }
+          if (!cur.donations) cur.donations = [];
         }
         cur.end = Date.now(); cur.title = s.title; cur.game = (chanInfo && chanInfo.game_name) || s.game_name;
         record(cur, s.viewer_count, cur.game);
       } else if (cur) { cur.end = Date.now(); cur = null; saveSessions(true); }
-    } catch (e) { if (/401|token|oauth/i.test(e.message)) { toast('Je login is verlopen. Log opnieuw in.', 'err'); } }
+    } catch (e) { if (/401|token|oauth/i.test(e.message)) toast('Je login is verlopen. Log opnieuw in.', 'err'); }
     if (hasScope('moderator:read:followers')) try {
-      const f = await helix('GET', 'channels/followers', { broadcaster_id: id, first: 10 });
+      const f = await helix('GET', 'channels/followers', { broadcaster_id: id, first: 20 });
       state.followers = f.total; recentFollows = f.data || [];
       if (cur && cur.folStart == null) cur.folStart = f.total;
     } catch {}
@@ -668,8 +945,25 @@
       state.subs = s.total;
       if (cur && cur.subStart == null) cur.subStart = s.total;
     } catch { state.subs = null; }
+    loadChatters();
     saveSessions(true);
     renderDash();
+  }
+  async function loadChatters() {
+    if (!hasScope('moderator:read:chatters')) { chatters = null; return; }
+    try {
+      const all = []; let after = '';
+      for (let i = 0; i < 10; i++) {
+        const p = { broadcaster_id: state.me.user_id, moderator_id: state.me.user_id, first: 1000 };
+        if (after) p.after = after;
+        const j = await helix('GET', 'chat/chatters', p);
+        all.push(...j.data.map((u) => u.user_name || u.user_login));
+        after = j.pagination && j.pagination.cursor;
+        if (!after) break;
+      }
+      chatters = all.sort((a, b) => a.localeCompare(b));
+    } catch { chatters = null; }
+    renderViewers();
   }
   function record(s, v, game) {
     const a = s.vh, now = Date.now();
@@ -682,22 +976,170 @@
     renderVods();
   }
 
-  // ---------- titel en categorie ----------
-  const gameIds = {};
-  function fillEdit(title, game) { $('#stTitle').value = title || ''; $('#stGame').value = game || ''; }
-  let gameT = null;
-  $('#stGame').oninput = () => {
-    clearTimeout(gameT);
-    const q = $('#stGame').value.trim();
-    if (q.length < 2 || !state.me) return;
-    gameT = setTimeout(async () => {
-      try {
-        const j = await helix('GET', 'search/categories', { query: q, first: 10 });
-        $('#gameList').innerHTML = j.data.map((g) => { gameIds[g.name.toLowerCase()] = g.id; return '<option value="' + esc(g.name) + '">'; }).join('');
-      } catch {}
-    }, 300);
+  // ---------- blokken (Overzicht en Live) ----------
+  // span = kolommen van de 12, h = hoogte in px (null = zo hoog als de inhoud)
+  const WIDGETS = {
+    stream:    { page: 'overview', title: '🎥 Stream', span: 12, h: null, html: () => '<div class="stream"><img class="av" data-r="av" alt=""><div class="info"><div class="who"><b data-r="name"></b><span class="badge" data-r="badge">OFFLINE</span><span class="meta" data-r="meta"></span>' +
+      '<a class="btn" data-r="open" target="_blank" rel="noopener" style="margin-left:auto">Open op Twitch ↗</a></div><div class="edit"><input id="stTitle" placeholder="Titel van je stream" maxlength="140" autocomplete="off">' +
+      '<input id="stGame" placeholder="Categorie / game" list="gameList" autocomplete="off"><button class="primary" id="stSave">Opslaan</button></div><datalist id="gameList"></datalist></div></div>' },
+    tiles:     { page: 'overview', title: '🔢 Cijfers', span: 12, h: null, html: () => '<div class="tilesFor"></div><div class="tiles"></div>' },
+    graph:     { page: 'overview', title: '📈 Kijkers', span: 8, h: 360, extra: '<span class="hint" data-r="gnow"></span><button class="icon" data-r="csv" title="Exporteren naar Excel (CSV)">⤓ CSV</button>', html: () => '<div class="gbox"></div><div class="gsum"></div>' },
+    feed:      { page: 'overview', title: '⚡ Activiteit', span: 4, h: 360, extra: '<span class="hint" data-r="fcount"></span>', html: () => '<div class="filters"></div><div class="feed"></div>' },
+    topChat:   { page: 'overview', title: '💬 Top-chatters', span: 4, h: 340, html: () => '<div class="list" data-r="topChat"></div>' },
+    topEmo:    { page: 'overview', title: '😀 Meest gebruikte emotes', span: 4, h: 340, html: () => '<div class="list" data-r="topEmo"></div>' },
+    followers: { page: 'overview', title: '💜 Nieuwste volgers', span: 4, h: 340, extra: '<span class="hint" data-r="folTotal"></span>', html: () => '<div class="list" data-r="followers"></div>' },
+    donations: { page: 'overview', title: '💰 Donaties', span: 4, h: 300, extra: '<span class="hint" data-r="dsum"></span>', html: () => '<div class="list" data-r="donations"></div>' },
+    history:   { page: 'overview', title: '🗓 Vorige streams', span: 12, h: null, extra: '<span class="hint">cijfers die R5 StreamerHub heeft bijgehouden</span>', html: () => '<div class="tablewrap"><table data-r="history"></table></div>' },
+    vods:      { page: 'overview', title: '🎞 Video\'s op Twitch', span: 12, h: null, extra: '<span class="hint">laatste uitzendingen</span>', html: () => '<div class="tablewrap"><table data-r="vods"></table></div>' },
+    ltiles:    { page: 'live', title: '🔢 Nu', span: 12, h: null, html: () => '<div class="tiles"></div>' },
+    lplayer:   { page: 'live', title: '📺 Minispeler', span: 5, h: 330, html: () => '<div class="player"></div>' },
+    lchat:     { page: 'live', title: '💬 Chat', span: 4, h: 640, html: () => '<div class="chat" id="lchat"></div><form class="send"><input placeholder="Stuur een bericht…" maxlength="500" autocomplete="off"><button class="primary">Stuur</button></form>' },
+    lfeed:     { page: 'live', title: '⚡ Activiteit', span: 3, h: 400, html: () => '<div class="filters"></div><div class="feed"></div>' },
+    lviewers:  { page: 'live', title: '👥 Kijkers in de chat', span: 5, h: 300, extra: '<span class="hint" data-r="vcount"></span>', html: () => '<input class="vsearch" placeholder="Zoek kijker…" autocomplete="off"><div class="list" data-r="viewers"></div>' },
+    ldon:      { page: 'live', title: '💰 Donaties', span: 3, h: 228, extra: '<span class="hint" data-r="dsum"></span>', html: () => '<div class="list" data-r="donations"></div>' },
   };
-  $('#stSave').onclick = async () => {
+  const DEFAULT_LAYOUT = {
+    overview: ['stream', 'tiles', 'graph', 'feed', 'topChat', 'topEmo', 'followers', 'donations', 'history', 'vods'],
+    live: ['ltiles', 'lplayer', 'lchat', 'lfeed', 'lviewers', 'ldon'],
+  };
+  const DEFAULT_OFF = { overview: ['donations'], live: [] };
+  // tegels met cijfers; op Live staan er standaard een paar uit
+  const TILES = [
+    ['viewers', '👁 Kijkers'], ['peak', '📈 Piek'], ['avg', '➗ Gemiddeld'], ['uptime', '⏱ Live-tijd'], ['followers', '💜 Volgers'], ['subs', '⭐ Abonnees'],
+    ['msgs', '💬 Chatberichten'], ['chatters', '🙋 Unieke chatters'], ['bits', '💎 Bits'], ['raids', '🚀 Raids binnen'], ['redeems', '🎁 Kanaalpunten'], ['donations', '💰 Donaties'],
+  ];
+  const TILES_OFF = { overview: ['uptime', 'chatters'], live: ['avg', 'chatters', 'redeems', 'raids'] };
+  let layout = store.get('layout', null);
+  function defLayout(page) { return { order: DEFAULT_LAYOUT[page].slice(), off: DEFAULT_OFF[page].slice(), size: {}, tilesOff: TILES_OFF[page].slice() }; }
+  if (!layout || typeof layout !== 'object') layout = {};
+  ['overview', 'live'].forEach((p) => {
+    const l = layout[p] = Object.assign(defLayout(p), layout[p] || {});
+    DEFAULT_LAYOUT[p].forEach((id) => { if (!l.order.includes(id)) l.order.push(id); });
+    l.order = l.order.filter((id) => WIDGETS[id] && WIDGETS[id].page === p);
+  });
+  const saveLayout = () => store.set('layout', layout);
+  const W = {};   // id -> kaart
+  function buildGrid(page) {
+    const g = $('#grid-' + page), l = layout[page];
+    Object.keys(W).forEach((id) => { if (WIDGETS[id].page === page) delete W[id]; });
+    g.innerHTML = '';
+    l.order.filter((id) => !l.off.includes(id)).forEach((id) => {
+      const d = WIDGETS[id], sz = l.size[id] || {};
+      const el = document.createElement('div');
+      el.className = 'card w'; el.dataset.w = id;
+      el.innerHTML = '<h2><span class="grip" title="Slepen om te verplaatsen">⠿</span>' + d.title + '<span class="r">' + (d.extra || '') + '</span></h2><div class="wb">' + d.html() + '</div><span class="rz" title="Slepen om groter of kleiner te maken (dubbelklik: standaard)"></span>';
+      applySize(el, sz.span || d.span, sz.h !== undefined ? sz.h : d.h);
+      g.appendChild(el);
+      W[id] = el;
+      el.querySelector('.grip').addEventListener('pointerdown', (e) => dragCard(e, el, page));
+      const rz = el.querySelector('.rz');
+      rz.addEventListener('pointerdown', (e) => resizeCard(e, el, page));
+      rz.addEventListener('dblclick', () => { delete l.size[id]; saveLayout(); applySize(el, d.span, d.h); redrawAfterResize(id); });
+    });
+    wireWidgets(page);
+    renderDash(); renderVods();
+  }
+  function applySize(el, span, h) {
+    el.style.gridColumn = 'span ' + span;
+    el.style.height = h ? h + 'px' : '';
+    el.classList.toggle('fixed', !!h);
+  }
+  function redrawAfterResize(id) { if (id === 'graph') drawGraph(shown()); }
+  function dragCard(e, el, page) {
+    e.preventDefault();
+    const g = el.parentElement, l = layout[page];
+    let target = null, after = false, moved = false;
+    const sx = e.clientX, sy = e.clientY;
+    const clear = () => g.querySelectorAll('.drop-before,.drop-after').forEach((x) => x.classList.remove('drop-before', 'drop-after'));
+    const mv = (ev) => {
+      if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return;
+      if (!moved) { moved = true; el.classList.add('dragging'); document.body.classList.add('moving'); }
+      clear();
+      const over = document.elementFromPoint(ev.clientX, ev.clientY);
+      const c = over && over.closest('.w');
+      target = c && c !== el && c.parentElement === g ? c : null;
+      if (target) { const r = target.getBoundingClientRect(); after = ev.clientX > r.left + r.width / 2; target.classList.add(after ? 'drop-after' : 'drop-before'); }
+    };
+    const up = () => {
+      removeEventListener('pointermove', mv); removeEventListener('pointerup', up);
+      el.classList.remove('dragging'); document.body.classList.remove('moving'); clear();
+      if (!target) return;
+      l.order.splice(l.order.indexOf(el.dataset.w), 1);
+      l.order.splice(l.order.indexOf(target.dataset.w) + (after ? 1 : 0), 0, el.dataset.w);
+      saveLayout();
+      if (after) target.after(el); else target.before(el);
+      drawGraph(shown());
+    };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up);
+  }
+  function resizeCard(e, el, page) {
+    e.preventDefault(); e.stopPropagation();
+    const g = el.parentElement, l = layout[page], id = el.dataset.w;
+    const col = (g.clientWidth - 11 * 12) / 12;
+    const r0 = el.getBoundingClientRect(), sx = e.clientX, sy = e.clientY;
+    el.classList.add('sizing'); document.body.classList.add('moving');
+    let span = Math.round((r0.width + 12) / (col + 12)), h = Math.round(r0.height);
+    const mv = (ev) => {
+      span = Math.max(2, Math.min(12, Math.round((r0.width + ev.clientX - sx + 12) / (col + 12))));
+      h = Math.max(120, Math.min(1400, Math.round(r0.height + ev.clientY - sy)));
+      applySize(el, span, h);
+      redrawAfterResize(id);
+    };
+    const up = () => {
+      removeEventListener('pointermove', mv); removeEventListener('pointerup', up);
+      el.classList.remove('sizing'); document.body.classList.remove('moving');
+      l.size[id] = { span, h }; saveLayout(); redrawAfterResize(id);
+    };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up);
+  }
+  // knoppen en invoer in de blokken koppelen
+  const gameIds = {};
+  let editFilled = false, gameT = null;
+  function wireWidgets(page) {
+    if (page === 'overview') {
+      if (W.stream) {
+        editFilled = false;
+        $('#stGame').oninput = () => {
+          clearTimeout(gameT);
+          const q = $('#stGame').value.trim();
+          if (q.length < 2 || !state.me || state.demo) return;
+          gameT = setTimeout(async () => {
+            try {
+              const j = await helix('GET', 'search/categories', { query: q, first: 10 });
+              $('#gameList').innerHTML = j.data.map((g) => { gameIds[g.name.toLowerCase()] = g.id; return '<option value="' + esc(g.name) + '">'; }).join('');
+            } catch {}
+          }, 300);
+        };
+        $('#stSave').onclick = saveTitle;
+      }
+      if (W.graph) {
+        $('[data-r=csv]', W.graph).onclick = exportCsv;
+        new ResizeObserver(() => drawGraph(shown())).observe($('.gbox', W.graph));
+      }
+    }
+    ['feed', 'lfeed'].forEach((id) => { if (W[id] && WIDGETS[id].page === page) $('.filters', W[id]).onclick = (e) => { const b = e.target.closest('[data-f]'); if (b) { state.feedFilter = b.dataset.f; renderFeeds(shown()); } }; });
+    if (page === 'live') {
+      if (W.lchat) {
+        const box = $('#lchat');
+        box.innerHTML = chatBuf.map(chatRow).join('');
+        box.scrollTop = box.scrollHeight;
+        const f = $('.send', W.lchat);
+        f.onsubmit = async (e) => {
+          e.preventDefault();
+          const inp = $('input', f), t = inp.value.trim();
+          if (!t) return;
+          inp.disabled = true;
+          if (await sendChat(t)) inp.value = '';
+          inp.disabled = false; inp.focus();
+        };
+      }
+      if (W.lviewers) $('.vsearch', W.lviewers).oninput = () => renderViewers();
+      if (W.lplayer) renderPlayer(true);
+    }
+  }
+
+  // ---------- titel en categorie ----------
+  async function saveTitle() {
     if (state.demo) return toast('In de demo wordt er niets naar Twitch gestuurd.');
     if (!hasScope('channel:manage:broadcast')) return toast('Log opnieuw in om je titel te kunnen aanpassen.', 'err');
     const body = { title: $('#stTitle').value.trim() };
@@ -711,108 +1153,187 @@
     if (!body.title) return toast('Vul een titel in.', 'err');
     try { await helix('PATCH', 'channels', { broadcaster_id: state.me.user_id }, body); toast('Opgeslagen op Twitch.', 'ok'); setTimeout(poll, 1500); }
     catch (e) { toast('Opslaan mislukt: ' + e.message, 'err'); }
-  };
+  }
 
-  // ---------- tekenen: overzicht ----------
+  // ---------- tekenen ----------
   function render() {
     $('#demoBadge').hidden = !state.demo;
     const a = $('#account');
     if (state.demo) a.innerHTML = '<span>demo</span>';
     else if (state.me) a.innerHTML = (state.user ? '<img src="' + esc(state.user.profile_image_url) + '" alt="">' : '') + '<span style="color:var(--text)">' + esc(state.user ? state.user.display_name : state.me.login) + '</span>';
     else a.innerHTML = '<button class="primary" data-act="login">Inloggen</button>';
-    $('#welcome').hidden = !!(state.me || state.demo);
-    $('#dash').hidden = !(state.me || state.demo);
+    const on = !!(state.me || state.demo);
+    $('#welcome').hidden = on || !['overview', 'live'].includes(state.page);
+    document.querySelectorAll('[data-need-dash]').forEach((el) => { el.hidden = !on; });
     renderSettings();
+    renderInteg();
     renderDash();
     renderVods();
-    renderOverlays();
+    if (state.page === 'overlays') renderOverlays();
   }
+  const R = (id, r) => W[id] && $('[data-r=' + r + ']', W[id]);
   function renderDash() {
-    if ($('#dash').hidden) return;
-    const s = shown(), live = !!cur;
-    const u = state.user || {};
-    $('#stAv').src = u.profile_image_url || 'icons/icon-192.png';
-    $('#stName').textContent = u.display_name || (state.me && state.me.login) || '';
-    $('#stOpen').href = 'https://www.twitch.tv/' + (u.login || (state.me && state.me.login) || '');
-    const b = $('#stBadge'); b.textContent = live ? 'LIVE' : 'OFFLINE'; b.className = 'badge' + (live ? ' live' : '');
+    $('#navLive').hidden = !cur;
+    if (!(state.me || state.demo)) return;
+    const s = shown(), live = !!cur, u = state.user || {};
     const lastV = live && cur.vh.length ? cur.vh[cur.vh.length - 1][1] : null;
-    $('#stMeta').textContent = live ? 'live sinds ' + hhmm(cur.start) + ' · ' + dur(Date.now() - cur.start) + (lastV != null ? ' · ' + nl(lastV) + ' kijkers' : '')
-      : sessions[0] && !state.demo ? 'laatst live ' + dateNl(sessions[0].start) + ' ' + hhmm(sessions[0].start) : '';
-    if (!$('#stTitle').value && !$('#stGame').value && document.activeElement !== $('#stTitle')) fillEdit(chanInfo ? chanInfo.title : s && s.title, chanInfo ? chanInfo.game_name : s && s.game);
-    if (opts.tabTitle && live) document.title = (lastV != null ? nl(lastV) + ' 👁 · ' : '') + dur(Date.now() - cur.start) + ' · R5 StreamerHub'; else document.title = 'R5 StreamerHub';
+    $('#ovFor').textContent = live ? 'Je bent live sinds ' + hhmm(cur.start) + '.' : s ? 'Offline. Hieronder de cijfers van je laatste stream.' : '';
+    if (W.stream) {
+      R('stream', 'av').src = u.profile_image_url || 'icons/icon-192.png';
+      R('stream', 'name').textContent = u.display_name || (state.me && state.me.login) || 'demo';
+      R('stream', 'open').href = 'https://www.twitch.tv/' + (u.login || (state.me && state.me.login) || '');
+      const b = R('stream', 'badge'); b.textContent = live ? 'LIVE' : 'OFFLINE'; b.className = 'badge' + (live ? ' live' : '');
+      R('stream', 'meta').textContent = live ? 'live sinds ' + hhmm(cur.start) + ' · ' + dur(Date.now() - cur.start) + (lastV != null ? ' · ' + nl(lastV) + ' kijkers' : '')
+        : sessions[0] && !state.demo ? 'laatst live ' + dateNl(sessions[0].start) + ' ' + hhmm(sessions[0].start) : '';
+      if (!editFilled && document.activeElement !== $('#stTitle') && document.activeElement !== $('#stGame')) {
+        const t = chanInfo ? chanInfo.title : s && s.title, g = chanInfo ? chanInfo.game_name : s && s.game;
+        if (t || g) { $('#stTitle').value = t || ''; $('#stGame').value = g || ''; editFilled = true; }
+      }
+    }
+    document.title = opts.tabTitle && live ? (lastV != null ? nl(lastV) + ' 👁 · ' : '') + dur(Date.now() - cur.start) + ' · R5 StreamerHub' : 'R5 StreamerHub';
 
-    // cijfers
-    $('#tilesFor').textContent = live ? 'Deze stream' : s ? 'Laatste stream: ' + dateNl(s.start) + ', ' + hhmm(s.start) + ' – ' + hhmm(s.end) + ' (' + dur(s.end - s.start) + ')' : 'Nog geen stream bijgehouden. De cijfers vullen zich zodra je live gaat en R5 StreamerHub open staat.';
-    const st = stats(s);
-    const fol = state.followers, sub = state.subs;
-    const tile = (l, v, d, up) => '<div class="tile"><div class="l">' + l + '</div><div class="v">' + v + '</div><div class="d' + (up ? ' up' : '') + '">' + (d || '&nbsp;') + '</div></div>';
-    $('#tiles').innerHTML = [
-      tile('👁 Kijkers ' + (live ? 'nu' : 'aan het eind'), nl(st.now), live ? 'piek ' + nl(st.peak) : ''),
-      tile('📈 Piek', nl(st.peak), st.peakAt ? 'om ' + hhmm(st.peakAt) : ''),
-      tile('➗ Gemiddeld', nl(st.avg), st.dur ? dur(st.dur) + ' live' : ''),
-      tile('💜 Volgers', nl(fol), s ? '+' + nl(st.newFol) + ' deze stream' : '', st.newFol > 0),
-      tile('⭐ Abonnees', sub == null ? '—' : nl(sub), s ? '+' + nl(s.subs) + ' (' + nl(s.gifts) + ' gift)' : sub == null && state.me && !state.demo ? 'alleen voor affiliates/partners' : '', s && s.subs > 0),
-      tile('💬 Chatberichten', nl(s ? s.msgs : null), s ? nl(st.chatters) + ' unieke chatters' : ''),
-      tile('💎 Bits', nl(s ? s.bits : null), ''),
-      tile('🚀 Raids binnen', nl(s ? s.raidsIn.length : null), s && s.raidsIn.length ? nl(s.raidsIn.reduce((p, r) => p + r[1], 0)) + ' kijkers mee' : ''),
-      tile('🎁 Kanaalpunten', nl(s ? s.redeems : null), 'ingewisseld'),
-    ].join('');
-
+    if (W.tiles) {
+      $('.tilesFor', W.tiles).textContent = live ? 'Deze stream' : s ? 'Laatste stream: ' + dateNl(s.start) + ', ' + hhmm(s.start) + ' – ' + hhmm(s.end) + ' (' + dur(s.end - s.start) + ')' : 'Nog geen stream bijgehouden. De cijfers vullen zich zodra je live gaat en R5 StreamerHub open staat.';
+      $('.tiles', W.tiles).innerHTML = tilesHtml('overview', s);
+    }
+    if (W.ltiles) $('.tiles', W.ltiles).innerHTML = tilesHtml('live', cur);
     drawGraph(s);
-    renderFeed(s);
-    // top-chatters
+    renderFeeds(s);
     const bots = new Set(opts.bots ? [...BOTS, ...opts.botList.toLowerCase().split(/[,\s]+/).filter(Boolean)] : []);
-    const ch = s ? Object.entries(s.chatters).filter(([k]) => !bots.has(k)).sort((x, y) => y[1][0] - x[1][0]).slice(0, 10) : [];
-    const max1 = ch.length ? ch[0][1][0] : 1;
-    $('#topChat').innerHTML = ch.length ? ch.map(([, v], i) => '<div class="row"><span class="rk">' + (i + 1) + '</span><span>' + esc(v[1]) + '</span><span class="bar" style="width:' + Math.round(v[0] / max1 * 60) + 'px"></span><span class="n">' + nl(v[0]) + '</span></div>').join('')
-      : '<div class="empty">Nog geen chatberichten.</div>';
-    const em = s ? Object.entries(s.emotes).sort((x, y) => y[1][0] - x[1][0]).slice(0, 10) : [];
-    $('#topEmo').innerHTML = em.length ? em.map(([n, v], i) => '<div class="row"><span class="rk">' + (i + 1) + '</span><img src="' + esc(v[1]) + '" alt="" title="' + esc(n) + '"><span>' + esc(n) + '</span><span class="n">' + nl(v[0]) + '×</span></div>').join('')
-      : '<div class="empty">Nog geen emotes gebruikt.</div>';
-    $('#folTotal').textContent = fol != null ? nl(fol) + ' totaal' : '';
-    $('#followers').innerHTML = !state.demo && state.me && !hasScope('moderator:read:followers') ? '<div class="empty">Log opnieuw in om je volgers te zien.</div>'
-      : recentFollows.length ? recentFollows.slice(0, 10).map((f) => '<div class="row"><span>' + esc(f.user_name) + '</span><span class="n">' + ago(Date.parse(f.followed_at)) + '</span></div>').join('')
-      : '<div class="empty">Nog geen volgers.</div>';
+    if (W.topChat) {
+      const ch = s ? Object.entries(s.chatters).filter(([k]) => !bots.has(k)).sort((x, y) => y[1][0] - x[1][0]).slice(0, 15) : [];
+      const max1 = ch.length ? ch[0][1][0] : 1;
+      R('topChat', 'topChat').innerHTML = ch.length ? ch.map(([, v], i) => '<div class="row"><span class="rk">' + (i + 1) + '</span><span>' + esc(v[1]) + '</span><span class="bar2" style="width:' + Math.round(v[0] / max1 * 60) + 'px"></span><span class="n">' + nl(v[0]) + '</span></div>').join('')
+        : '<div class="empty">Nog geen chatberichten.</div>';
+    }
+    if (W.topEmo) {
+      const em = s ? Object.entries(s.emotes).sort((x, y) => y[1][0] - x[1][0]).slice(0, 15) : [];
+      R('topEmo', 'topEmo').innerHTML = em.length ? em.map(([n, v], i) => '<div class="row"><span class="rk">' + (i + 1) + '</span><img src="' + esc(v[1]) + '" alt="" title="' + esc(n) + '"><span>' + esc(n) + '</span><span class="n">' + nl(v[0]) + '×</span></div>').join('')
+        : '<div class="empty">Nog geen emotes gebruikt.</div>';
+    }
+    if (W.followers) {
+      R('followers', 'folTotal').textContent = state.followers != null ? nl(state.followers) + ' totaal' : '';
+      R('followers', 'followers').innerHTML = !state.demo && state.me && !hasScope('moderator:read:followers') ? '<div class="empty">Log opnieuw in om je volgers te zien.</div>'
+        : recentFollows.length ? recentFollows.slice(0, 20).map((f) => '<div class="row"><span>' + esc(f.user_name) + '</span><span class="n">' + ago(Date.parse(f.followed_at)) + '</span></div>').join('')
+        : '<div class="empty">Nog geen volgers.</div>';
+    }
+    renderDonations(s);
+    renderViewers();
+    renderPlayer();
     renderHistory();
+  }
+  function donTotal(list) {
+    const by = {};
+    (list || []).forEach((d) => { by[d.cur] = (by[d.cur] || 0) + d.amount; });
+    const e = Object.entries(by).sort((a, b) => b[1] - a[1]);
+    return e.length ? e.map(([c, a]) => money(a, c)).join(' + ') : money(0, 'EUR');
+  }
+  function renderDonations(s) {
+    ['donations', 'ldon'].forEach((id) => {
+      const el = R(id, 'donations');
+      if (!el) return;
+      const on = state.demo || donActive();
+      const list = state.demo ? (cur ? cur.donations.slice().reverse() : []) : donList();
+      const ss = id === 'ldon' ? cur : s;
+      R(id, 'dsum').textContent = on && ss ? donTotal(ss.donations) + (id === 'ldon' || ss === cur ? ' deze stream' : ' laatste stream') : '';
+      if (!on) { el.innerHTML = '<div class="empty">Koppel StreamElements of TipeeeStream bij ⚙ Instellingen → <b>Koppelingen</b> om je donaties hier te zien.</div>'; return; }
+      if (!state.demo && !donOk()) { el.innerHTML = '<div class="empty">' + (donErr() ? esc(donErr()) + '. Kijk bij ⚙ Instellingen → Koppelingen.' : 'Donaties laden…') + '</div>'; return; }
+      el.innerHTML = list.length ? list.slice(0, 25).map((d) => '<div class="row"><span style="flex:1;min-width:0"><b>' + esc(d.name) + '</b>' + (d.msg ? '<span class="dm">' + esc(d.msg) + '</span>' : '') + '</span><span class="n"><span class="amt">' + money(d.amount, d.cur) + '</span><br>' + ago(d.t) + '</span></div>').join('')
+        : '<div class="empty">Nog geen donaties.</div>';
+    });
+  }
+  const sdur = (ms) => dur(ms).replace(/ u /, 'u ').replace(/ min$/, 'm');
+  function tilesHtml(page, s) {
+    const off = layout[page].tilesOff, live = s === cur && !!cur, st = stats(s);
+    const tile = (id, v, d, up, soon) => {
+      if (off.includes(id)) return '';
+      const l = TILES.find((t) => t[0] === id)[1];
+      return '<div class="tile' + (soon ? ' soon' : '') + '"><div class="l">' + l + (id === 'viewers' ? (live ? ' nu' : ' aan het eind') : '') + '</div><div class="v" title="' + esc(String(v).replace(/<[^>]+>/g, '')) + '">' + v + '</div><div class="d' + (up ? ' up' : '') + '">' + (d || '&nbsp;') + '</div></div>';
+    };
+    const sub = state.subs, donOn = state.demo || donActive(), dons = s && s.donations ? s.donations : [];
+    return [
+      tile('viewers', nl(st.now), live ? 'piek ' + nl(st.peak) : ''),
+      tile('peak', nl(st.peak), st.peakAt ? 'om ' + hhmm(st.peakAt) : ''),
+      tile('avg', nl(st.avg), st.dur ? dur(st.dur) + ' live' : ''),
+      tile('uptime', live ? sdur(Date.now() - cur.start) : s ? sdur(s.end - s.start) : '—', live ? 'sinds ' + hhmm(cur.start) : s ? 'laatste stream' : ''),
+      tile('followers', nl(state.followers), s ? '+' + nl(st.newFol) + ' deze stream' : '', st.newFol > 0),
+      tile('subs', sub == null ? '—' : nl(sub), s ? '+' + nl(s.subs) + ' (' + nl(s.gifts) + ' gift)' : sub == null && state.me && !state.demo ? 'alleen voor affiliates/partners' : '', s && s.subs > 0),
+      tile('msgs', nl(s ? s.msgs : null), s ? nl(st.chatters) + ' unieke chatters' : ''),
+      tile('chatters', nl(s ? st.chatters : null), ''),
+      tile('bits', nl(s ? s.bits : null), ''),
+      tile('raids', nl(s ? s.raidsIn.length : null), s && s.raidsIn.length ? nl(s.raidsIn.reduce((p, r) => p + r[1], 0)) + ' kijkers mee' : ''),
+      tile('redeems', nl(s ? s.redeems : null), 'ingewisseld'),
+      donOn ? tile('donations', s ? donTotal(dons) : '—', s ? dons.length + ' donatie' + (dons.length === 1 ? '' : 's') : '', dons.length > 0) : tile('donations', '—', 'koppel in ⚙ Instellingen', false, true),
+    ].join('') || '<div class="empty">Alle tegels staan uit. Zet ze aan met ✎ Indeling.</div>';
   }
   function ago(t) {
     const m = Math.round((Date.now() - t) / 60000);
     return m < 1 ? 'net' : m < 60 ? m + ' min' : m < 1440 ? Math.round(m / 60) + ' u' : Math.round(m / 1440) + ' d';
   }
   function stats(s) {
-    if (!s || !s.vh.length) return { now: null, peak: null, avg: null, dur: s ? s.end - s.start : 0, chatters: s ? Object.keys(s.chatters).length : 0, newFol: s ? Math.max(s.follows, s === cur && state.followers != null && s.folStart != null ? state.followers - s.folStart : 0) : 0 };
+    const newFol = s ? Math.max(s.follows, s === cur && state.followers != null && s.folStart != null ? state.followers - s.folStart : 0) : 0;
+    if (!s || !s.vh.length) return { now: null, peak: null, avg: null, dur: s ? s.end - s.start : 0, chatters: s ? Object.keys(s.chatters).length : 0, newFol };
     const v = s.vh.map((x) => x[1]);
     let pk = 0; s.vh.forEach((x, i) => { if (x[1] > s.vh[pk][1]) pk = i; });
-    return { now: v[v.length - 1], peak: s.vh[pk][1], peakAt: s.vh[pk][0], avg: v.reduce((p, x) => p + x, 0) / v.length, dur: s.end - s.start,
-      chatters: Object.keys(s.chatters).length, newFol: Math.max(s.follows, s === cur && state.followers != null && s.folStart != null ? state.followers - s.folStart : 0) };
+    return { now: v[v.length - 1], peak: s.vh[pk][1], peakAt: s.vh[pk][0], avg: v.reduce((p, x) => p + x, 0) / v.length, dur: s.end - s.start, chatters: Object.keys(s.chatters).length, newFol };
   }
-  const FEED_KINDS = [['all', 'Alles'], ['follow', '💜 Volgers'], ['sub', '⭐ Subs'], ['bits', '💎 Bits'], ['raid', '🚀 Raids'], ['redeem', '🎁 Punten']];
-  function renderFeed(s) {
-    $('#feedFilters').innerHTML = FEED_KINDS.map(([k, l]) => '<button data-f="' + k + '" class="' + (state.feedFilter === k ? 'on' : '') + '">' + l + '</button>').join('');
-    const f = s ? s.feed.filter((x) => state.feedFilter === 'all' || x.kind === state.feedFilter) : [];
-    $('#feedCount').textContent = s && s.feed.length ? nl(s.feed.length) + ' gebeurtenissen' : '';
-    $('#feed').innerHTML = f.length ? f.slice(0, 150).map((x) => '<div class="it ' + x.kind + '"><span class="t">' + hhmm(x.t) + '</span><span class="ic">' + x.ic + '</span><span class="w">' + esc(x.text) +
-      (x.sub ? '<small>' + esc(x.sub) + '</small>' : '') + '</span></div>').join('') : '<div class="empty">' + (cur ? 'Nog niets gebeurd deze stream.' : 'Volgers, subs, bits en raids verschijnen hier zodra je live bent.') + '</div>';
+  const FEED_KINDS = [['all', 'Alles'], ['follow', '💜 Volgers'], ['sub', '⭐ Subs'], ['bits', '💎 Bits'], ['raid', '🚀 Raids'], ['redeem', '🎁 Punten'], ['donation', '💰 Donaties']];
+  function renderFeeds(s) {
+    ['feed', 'lfeed'].forEach((id) => {
+      const el = W[id];
+      if (!el) return;
+      const ss = id === 'lfeed' ? cur : s;
+      $('.filters', el).innerHTML = FEED_KINDS.map(([k, l]) => '<button data-f="' + k + '" class="' + (state.feedFilter === k ? 'on' : '') + '">' + l + '</button>').join('');
+      const f = ss ? ss.feed.filter((x) => state.feedFilter === 'all' || x.kind === state.feedFilter) : [];
+      const c = $('[data-r=fcount]', el); if (c) c.textContent = ss && ss.feed.length ? nl(ss.feed.length) + ' gebeurtenissen' : '';
+      $('.feed', el).innerHTML = f.length ? f.slice(0, 150).map((x) => '<div class="it ' + x.kind + '"><span class="t">' + hhmm(x.t) + '</span><span class="ic">' + x.ic + '</span><span class="w2">' + esc(x.text) +
+        (x.sub ? '<small>' + esc(x.sub) + '</small>' : '') + '</span></div>').join('')
+        : '<div class="empty">' + (state.feedFilter === 'donation' && !donActive() && !state.demo ? 'Koppel StreamElements of TipeeeStream bij ⚙ Instellingen om donaties te zien.' : cur ? 'Nog niets gebeurd deze stream.' : 'Volgers, subs, bits en raids verschijnen hier zodra je live bent.') + '</div>';
+    });
   }
-  $('#feedFilters').onclick = (e) => { const b = e.target.closest('[data-f]'); if (b) { state.feedFilter = b.dataset.f; renderFeed(shown()); } };
+  function renderViewers() {
+    if (!W.lviewers) return;
+    const q = $('.vsearch', W.lviewers).value.trim().toLowerCase();
+    const list = state.demo ? DEMO_USERS.concat(['tomtom', 'Ellie_NL', 'koffiekop']).sort((a, b) => a.localeCompare(b)) : chatters;
+    R('lviewers', 'vcount').textContent = list ? nl(list.length) + ' in de chat' : '';
+    const el = R('lviewers', 'viewers');
+    if (!list) { el.innerHTML = '<div class="empty">' + (state.me && !hasScope('moderator:read:chatters') ? 'Log opnieuw in om de kijkerslijst te zien.' : 'Laden…') + '</div>'; return; }
+    const f = list.filter((n) => !q || n.toLowerCase().includes(q));
+    el.innerHTML = f.length ? f.slice(0, 500).map((n) => '<div class="row"><span style="color:' + nameColor(n) + '">' + esc(n) + '</span></div>').join('') : '<div class="empty">Niemand gevonden.</div>';
+  }
+  let playerFor = '';
+  function renderPlayer(force) {
+    if (!W.lplayer) return;
+    const box = $('.player', W.lplayer);
+    const ch = state.demo ? '' : state.me ? state.me.login : '';
+    const key = ch + '|' + state.demo;
+    if (!force && playerFor === key && box.childElementCount) return;
+    playerFor = key;
+    if (!ch) { box.innerHTML = '<div class="ph">In de demo is er geen speler. Ingelogd zie je hier je eigen stream.</div>'; return; }
+    if (location.protocol === 'file:') { box.innerHTML = '<div class="ph">De speler werkt alleen online.</div>'; return; }
+    // autoplay=false: de speler start op pauze, zodat je jezelf niet dubbel hoort
+    box.innerHTML = '<iframe allowfullscreen title="Minispeler" src="https://player.twitch.tv/?channel=' + encodeURIComponent(ch) + '&parent=' + encodeURIComponent(location.hostname) + '&autoplay=false&muted=false"></iframe>';
+  }
 
   function drawGraph(s) {
-    const box = $('#gbox'), W = box.clientWidth, H = box.clientHeight;
+    if (!W.graph) return;
+    const box = $('.gbox', W.graph), W2 = box.clientWidth, H = box.clientHeight;
     const a = s ? s.vh : [];
-    if (!W || !H) return;
+    const nowEl = $('[data-r=gnow]', W.graph), sum = $('.gsum', W.graph);
+    if (!W2 || !H) return;
     if (a.length < 2) {
-      $('#gNow').textContent = ''; $('#gsum').innerHTML = '';
+      nowEl.textContent = ''; sum.innerHTML = '';
       box.innerHTML = '<div class="gempty">De grafiek vult zich zodra je live bent en R5 StreamerHub open staat (elke minuut een meetpunt).</div>';
       return;
     }
-    const L = 40, R = 10, T = 20, B = 20, w = W - L - R, h = H - T - B;
+    const L = 40, Rr = 10, T = 20, B = 20, w = W2 - L - Rr, h = H - T - B;
     const t0 = a[0][0], t1 = a[a.length - 1][0], peak = Math.max(...a.map((x) => x[1]));
     const step = Math.pow(10, Math.floor(Math.log10(Math.max(1, peak)))) / 2;
     const top = Math.max(step * 2, Math.ceil(peak * 1.1 / step) * step);
     const X = (t) => L + (t - t0) / Math.max(1, t1 - t0) * w, Y = (v) => T + h - v / top * h;
     const pts = a.map((x) => X(x[0]).toFixed(1) + ',' + Y(x[1]).toFixed(1)).join(' ');
     let g = '';
-    [0, top / 2, top].forEach((v) => { g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="#2e2e35" stroke-dasharray="4 4"/><text x="' + (L - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + Math.round(v) + '</text>'; });
+    [0, top / 2, top].forEach((v) => { g += '<line x1="' + L + '" x2="' + (W2 - Rr) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="#2e2e35" stroke-dasharray="4 4"/><text x="' + (L - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end">' + Math.round(v) + '</text>'; });
     [t0, (t0 + t1) / 2, t1].forEach((t, i) => { g += '<text x="' + X(t) + '" y="' + (H - 4) + '" text-anchor="' + ['start', 'middle', 'end'][i] + '">' + hhmm(t) + '</text>'; });
     s.raidsIn.filter((r) => r[0] >= t0 && r[0] <= t1).forEach((r) => {
       g += '<line x1="' + X(r[0]) + '" x2="' + X(r[0]) + '" y1="' + T + '" y2="' + (T + h) + '" stroke="#ff4f8b" stroke-dasharray="3 3"/><text x="' + X(r[0]) + '" y="' + (T - 6) + '" text-anchor="middle" style="fill:#ff4f8b">raid +' + r[1] + '</text>';
@@ -827,16 +1348,15 @@
       }
       const sg = segs[segs.length - 1]; sg.vals.push(x[1]); sg.to = x[1]; sg.end = x[0];
     });
-    $('#gsum').innerHTML = segs.filter((sg) => sg.game).map((sg) => {
+    sum.innerHTML = segs.filter((sg) => sg.game).map((sg) => {
       const d = sg.to - sg.from, avg = Math.round(sg.vals.reduce((p, v) => p + v, 0) / sg.vals.length);
       return '<span title="' + hhmm(sg.start) + ' – ' + hhmm(sg.end) + '"><b>' + esc(sg.game) + '</b> ' + sg.from + ' → ' + sg.to + ' <i class="' + (d > 0 ? 'up' : d < 0 ? 'down' : '') + '">(' + (d > 0 ? '+' : '') + d + ')</i> · gem. ' + avg + '</span>';
     }).join('');
-    box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '">' + g + '<polygon points="' + L + ',' + (T + h) + ' ' + pts + ' ' + X(t1) + ',' + (T + h) + '" fill="rgba(145,71,255,.2)"/>' +
+    box.innerHTML = '<svg viewBox="0 0 ' + W2 + ' ' + H + '">' + g + '<polygon points="' + L + ',' + (T + h) + ' ' + pts + ' ' + X(t1) + ',' + (T + h) + '" fill="rgba(145,71,255,.2)"/>' +
       '<polyline points="' + pts + '" fill="none" stroke="#9147ff" stroke-width="2.5" stroke-linejoin="round"/></svg>';
-    $('#gNow').textContent = (cur ? 'nu ' + a[a.length - 1][1] + ' · ' : '') + 'piek ' + peak;
+    nowEl.textContent = (cur ? 'nu ' + a[a.length - 1][1] + ' · ' : '') + 'piek ' + peak;
   }
-  new ResizeObserver(() => drawGraph(shown())).observe($('#gbox'));
-  $('#csvBtn').onclick = () => {
+  function exportCsv() {
     const s = shown();
     if (!s || !s.vh.length) return toast('Nog geen kijkersgegevens.', 'err');
     const rows = s.vh.map((x) => [x[0], x[1], '', x[2] || '']);
@@ -848,17 +1368,21 @@
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     a.download = 'kijkers-' + d.getFullYear() + '-' + d2(d.getMonth() + 1) + '-' + d2(d.getDate()) + '_' + d2(d.getHours()) + '-' + d2(d.getMinutes()) + '.csv';
     a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  };
-
+  }
   function renderHistory() {
+    const el = R('history', 'history');
+    if (!el) return;
     const list = state.demo ? (cur ? [cur] : []) : sessions;
-    $('#history').innerHTML = list.length ? '<tr><th>Datum</th><th>Duur</th><th>Titel / game</th><th>Piek</th><th>Gem.</th><th>Berichten</th><th>Chatters</th><th>Volgers</th><th>Subs</th><th>Bits</th><th>Raids</th></tr>' +
+    const donOn = state.demo || donActive();
+    el.innerHTML = list.length ? '<tr><th>Datum</th><th>Duur</th><th>Titel / game</th><th>Piek</th><th>Gem.</th><th>Berichten</th><th>Chatters</th><th>Volgers</th><th>Subs</th><th>Bits</th><th>Raids</th>' + (donOn ? '<th>Donaties</th>' : '') + '</tr>' +
       list.map((s) => { const st = stats(s); return '<tr><td>' + dateNl(s.start) + ' ' + hhmm(s.start) + (s === cur ? ' <span class="badge live">LIVE</span>' : '') + '</td><td>' + dur(s.end - s.start) + '</td><td class="ti">' + esc(s.title) + '<br><span class="hint">' + esc(s.game) + '</span></td><td>' +
-        nl(st.peak) + '</td><td>' + nl(st.avg) + '</td><td>' + nl(s.msgs) + '</td><td>' + nl(st.chatters) + '</td><td>+' + nl(st.newFol) + '</td><td>+' + nl(s.subs) + '</td><td>' + nl(s.bits) + '</td><td>' + nl(s.raidsIn.length) + '</td></tr>'; }).join('')
+        nl(st.peak) + '</td><td>' + nl(st.avg) + '</td><td>' + nl(s.msgs) + '</td><td>' + nl(st.chatters) + '</td><td>+' + nl(st.newFol) + '</td><td>+' + nl(s.subs) + '</td><td>' + nl(s.bits) + '</td><td>' + nl(s.raidsIn.length) + '</td>' +
+        (donOn ? '<td>' + donTotal(s.donations) + '</td>' : '') + '</tr>'; }).join('')
       : '<tr><td class="empty">Nog geen streams bijgehouden. Laat R5 StreamerHub openstaan tijdens je stream.</td></tr>';
   }
   function renderVods() {
-    const el = $('#vods');
+    const el = R('vods', 'vods');
+    if (!el) return;
     if (state.demo) { el.innerHTML = '<tr><td class="empty">In de demo zijn er geen video\'s.</td></tr>'; return; }
     if (!vods) { el.innerHTML = '<tr><td class="empty">Laden…</td></tr>'; return; }
     el.innerHTML = vods.length ? '<tr><th>Datum</th><th>Duur</th><th>Titel</th><th>Weergaven</th><th></th></tr>' + vods.map((v) => '<tr><td>' + dateNl(v.created_at) + ' ' + hhmm(v.created_at) + '</td><td>' +
@@ -866,15 +1390,37 @@
       : '<tr><td class="empty">Geen video\'s gevonden. Zet bij Twitch "Eerdere uitzendingen opslaan" aan om ze te bewaren.</td></tr>';
   }
 
+  // ---------- indeling (blokken en tegels aan/uit) ----------
+  let layPage = 'overview';
+  function openLayout(page) {
+    layPage = page;
+    $('#layTitle').textContent = '✎ Indeling: ' + (page === 'live' ? 'Live' : 'Overzicht');
+    drawLayout();
+    $('#layModal').classList.add('open');
+  }
+  function drawLayout() {
+    const l = layout[layPage];
+    $('#layBlocks').innerHTML = DEFAULT_LAYOUT[layPage].map((id) => '<label class="optrow"><input type="checkbox" data-b="' + id + '"' + (l.off.includes(id) ? '' : ' checked') + '> ' + WIDGETS[id].title + '</label>').join('');
+    $('#layTiles').innerHTML = TILES.map(([id, lab]) => '<label class="optrow"><input type="checkbox" data-t="' + id + '"' + (l.tilesOff.includes(id) ? '' : ' checked') + '> ' + lab + '</label>').join('');
+  }
+  $('#layModal').addEventListener('change', (e) => {
+    const l = layout[layPage], b = e.target.dataset.b, t = e.target.dataset.t;
+    if (b) { l.off = l.off.filter((x) => x !== b); if (!e.target.checked) l.off.push(b); saveLayout(); buildGrid(layPage); }
+    if (t) { l.tilesOff = l.tilesOff.filter((x) => x !== t); if (!e.target.checked) l.tilesOff.push(t); saveLayout(); renderDash(); }
+  });
+  $('#layReset').onclick = () => { layout[layPage] = defLayout(layPage); saveLayout(); buildGrid(layPage); drawLayout(); toast('Standaardindeling hersteld.'); };
+  document.querySelectorAll('[data-layout]').forEach((b) => { b.onclick = () => openLayout(b.dataset.layout); });
+
   // ---------- demo ----------
   const DEMO_USERS = ['kaaskop99', 'PixelPiet', 'GamerGirl_NL', 'Henk_de_Tank', 'luna_moon', 'xXSniperXx', 'Bram', 'Nightbot', 'mia_plays', 'Sjoerd'];
   const DEMO_TEXT = ['hoi chat!', 'wat een play', 'GG', 'Kappa', 'LUL LUL', 'PogChamp PogChamp', 'kun je die boss nog een keer doen?', 'goedemorgen!', '<3', 'SeemsGood', 'LUL', 'PogChamp'];
+  const DEMO_BADGES = ['', '', 'subscriber/3', 'moderator/1,subscriber/12', 'vip/1', ''];
   // vaste Twitch-emotes voor de demo (in echte chat komen ze met het bericht mee)
   const TW_BASE = { Kappa: '25', LUL: '425618', PogChamp: '305954156', '<3': '9', SeemsGood: '64138' };
   const twTag = (text) => { const m = {}; let i = 0; text.split(' ').forEach((w) => { if (TW_BASE[w]) (m[TW_BASE[w]] = m[TW_BASE[w]] || []).push(i + '-' + (i + Array.from(w).length - 1)); i += Array.from(w).length + 1; }); return Object.entries(m).map(([id, r]) => id + ':' + r.join(',')).join('/'); };
   let demoT = null;
   function startDemo() {
-    state.demo = true; esubStop(); irc.close();
+    state.demo = true; esubStop(); irc.close(); chatBuf.length = 0;
     const now = Date.now(), start = now - 95 * 60000;
     cur = newSession('demo', start, 'Zaterdagstream! Eerst kletsen, dan Minecraft', 'Minecraft');
     for (let i = 0; i < 95; i += 1) cur.vh.push([start + i * 60000, Math.round(40 + i * 0.9 + Math.sin(i / 4) * 6 + (i > 60 ? 55 : 0)), i < 35 ? 'Just Chatting' : 'Minecraft']);
@@ -882,26 +1428,32 @@
     state.followers = 1284; state.subs = 37; cur.folStart = 1271; cur.subStart = 33;
     Object.assign(cur, { msgs: 0, bits: 350, subs: 4, gifts: 2, follows: 13, redeems: 9 });
     recentFollows = ['mia_plays', 'Sjoerd', 'tomtom', 'Ellie_NL', 'koffiekop'].map((n, i) => ({ user_name: n, followed_at: new Date(now - (i * 7 + 2) * 60000).toISOString() }));
+    cur.donations = [[48, 'Bram', 5, 'Lekker bezig, drink wat water!'], [22, 'GamerGirl_NL', 2.5, ''], [9, 'Henk_de_Tank', 10, 'Voor die clutch 🔥']].map(([m, name, amount, msg], i) => ({ id: 'd' + i, t: now - m * 60000, name, amount, cur: 'EUR', msg }));
     [[3, 'follow', '💜', 'mia_plays volgt je nu'], [12, 'sub', '⭐', 'GamerGirl_NL is opnieuw geabonneerd (5 maanden)'], [20, 'bits', '💎', 'PixelPiet gaf 250 bits'], [34, 'raid', '🚀', 'luna_moon raidt met 54 kijkers'],
-      [40, 'redeem', '🎁', 'Bram wisselde in: Hydrateer! (500 punten)'], [55, 'sub', '🎁', 'Henk_de_Tank geeft een abonnement aan Sjoerd']].reverse()
-      .forEach(([m, kind, ic, text]) => cur.feed.unshift({ t: now - m * 60000, kind, ic, text, sub: '' }));
+      [40, 'redeem', '🎁', 'Bram wisselde in: Hydrateer! (500 punten)'], [55, 'sub', '🎁', 'Henk_de_Tank geeft een abonnement aan Sjoerd']]
+      .forEach(([m, kind, ic, text]) => cur.feed.push({ t: now - m * 60000, kind, ic, text, sub: '' }));
+    cur.donations.forEach((d) => cur.feed.push({ t: d.t, kind: 'donation', ic: '💰', text: d.name + ' doneerde ' + money(d.amount, d.cur), sub: d.msg }));
     cur.feed.sort((a, b) => b.t - a.t);
     for (let i = 0; i < 400; i++) demoChat();
     vods = [];
+    Object.entries(TW_BASE).forEach(([n, id]) => put(n, twEmoteUrl(id), 'twitch', true));
+    if (!emotesLoaded) loadEmotes(null);
     clearInterval(demoT); demoT = setInterval(demoTick, 1500);
+    buildGrid('overview'); buildGrid('live');
     render();
   }
-  function stopDemo() { state.demo = false; clearInterval(demoT); cur = null; vods = null; recentFollows = []; state.followers = null; state.subs = null; boot(); }
+  function stopDemo() { state.demo = false; clearInterval(demoT); cur = null; vods = null; recentFollows = []; state.followers = null; state.subs = null; chatBuf.length = 0; buildGrid('overview'); buildGrid('live'); boot(); }
   function demoChat() {
     const u = DEMO_USERS[Math.floor(Math.random() * DEMO_USERS.length)];
     const text = DEMO_TEXT[Math.floor(Math.random() * DEMO_TEXT.length)];
-    chatMsg(u.toLowerCase(), u, text, twTag(text), 0);
+    chatMsg(u.toLowerCase(), u, text, twTag(text), 0, '', u === 'Nightbot' ? 'moderator/1' : DEMO_BADGES[u.length % DEMO_BADGES.length]);
   }
   function demoTick(force) {
     if (!state.demo || !cur) return;
-    for (let i = 0; i < 1 + Math.floor(Math.random() * 3); i++) demoChat();
-    if (Math.random() < .06) { const n = DEMO_USERS[Math.floor(Math.random() * 7)]; state.followers++; recentFollows.unshift({ user_name: n + Math.floor(Math.random() * 99), followed_at: new Date().toISOString() }); event('follow', '💜', recentFollows[0].user_name + ' volgt je nu', '', { follows: 1 }); }
+    for (let i = 0; i < 1 + Math.floor(Math.random() * 2); i++) demoChat();
+    if (Math.random() < .06) { const n = DEMO_USERS[Math.floor(Math.random() * 7)] + Math.floor(Math.random() * 99); state.followers++; recentFollows.unshift({ user_name: n, followed_at: new Date().toISOString() }); event('follow', '💜', n + ' volgt je nu', '', { follows: 1 }); }
     if (Math.random() < .02) event('bits', '💎', DEMO_USERS[Math.floor(Math.random() * 7)] + ' gaf 100 bits', 'lekker bezig!', { bits: 100 });
+    if (Math.random() < .015) { const d = { id: 'd' + Date.now(), t: Date.now(), name: DEMO_USERS[Math.floor(Math.random() * 7)], amount: [1, 2, 5][Math.floor(Math.random() * 3)], cur: 'EUR', msg: 'Top stream!' }; cur.donations.push(d); event('donation', '💰', d.name + ' doneerde ' + money(d.amount, d.cur), d.msg, {}); }
     const last = cur.vh[cur.vh.length - 1];
     if (force || Date.now() - last[0] > 60000) cur.vh.push([Date.now(), Math.max(1, last[1] + Math.round(Math.random() * 8 - 3)), 'Minecraft']);
     cur.end = Date.now();
@@ -918,77 +1470,147 @@
       ['size', 'Grootte', 'range', 90, [40, 240, 5, 'px']], ['min', 'Combo vanaf', 'range', 4, [2, 20, 1, '×']],
       ['win', 'Max. tijd tussen twee keer', 'range', 8, [3, 30, 1, 's']], ['color', 'Kleur', 'color', '#9147ff'],
       ['sound', 'Geluidje bij een nieuwe combo', 'check', false], ['vol', 'Volume', 'range', 50, [5, 100, 5, '%']]] },
-    { type: 'raid', name: '🚀 Raid-melding', desc: 'Een melding met naam, profielfoto en aantal kijkers als iemand je raidt.', fields: [
+    { type: 'raid', name: '🚀 Raid melding', desc: 'Naam, afbeelding en aantal kijkers als iemand je raidt.', fields: [
       ['text', 'Tekst ({name} = raider, {viewers} = kijkers)', 'text', '{viewers} kijkers komen binnen!'],
+      ['imgmode', 'Afbeelding', 'select', 'avatar', [['avatar', 'Profielfoto van de raider'], ['custom', 'Eigen afbeelding'], ['none', 'Geen afbeelding']]],
+      ['img', 'Link naar je eigen afbeelding (png, jpg, gif of webp)', 'image', ''],
       ['size', 'Grootte', 'range', 64, [40, 120, 4, '']], ['dur', 'Hoe lang op beeld', 'range', 8, [3, 20, 1, 's']],
       ['color', 'Kleur', 'color', '#9147ff'], ['sound', 'Geluid', 'check', true], ['vol', 'Volume', 'range', 60, [5, 100, 5, '%']]] },
   ];
   const ovCfg = store.get('ov', {});
   OVERLAYS.forEach((o) => { ovCfg[o.type] = Object.assign(Object.fromEntries(o.fields.map((f) => [f[0], f[3]])), ovCfg[o.type] || {}); });
+  if (!Array.isArray(ovCfg.off)) ovCfg.off = [];   // emotes die uit staan voor de overlays
+  let ovSel = store.get('ovSel', 'wall');
   const ovChan = () => (state.me && !state.demo ? state.me.login : '') || store.get('ovChan', '') || (state.demo ? 'demo' : '');
   const base = location.href.replace(/[#?].*$/, '').replace(/index\.html$/, '').replace(/\/?$/, '/');
   function ovUrl(o, extra) {
     const p = new URLSearchParams({ type: o.type, ch: ovChan() });
-    Object.entries(ovCfg[o.type]).forEach(([k, v]) => p.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : k === 'color' ? String(v).replace('#', '') : v));
+    Object.entries(ovCfg[o.type]).forEach(([k, v]) => { if (k === 'img' && ovCfg[o.type].imgmode !== 'custom') return; p.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : k === 'color' ? String(v).replace('#', '') : v); });
+    if (o.type !== 'raid' && ovCfg.off.length) p.set('off', ovCfg.off.join(' '));
     Object.entries(extra || {}).forEach(([k, v]) => p.set(k, v));
     return base + 'overlay.html?' + p.toString();
   }
-  let ovBuilt = false;
   function renderOverlays() {
     const inp = $('#ovChan');
     if (document.activeElement !== inp) inp.value = ovChan();
     inp.disabled = !!(state.me && !state.demo);
     $('#ovChanHint').textContent = state.me && !state.demo ? 'je eigen kanaal (ingelogd)' : 'vul je kanaalnaam in, inloggen is niet nodig';
-    if (!ovBuilt) buildOverlays();
-    OVERLAYS.forEach(refreshOverlay);
+    const tiles = OVERLAYS.map((o) => [o.type, o.name, o.desc]).concat([['emotes', '😀 Emotes', 'Kies welke emotes in de emote-wall en combo mogen. Uploaden komt later.']]);
+    $('#ovTiles').innerHTML = tiles.map(([t, n, d]) => '<button class="ovtile' + (ovSel === t ? ' on' : '') + '" data-ov="' + t + '"><b>' + n + '</b><small>' + d + '</small>' +
+      (t === 'emotes' ? '<small data-emcount>' + emCountText() + '</small>' : '') + '</button>').join('');
+    renderOvEditor();
   }
-  function buildOverlays() {
-    ovBuilt = true;
-    $('#ovList').innerHTML = OVERLAYS.map((o) => '<div class="card ov" id="ov-' + o.type + '"><div class="f"><h3>' + o.name + '</h3><div class="hint">' + o.desc + '</div>' +
-      o.fields.map(([k, l, t, , x]) => {
-        const id = 'f-' + o.type + '-' + k, v = ovCfg[o.type][k];
-        if (t === 'select') return '<label for="' + id + '">' + l + '</label><select id="' + id + '" data-k="' + k + '">' + x.map(([val, lab]) => '<option value="' + val + '"' + (val === v ? ' selected' : '') + '>' + lab + '</option>').join('') + '</select>';
-        if (t === 'range') return '<label for="' + id + '">' + l + '</label><div class="rng"><input type="range" id="' + id + '" data-k="' + k + '" min="' + x[0] + '" max="' + x[1] + '" step="' + x[2] + '" value="' + v + '"><output data-u="' + x[3] + '">' + v + x[3] + '</output></div>';
-        if (t === 'check') return '<label class="chk"><input type="checkbox" data-k="' + k + '"' + (v ? ' checked' : '') + '> ' + l + '</label>';
-        if (t === 'color') return '<label for="' + id + '">' + l + '</label><input type="color" id="' + id + '" data-k="' + k + '" value="' + esc(v) + '">';
-        return '<label for="' + id + '">' + l + '</label><input id="' + id + '" data-k="' + k + '" value="' + esc(v) + '" maxlength="80" autocomplete="off">';
-      }).join('') + '</div><div><div class="pv"><iframe title="Voorbeeld" loading="lazy"></iframe></div>' +
-      '<div class="acts"><button data-a="test">▶ Test</button><label class="chk hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-a="loop"> doorlopend testen</label>' +
-      '<button class="primary" data-a="copy" style="margin-left:auto">📋 Kopieer OBS-link</button></div><div class="link"></div></div></div>').join('');
-    OVERLAYS.forEach((o) => {
-      const card = $('#ov-' + o.type);
-      card.querySelectorAll('[data-k]').forEach((inp) => {
-        inp.addEventListener(inp.type === 'range' || inp.type === 'text' || inp.type === 'color' ? 'input' : 'change', () => {
-          const k = inp.dataset.k;
-          ovCfg[o.type][k] = inp.type === 'checkbox' ? inp.checked : inp.type === 'range' ? +inp.value : inp.value;
-          if (inp.type === 'range') inp.nextElementSibling.textContent = inp.value + inp.nextElementSibling.dataset.u;
-          store.set('ov', ovCfg);
-          clearTimeout(card.t); card.t = setTimeout(() => refreshOverlay(o, true), 400);
-        });
+  const emCountText = () => (ovCfg.off.length ? ovCfg.off.length + ' emote' + (ovCfg.off.length === 1 ? '' : 's') + ' uitgezet' : 'alle emotes aan');
+  $('#ovTiles').onclick = (e) => { const b = e.target.closest('[data-ov]'); if (!b) return; ovSel = b.dataset.ov; store.set('ovSel', ovSel); renderOverlays(); };
+  let edFor = '';
+  function renderOvEditor() {
+    const box = $('#ovEditor');
+    if (ovSel === 'emotes') { edFor = 'emotes'; return renderEmoteEditor(box); }
+    const o = OVERLAYS.find((x) => x.type === ovSel) || OVERLAYS[0];
+    if (edFor !== o.type || !box.querySelector('.ov')) {
+      edFor = o.type;
+      box.innerHTML = '<div class="card ov"><div class="f"><h3>' + o.name + '</h3><div class="hint">' + o.desc + '</div>' + o.fields.map((f) => fieldHtml(o, f)).join('') + '</div>' +
+        '<div><div class="pv"><iframe title="Voorbeeld"></iframe></div><div class="acts"><button data-a="test">▶ Test</button><label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-a="loop"> doorlopend testen</label>' +
+        '<button class="primary" data-a="copy" style="margin-left:auto">📋 Kopieer OBS-link</button></div><div class="link"></div>' +
+        (o.type !== 'raid' ? '<p class="hint">' + (ovCfg.off.length ? ovCfg.off.length + ' emote(s) staan uit; ' : '') + 'welke emotes meedoen kies je bij <a href="#" data-ov-go="emotes">😀 Emotes</a>.</p>' : '') + '</div></div>';
+      wireOvEditor(o, box);
+    }
+    refreshOverlay(o);
+  }
+  function fieldHtml(o, [k, l, t, , x]) {
+    const id = 'f-' + o.type + '-' + k, v = ovCfg[o.type][k];
+    const hide = k === 'img' && ovCfg[o.type].imgmode !== 'custom' ? ' hidden' : '';
+    if (t === 'select') return '<label for="' + id + '">' + l + '</label><select id="' + id + '" data-k="' + k + '">' + x.map(([val, lab]) => '<option value="' + val + '"' + (val === v ? ' selected' : '') + '>' + lab + '</option>').join('') + '</select>';
+    if (t === 'range') return '<label for="' + id + '">' + l + '</label><div class="rng"><input type="range" id="' + id + '" data-k="' + k + '" min="' + x[0] + '" max="' + x[1] + '" step="' + x[2] + '" value="' + v + '"><output data-u="' + x[3] + '">' + v + x[3] + '</output></div>';
+    if (t === 'check') return '<label class="chk"><input type="checkbox" data-k="' + k + '"' + (v ? ' checked' : '') + '> ' + l + '</label>';
+    if (t === 'color') return '<label for="' + id + '">' + l + '</label><input type="color" id="' + id + '" data-k="' + k + '" value="' + esc(v) + '">';
+    if (t === 'image') return '<div data-imgbox' + hide + '><label for="' + id + '">' + l + '</label><div class="imgrow"><img alt="" data-imgpv' + (v ? ' src="' + esc(v) + '"' : '') + '><input id="' + id + '" data-k="' + k + '" value="' + esc(v) + '" placeholder="https://…/plaatje.png" autocomplete="off"></div>' +
+      '<div class="acts"><button type="button" data-a="upload">⬆ Afbeelding uploaden</button><span class="soonpill">KOMT LATER</span></div><p class="hint">Uploaden komt in een volgende versie. Plak nu een link naar een afbeelding die online staat.</p></div>';
+    return '<label for="' + id + '">' + l + '</label><input id="' + id + '" data-k="' + k + '" value="' + esc(v) + '" maxlength="80" autocomplete="off">';
+  }
+  function wireOvEditor(o, card) {
+    card.querySelectorAll('[data-k]').forEach((inp) => {
+      const live = inp.tagName === 'INPUT' && inp.type !== 'checkbox';
+      inp.addEventListener(live ? 'input' : 'change', () => {
+        const k = inp.dataset.k;
+        ovCfg[o.type][k] = inp.type === 'checkbox' ? inp.checked : inp.type === 'range' ? +inp.value : inp.value.trim();
+        if (inp.type === 'range') inp.nextElementSibling.textContent = inp.value + inp.nextElementSibling.dataset.u;
+        if (k === 'imgmode') card.querySelector('[data-imgbox]').hidden = inp.value !== 'custom';
+        if (k === 'img') { const pv = card.querySelector('[data-imgpv]'); if (/^https:\/\//.test(inp.value.trim())) pv.src = inp.value.trim(); else pv.removeAttribute('src'); }
+        store.set('ov', ovCfg);
+        clearTimeout(card.t); card.t = setTimeout(() => refreshOverlay(o, true), 400);
       });
-      card.querySelector('[data-a=test]').onclick = () => { const f = card.querySelector('iframe'); try { f.contentWindow.postMessage({ r5: 'test' }, location.origin); } catch {} };
-      card.querySelector('[data-a=loop]').onchange = () => refreshOverlay(o, true);
-      card.querySelector('[data-a=copy]').onclick = async () => {
-        if (!ovChan()) return toast('Vul eerst je kanaalnaam in.', 'err');
-        const url = ovUrl(o);
-        try { await navigator.clipboard.writeText(url); toast('Link gekopieerd. Plak hem in OBS als Browserbron (1920 × 1080).', 'ok'); }
-        catch { prompt('Kopieer deze link:', url); }
-      };
-      new ResizeObserver(() => scalePv(card)).observe(card.querySelector('.pv'));
     });
+    const up = card.querySelector('[data-a=upload]');
+    if (up) up.onclick = () => toast('Uploaden komt in een volgende versie (in de Windows-app). Plak nu een link naar een afbeelding.');
+    card.querySelector('[data-a=test]').onclick = () => { const f = card.querySelector('iframe'); try { f.contentWindow.postMessage({ r5: 'test' }, location.origin); } catch {} };
+    card.querySelector('[data-a=loop]').onchange = () => refreshOverlay(o, true);
+    card.querySelector('[data-a=copy]').onclick = async () => {
+      if (!ovChan() || ovChan() === 'demo') return toast('Vul eerst je kanaalnaam in.', 'err');
+      if (o.type === 'raid' && ovCfg.raid.imgmode === 'custom' && !/^https:\/\//.test(ovCfg.raid.img)) return toast('Plak eerst een link (https://…) naar je afbeelding, of kies een andere afbeelding.', 'err');
+      const url = ovUrl(o);
+      try { await navigator.clipboard.writeText(url); toast('Link gekopieerd. Plak hem in OBS als Browserbron (1920 × 1080).', 'ok'); }
+      catch { prompt('Kopieer deze link:', url); }
+    };
+    const go = card.querySelector('[data-ov-go]');
+    if (go) go.onclick = (e) => { e.preventDefault(); ovSel = 'emotes'; store.set('ovSel', ovSel); renderOverlays(); };
+    new ResizeObserver(() => scalePv(card)).observe(card.querySelector('.pv'));
   }
-  function scalePv(card) { const pv = card.querySelector('.pv'); card.querySelector('iframe').style.transform = 'scale(' + pv.clientWidth / 1920 + ')'; }
+  function scalePv(card) { const pv = card.querySelector('.pv'), f = card.querySelector('iframe'); if (pv && f) f.style.transform = 'scale(' + pv.clientWidth / 1920 + ')'; }
   function refreshOverlay(o, force) {
-    const card = $('#ov-' + o.type);
-    if (!card) return;
-    card.querySelector('.link').textContent = ovChan() ? ovUrl(o) : 'Vul bovenaan je kanaalnaam in om de link te maken.';
-    const loop = card.querySelector('[data-a=loop]').checked;
-    const src = ovUrl(o, Object.assign({ preview: '1' }, loop ? { test: '1' } : {}, ovChan() === 'demo' || !ovChan() ? { ch: '' } : {}));
+    const card = $('#ovEditor');
     const f = card.querySelector('iframe');
-    if (force || f.dataset.src !== src) { if (state.page === 'overlays' || force) { f.dataset.src = src; f.src = src; } }
+    if (!f) return;
+    const okCh = ovChan() && ovChan() !== 'demo';
+    card.querySelector('.link').textContent = okCh ? ovUrl(o) : (ovChan() === 'demo' ? 'In de demo is er geen echte link: vul bovenaan je eigen kanaalnaam in.' : 'Vul bovenaan je kanaalnaam in om de link te maken.');
+    const loop = card.querySelector('[data-a=loop]').checked;
+    const src = ovUrl(o, Object.assign({ preview: '1' }, loop ? { test: '1' } : {}, okCh ? {} : { ch: '' }));
+    if ((force || f.dataset.src !== src) && state.page === 'overlays') { f.dataset.src = src; f.src = src; }
     scalePv(card);
   }
   $('#ovChan').oninput = () => { store.set('ovChan', $('#ovChan').value.trim().toLowerCase().replace(/^.*twitch\.tv\//, '').replace(/[^a-z0-9_]/g, '')); clearTimeout(state.ovT); state.ovT = setTimeout(renderOverlays, 500); };
+
+  // emotes: bekijken en per emote aan/uit voor de overlays
+  const SRC_LABEL = { twitch: 'Twitch', '7tv': '7TV', bttv: 'BTTV', ffz: 'FFZ' };
+  const emState = { q: '', src: 'all', scope: 'chan' };
+  function renderEmoteEditor(box) {
+    let card = box.querySelector('.emcard');
+    if (!card) {
+      box.innerHTML = '<div class="card emcard"><h3 style="margin:0 0 4px">😀 Emotes voor de overlays</h3><div class="hint">Klik op een emote om hem uit (grijs) of weer aan te zetten. Uitgezette emotes verschijnen niet in de emote-wall en de combo. Na een wijziging kopieer je de OBS-link opnieuw.</div>' +
+        '<div class="emtools"><input data-e="q" placeholder="Zoek emote…" autocomplete="off"><div class="filters" data-e="scope" style="margin:0"></div><div class="filters" data-e="src" style="margin:0"></div>' +
+        '<span style="margin-left:auto" class="hint" data-e="count"></span><button data-e="allon">Alles aan</button><button data-e="alloff">Getoonde uit</button></div><div class="emgrid" data-e="grid"></div>' +
+        '<div class="drop"><b>⬆ Eigen emotes uploaden</b><span class="soonpill">KOMT LATER</span><br>Sleep hier straks je eigen plaatjes naartoe om ze in je overlays te gebruiken. Dit komt in een volgende versie, samen met de Windows-app.' +
+        '<div class="acts" style="justify-content:center"><button data-e="upload">Kies bestanden…</button></div></div></div>';
+      card = box.querySelector('.emcard');
+      $('[data-e=q]', card).oninput = (e) => { emState.q = e.target.value.trim().toLowerCase(); drawEmotes(card); };
+      card.onclick = (e) => {
+        const f = e.target.closest('[data-fs]'), em = e.target.closest('[data-em]'), a = e.target.closest('[data-e]');
+        if (f) { emState[f.dataset.fs] = f.dataset.v; drawEmotes(card); return; }
+        if (em) { const n = em.dataset.em, i = ovCfg.off.indexOf(n); if (i >= 0) ovCfg.off.splice(i, 1); else ovCfg.off.push(n); store.set('ov', ovCfg); em.classList.toggle('off', i < 0); countEm(card); return; }
+        if (!a) return;
+        if (a.dataset.e === 'allon') { ovCfg.off = []; store.set('ov', ovCfg); drawEmotes(card); }
+        if (a.dataset.e === 'alloff') { const set = new Set(ovCfg.off); visibleEmotes().forEach(([n]) => set.add(n)); ovCfg.off = [...set]; store.set('ov', ovCfg); drawEmotes(card); }
+        if (a.dataset.e === 'upload') toast('Emotes uploaden komt in een volgende versie (in de Windows-app).');
+      };
+    }
+    drawEmotes(card);
+  }
+  function visibleEmotes() {
+    return Object.entries(emo).filter(([n, e]) => (emState.scope === 'all' || e.ch) && (emState.src === 'all' || e.src === emState.src) && (!emState.q || n.toLowerCase().includes(emState.q)))
+      .sort((a, b) => (b[1].ch - a[1].ch) || a[0].localeCompare(b[0]));
+  }
+  function countEm(card) {
+    $('[data-e=count]', card).textContent = nl(Object.keys(emo).length) + ' emotes · ' + nl(ovCfg.off.length) + ' uit';
+    const t = $('#ovTiles [data-emcount]'); if (t) t.textContent = emCountText();
+  }
+  function drawEmotes(card) {
+    $('[data-e=scope]', card).innerHTML = [['chan', 'Van je kanaal'], ['all', 'Ook globaal']].map(([v, l]) => '<button data-fs="scope" data-v="' + v + '" class="' + (emState.scope === v ? 'on' : '') + '">' + l + '</button>').join('');
+    $('[data-e=src]', card).innerHTML = [['all', 'Alle bronnen'], ['twitch', 'Twitch'], ['7tv', '7TV'], ['bttv', 'BTTV'], ['ffz', 'FFZ']].map(([v, l]) => '<button data-fs="src" data-v="' + v + '" class="' + (emState.src === v ? 'on' : '') + '">' + l + '</button>').join('');
+    const list = visibleEmotes(), off = new Set(ovCfg.off);
+    $('[data-e=grid]', card).innerHTML = list.length ? list.slice(0, 600).map(([n, e]) => '<div class="em' + (off.has(n) ? ' off' : '') + '" data-em="' + esc(n) + '" title="' + esc(n) + ' (' + SRC_LABEL[e.src] + (e.ch ? ', kanaal' : ', globaal') + ')"><img loading="lazy" src="' + esc(e.url) + '" alt=""><span>' + esc(n) + '</span><small>' + SRC_LABEL[e.src] + '</small></div>').join('')
+      : '<div class="empty">' + (!emotesLoaded ? 'Emotes laden…' : !state.me && !state.demo && emState.scope === 'chan' ? 'Log in om de emotes van je kanaal te zien, of kies "Ook globaal".' : 'Geen emotes gevonden.') + '</div>';
+    countEm(card);
+  }
 
   // ---------- instellingen ----------
   function renderSettings() {
@@ -1000,6 +1622,7 @@
     $('#demoOn').checked = state.demo;
     $('#optBots').checked = opts.bots; $('#optBotList').value = opts.botList; $('#optTitle').checked = opts.tabTitle;
     $('#ver').textContent = VERSION;
+    $('#redirUri').textContent = redirectUri;
   }
   $('#demoOn').onchange = (e) => (e.target.checked ? startDemo() : stopDemo());
   $('#optBots').onchange = (e) => { opts.bots = e.target.checked; saveOpts(); renderDash(); };
@@ -1007,11 +1630,12 @@
   $('#optTitle').onchange = (e) => { opts.tabTitle = e.target.checked; saveOpts(); renderDash(); };
   $('#logoutBtn').onclick = logout;
   $('#exportBtn').onclick = () => {
-    const data = { app: 'R5 StreamerHub', version: VERSION, opts, ov: ovCfg, ovChan: store.get('ovChan', ''), sessions };
+    // zonder de geheime StreamElements-token en TipeeeStream-key
+    const data = { app: 'R5 StreamerHub', version: VERSION, opts, ov: ovCfg, ovChan: store.get('ovChan', ''), layout, integ: { on: integ.on, se: { on: integ.se.on, id: integ.se.id }, tp: { on: integ.tp.on } }, sessions };
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
     const n = new Date();
-    a.download = 'r5-streamerhub-' + n.getFullYear() + '-' + d2(n.getMonth() + 1) + '-' + d2(n.getDate()) + '.json';
+    a.download = 'r5-streamerhub-' + n.getFullYear() + '-' + d2(n.getMonth() + 1) + '-' + d2(n.getDate()) + '_' + d2(n.getHours()) + '-' + d2(n.getMinutes()) + '.json';
     a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
   $('#importBtn').onclick = () => $('#importFile').click();
@@ -1024,6 +1648,8 @@
       if (j.opts) store.set('opts', j.opts);
       if (j.ov) store.set('ov', j.ov);
       if (j.ovChan) store.set('ovChan', j.ovChan);
+      if (j.layout) store.set('layout', j.layout);
+      if (j.integ) store.set('integ', { on: !!j.integ.on, se: Object.assign({}, integ.se, (j.integ.se || {}), { jwt: integ.se.jwt }), tp: { on: !!(j.integ.tp && j.integ.tp.on), key: integ.tp.key } });
       if (Array.isArray(j.sessions)) {
         const have = new Set(sessions.map((s) => s.id));
         store.set('sessions', [...sessions, ...j.sessions.filter((s) => !have.has(s.id))].sort((a, b) => b.start - a.start).slice(0, 30));
@@ -1044,8 +1670,9 @@
     state.page = p; store.set('page', p);
     document.querySelectorAll('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.page === p));
     document.querySelectorAll('.page').forEach((s) => { s.hidden = s.id !== 'page-' + p; });
-    if (p === 'overview') renderDash();
-    if (p === 'overlays') OVERLAYS.forEach((o) => refreshOverlay(o));
+    $('#welcome').hidden = !!(state.me || state.demo) || !['overview', 'live'].includes(p);
+    if (p === 'overview' || p === 'live') { renderDash(); if (p === 'overview') drawGraph(shown()); if (p === 'live' && W.lchat) $('#lchat').scrollTop = 1e9; }
+    if (p === 'overlays') renderOverlays();
   }
   $('#nav').onclick = (e) => { const b = e.target.closest('[data-page]'); if (b) showPage(b.dataset.page); };
   document.addEventListener('click', (e) => {
@@ -1078,7 +1705,6 @@
   };
 
   // ---------- starten ----------
-  let pollT = null;
   async function boot() {
     await validate();
     if (state.me) {
@@ -1088,13 +1714,15 @@
       esubConnect();
       await poll();
       loadVods();
-    }
+      donPoll();
+    } else if (!emotesLoaded) loadEmotes(null);
     render();
   }
-  clearInterval(pollT); pollT = setInterval(() => { if (!state.demo) poll(); }, 60000);
-  setInterval(() => { if (cur && state.page === 'overview') renderDash(); }, 30000);
+  setInterval(() => { if (!state.demo) poll(); }, 60000);
+  setInterval(() => { if (cur && (state.page === 'overview' || state.page === 'live')) renderDash(); }, 30000);
   readTokenFromHash();
-  showPage(['overview', 'overlays', 'settings'].includes(state.page) ? state.page : 'overview');
+  buildGrid('overview'); buildGrid('live');
+  showPage(['overview', 'live', 'overlays', 'settings'].includes(state.page) ? state.page : 'overview');
   render();
   boot();
 })();
