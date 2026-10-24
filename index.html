@@ -570,7 +570,9 @@
     if (err) {
       const d = (h.get('error_description') || q.get('error_description') || '').replace(/\+/g, ' ');
       const nice = { access_denied: 'je hebt de toegang geweigerd', redirect_mismatch: 'het terugstuuradres klopt niet met de Twitch-app' }[err] || err;
-      setTimeout(() => toast('Inloggen bij Twitch mislukt: ' + nice + (d && d !== nice ? ' (' + d + ')' : '') + '. Kijk bij ⚙ Instellingen → "Lukt inloggen niet?".', 'err'), 300);
+      // alleen melden als je net op Inloggen klikte; een oud adres uit de browsergeschiedenis negeren we
+      let pending = false; try { pending = sessionStorage.getItem('r5s.loginAt') > Date.now() - 600000; sessionStorage.removeItem('r5s.loginAt'); } catch {}
+      if (pending) setTimeout(() => toast('Inloggen bij Twitch mislukt: ' + nice + (d && d !== nice ? ' (' + d + ')' : '') + '. Kijk bij ⚙ Instellingen → "Lukt inloggen niet?".', 'err'), 300);
       history.replaceState(null, '', location.pathname);
       return;
     }
@@ -593,6 +595,7 @@
     if (location.protocol === 'file:') return toast('Inloggen werkt alleen online. Open r5streamer.daver5.nl.', 'err');
     const u = new URL('https://id.twitch.tv/oauth2/authorize');
     u.search = new URLSearchParams({ client_id: CLIENT_ID, redirect_uri: redirectUri, response_type: 'token', scope: SCOPES.join(' '), force_verify: 'true' });
+    try { sessionStorage.setItem('r5s.loginAt', Date.now()); } catch {}
     location.href = u.toString();
   }
   function logout() {
