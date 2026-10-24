@@ -55,7 +55,7 @@
   /* clip van de raider */
   #clip { position: absolute; border-radius: 14px; overflow: hidden; background: #000; box-shadow: 0 12px 40px rgba(0,0,0,.55); border: 3px solid var(--accent); opacity: 0; transform: scale(.85); transition: opacity .4s, transform .5s cubic-bezier(.2,1.3,.4,1); }
   #clip.on { opacity: 1; transform: none; }
-  #clip iframe { width: 100%; height: 100%; border: 0; }
+  #clip iframe, #clip video { width: 100%; height: 100%; border: 0; display: block; object-fit: cover; background: #000; }
   #clip .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #ddd; font-size: 28px; font-weight: 700; background: repeating-linear-gradient(45deg, #26262c 0 18px, #1d1d22 18px 36px); }
 
   #hint { position: fixed; left: 10px; bottom: 8px; font: 12px system-ui, sans-serif; color: #a0a0ab; background: rgba(14,14,16,.8); padding: 4px 8px; border-radius: 6px; display: none; }
@@ -405,13 +405,34 @@
     }
     findClip(login).then((id) => {
       if (!id) { if (r.test) { c.innerHTML = '<div class="ph">🎬 Geen clips gevonden van ' + esc(login) + '</div>'; c.classList.add('on'); setTimeout(hideClip, 4000); } return; }
-      c.innerHTML = '<iframe allow="autoplay" src="https://clips.twitch.tv/embed?clip=' + encodeURIComponent(id) + '&parent=' + encodeURIComponent(location.hostname) + '&autoplay=true&muted=' + (cfg.clipsnd && !holdMode ? 'false' : 'true') + '"></iframe>';
-      requestAnimationFrame(() => c.classList.add('on'));
-      setTimeout(hideClip, cfg.clipdur * 1000);
+      const muted = !(cfg.clipsnd && !holdMode);
+      const embed = () => { c.innerHTML = '<iframe allow="autoplay" src="https://clips.twitch.tv/embed?clip=' + encodeURIComponent(id) + '&parent=' + encodeURIComponent(location.hostname) + '&autoplay=true&muted=' + muted + '"></iframe>'; };
+      // liefst als gewone video (start altijd vanzelf); lukt dat niet, dan de Twitch-clipspeler
+      clipVideo(id).then((src) => {
+        if (!src) return embed();
+        const v = document.createElement('video');
+        Object.assign(v, { src, autoplay: true, playsInline: true, muted, volume: 1 });
+        v.onerror = embed;
+        c.innerHTML = ''; c.appendChild(v);
+        v.play().catch(() => { v.muted = true; v.play().catch(embed); });   // geluid geweigerd: dan zonder geluid
+      }).finally(() => {
+        requestAnimationFrame(() => c.classList.add('on'));
+        setTimeout(hideClip, cfg.clipdur * 1000);
+      });
     });
     return cfg.clipdur * 1000;
   }
   // via de openbare API van de Twitch-site (geen sleutel nodig); werkt dit ooit niet meer, dan komt er alleen geen clip
+  // directe videolink van een clip (zoals de Twitch-site die zelf ook ophaalt)
+  async function clipVideo(slug) {
+    try {
+      const j = await fetch('https://gql.twitch.tv/gql', { method: 'POST', headers: { 'Client-Id': 'kimne78kx3ncx6brgo4mv6wki5h1ko', 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ query: 'query($s:ID!){clip(slug:$s){playbackAccessToken(params:{platform:"web",playerBackend:"mediaplayer",playerType:"site"}){signature value} videoQualities{quality sourceURL}}}', variables: { s: slug } }) }).then((r) => r.json());
+      const c = j.data && j.data.clip, t = c && c.playbackAccessToken, q = (c && c.videoQualities) || [];
+      const best = q.find((x) => x.quality === '1080') || q.find((x) => x.quality === '720') || q[0];
+      return t && best ? best.sourceURL + '?sig=' + encodeURIComponent(t.signature) + '&token=' + encodeURIComponent(t.value) : '';
+    } catch { return ''; }
+  }
   async function findClip(login) {
     const q = (period) => fetch('https://gql.twitch.tv/gql', { method: 'POST', headers: { 'Client-Id': 'kimne78kx3ncx6brgo4mv6wki5h1ko', 'Content-Type': 'text/plain' },
       body: JSON.stringify({ query: 'query($l:String!){user(login:$l){clips(first:20,criteria:{period:' + period + ',sort:VIEWS_DESC}){edges{node{slug durationSeconds}}}}}', variables: { l: login } }) })
