@@ -30,18 +30,30 @@
   .pos-tl { top: 4%; left: 4%; } .pos-tr { top: 4%; right: 4%; } .pos-bl { bottom: 8%; left: 4%; } .pos-br { bottom: 8%; right: 4%; }
   .pos-c { top: 50%; left: 50%; transform: translate(-50%, -50%); } .pos-tc { top: 4%; left: 50%; transform: translateX(-50%); }
 
-  /* raid melding */
-  #raid { position: absolute; left: 50%; top: 12%; transform: translate(-50%, -40px) scale(.9); opacity: 0; transition: transform .5s cubic-bezier(.2,1.4,.4,1), opacity .4s;
-    display: flex; align-items: center; gap: 22px; padding: 20px 34px 20px 20px; border-radius: 22px; color: #fff;
-    background: linear-gradient(135deg, var(--accent), #1f1f23 75%); box-shadow: 0 12px 40px rgba(0,0,0,.55), 0 0 0 3px rgba(255,255,255,.12) inset; max-width: 86vw; }
-  #raid.on { transform: translate(-50%, 0) scale(1); opacity: 1; }
-  #raid img { width: 110px; height: 110px; border-radius: 50%; border: 4px solid #fff; background: #000; flex-shrink: 0; }
-  #raid img.custom { width: auto; max-width: 220px; height: 130px; border-radius: 12px; border: 0; background: none; object-fit: contain; }
-  #raid .top { font-size: 20px; letter-spacing: .14em; text-transform: uppercase; opacity: .85; font-weight: 700; }
-  #raid .name { font-size: 46px; font-weight: 800; line-height: 1.05; overflow-wrap: anywhere; }
-  #raid .sub { font-size: 24px; margin-top: 4px; }
-  #raid .rocket { position: absolute; right: -24px; top: -30px; font-size: 64px; animation: fly 1.4s ease-in-out infinite alternate; }
+  /* raid melding: staat in zijn eigen vak (box), alle maten schalen mee met de hoogte van dat vak (--u = 1% van de hoogte) */
+  #raid { position: absolute; display: flex; align-items: center; gap: calc(var(--u) * 7); padding: calc(var(--u) * 8) calc(var(--u) * 10); box-sizing: border-box;
+    border-radius: calc(var(--u) * 11); color: var(--tc); opacity: 0; transition: transform .55s cubic-bezier(.2,1.3,.4,1), opacity .4s; }
+  #raid.on { transform: none !important; opacity: 1; }
+  #raid.s-card { background: linear-gradient(135deg, var(--accent), #1f1f23 75%); box-shadow: 0 12px 40px rgba(0,0,0,.55), 0 0 0 3px rgba(255,255,255,.12) inset; }
+  #raid.s-banner { border-radius: 0; background: linear-gradient(90deg, transparent, var(--accent) 12%, var(--accent) 88%, transparent); justify-content: center; text-align: center; }
+  #raid.s-glass { background: rgba(20,20,24,.45); backdrop-filter: blur(10px); border: 2px solid var(--accent); box-shadow: 0 8px 30px rgba(0,0,0,.4); }
+  #raid.s-text { background: none; justify-content: center; text-align: center; text-shadow: 0 0 10px rgba(0,0,0,.95), 0 3px 0 rgba(0,0,0,.7); }
+  #raid.a-pop { transform: scale(.6); } #raid.a-zoom { transform: scale(2.2); } #raid.a-fade { transform: none; }
+  #raid.a-top { transform: translateY(-120vh); } #raid.a-bottom { transform: translateY(120vh); }
+  #raid.a-left { transform: translateX(-120vw); } #raid.a-right { transform: translateX(120vw); }
+  #raid img { height: calc(var(--u) * 78); width: calc(var(--u) * 78); border-radius: 50%; border: calc(var(--u) * 3) solid #fff; background: #000; flex-shrink: 0; object-fit: cover; }
+  #raid img.custom { width: auto; max-width: 45%; height: calc(var(--u) * 84); border-radius: calc(var(--u) * 6); border: 0; background: none; object-fit: contain; }
+  #raid .txt { min-width: 0; }
+  #raid .top { font-size: calc(var(--u) * 12); letter-spacing: .14em; text-transform: uppercase; opacity: .85; font-weight: 700; }
+  #raid .name { font-size: calc(var(--u) * 26); font-weight: 800; line-height: 1.05; overflow-wrap: anywhere; }
+  #raid .sub { font-size: calc(var(--u) * 13); margin-top: calc(var(--u) * 2); }
+  #raid .rocket { position: absolute; right: calc(var(--u) * -10); top: calc(var(--u) * -18); font-size: calc(var(--u) * 34); animation: fly 1.4s ease-in-out infinite alternate; }
   @keyframes fly { from { transform: translate(0, 0) rotate(-8deg); } to { transform: translate(8px, -10px) rotate(6deg); } }
+  /* clip van de raider */
+  #clip { position: absolute; border-radius: 14px; overflow: hidden; background: #000; box-shadow: 0 12px 40px rgba(0,0,0,.55); border: 3px solid var(--accent); opacity: 0; transform: scale(.85); transition: opacity .4s, transform .5s cubic-bezier(.2,1.3,.4,1); }
+  #clip.on { opacity: 1; transform: none; }
+  #clip iframe { width: 100%; height: 100%; border: 0; }
+  #clip .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #ddd; font-size: 28px; font-weight: 700; background: repeating-linear-gradient(45deg, #26262c 0 18px, #1d1d22 18px 36px); }
 
   #hint { position: fixed; left: 10px; bottom: 8px; font: 12px system-ui, sans-serif; color: #a0a0ab; background: rgba(14,14,16,.8); padding: 4px 8px; border-radius: 6px; display: none; }
   body.preview #hint { display: block; }
@@ -55,6 +67,7 @@
   'use strict';
   // Instellingen staan in de link, zodat deze pagina zonder login en zonder server werkt.
   const P = new URLSearchParams(location.search);
+  const box = (v, d) => { const a = String(v || '').split(',').map(Number); return a.length === 4 && a.every(isFinite) ? a : d; };
   const num = (k, d, lo, hi) => { const v = parseFloat(P.get(k)); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
   const cfg = {
     type: P.get('type') || 'wall',                     // wall | combo | raid
@@ -67,7 +80,7 @@
     min: num('min', 3, 2, 100),                         // combo: vanaf hoeveel keer
     win: num('win', 8, 2, 60),                          // combo: seconden tussen twee keer dezelfde emote
     pos: P.get('pos') || 'br',
-    sound: P.get('sound') === '1',
+    sound: ['1', 'chime', 'fanfare'].includes(P.get('sound')) ? (P.get('sound') === 'fanfare' ? 'fanfare' : 'chime') : '',
     vol: num('vol', 50, 0, 100),
     text: P.get('text') || '{viewers} kijkers komen binnen!',
     color: /^[0-9a-f]{6}$/i.test(P.get('color') || '') ? '#' + P.get('color') : '#9147ff',
@@ -75,9 +88,21 @@
     preview: P.get('preview') === '1',
     off: new Set((P.get('off') || '').split(' ').filter(Boolean)),   // emotes die de streamer heeft uitgezet
     imgmode: P.get('imgmode') || 'avatar',              // raid: avatar | custom | none
+    style: P.get('style') || 'card',                    // raid: card | banner | glass | text
+    title: P.get('title') ?? 'Raid!',
+    ranim: P.get('ranim') || 'pop',                     // raid: pop | top | bottom | left | right | fade | zoom
+    rocket: P.get('rocket') !== '0',
+    tcolor: /^[0-9a-f]{6}$/i.test(P.get('tcolor') || '') ? '#' + P.get('tcolor') : '#ffffff',
+    box: box(P.get('box'), [560, 90, 800, 200]),        // raid: plek en grootte van de melding (x,y,b,h op 1920x1080)
+    clip: P.get('clip') === '1',
+    cbox: box(P.get('cbox'), [1360, 600, 520, 292]),
+    clipdur: num('clipdur', 20, 5, 60),
+    clipsnd: P.get('clipsnd') !== '0',
+    hold: P.get('hold') === '1',                        // editor: melding blijft staan
     img: /^https:\/\//.test(P.get('img') || '') ? P.get('img') : '',
   };
   document.documentElement.style.setProperty('--accent', cfg.color);
+  document.documentElement.style.setProperty('--tc', cfg.tcolor);
   if (cfg.preview) document.body.classList.add('preview');
   const stage = document.getElementById('stage');
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -134,9 +159,12 @@
       const t = actx.currentTime, g = actx.createGain();
       g.connect(actx.destination);
       g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(cfg.vol / 100 * .5, t + .02); g.gain.exponentialRampToValueAtTime(.001, t + 1.6);
-      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
-        const o = actx.createOscillator(); o.type = 'triangle'; o.frequency.value = f;
-        o.connect(g); o.start(t + i * .11); o.stop(t + 1.6);
+      const notes = cfg.sound === 'fanfare' ? [392, 392, 392, 523.25, 659.25, 783.99] : [523.25, 659.25, 783.99, 1046.5];
+      const step = cfg.sound === 'fanfare' ? .14 : .11;
+      if (cfg.sound === 'fanfare') { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(cfg.vol / 100 * .45, t + .02); g.gain.setValueAtTime(cfg.vol / 100 * .45, t + 1.1); g.gain.exponentialRampToValueAtTime(.001, t + 2.2); }
+      notes.forEach((f, i) => {
+        const o = actx.createOscillator(); o.type = cfg.sound === 'fanfare' ? 'sawtooth' : 'triangle'; o.frequency.value = f;
+        o.connect(g); o.start(t + i * step); o.stop(t + (cfg.sound === 'fanfare' ? 2.2 : 1.6));
       });
     } catch {}
   }
@@ -230,22 +258,75 @@
 
   // ---------- raid melding ----------
   const raidQ = [];
+  const holdMode = cfg.hold;
   let raidBusy = false;
   function raid(r) { raidQ.push(r); if (!raidBusy) nextRaid(); }
   function nextRaid() {
     const r = raidQ.shift();
-    if (!r) { raidBusy = false; return; }
+    if (!r) {
+      raidBusy = false;
+      // editor: na een test de voorbeeldmelding weer laten staan
+      if (holdMode && !cfg.hold) { cfg.hold = true; onRaid('PixelPiet', 42, TEST_AV, 'pixelpiet', true); }
+      return;
+    }
     raidBusy = true;
     let el = document.getElementById('raid');
-    if (!el) { el = document.createElement('div'); el.id = 'raid'; document.body.appendChild(el); }
+    if (el) el.remove();
+    el = document.createElement('div'); el.id = 'raid';
+    const [x, y, w, h] = cfg.box;
+    el.className = 's-' + cfg.style + ' a-' + cfg.ranim;
+    Object.assign(el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
+    el.style.setProperty('--u', h / 100 + 'px');
     const sub = cfg.text.replace(/\{name\}/g, r.name).replace(/\{viewers\}/g, r.viewers.toLocaleString('nl-NL'));
     const pic = cfg.imgmode === 'none' ? '' : cfg.imgmode === 'custom' && cfg.img ? cfg.img : r.avatar;
-    el.innerHTML = '<span class="rocket">🚀</span>' + (pic ? '<img src="' + esc(pic) + '" alt=""' + (cfg.imgmode === 'custom' ? ' class="custom"' : '') + '>' : '') +
-      '<div><div class="top">Raid!</div><div class="name">' + esc(r.name) + '</div><div class="sub">' + esc(sub) + '</div></div>';
-    el.style.zoom = cfg.size / 64;
+    el.innerHTML = (cfg.rocket ? '<span class="rocket">🚀</span>' : '') + (pic ? '<img src="' + esc(pic) + '" alt=""' + (cfg.imgmode === 'custom' ? ' class="custom"' : '') + '>' : '') +
+      '<div class="txt">' + (cfg.title ? '<div class="top">' + esc(cfg.title) + '</div>' : '') + '<div class="name">' + esc(r.name) + '</div>' + (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') + '</div>';
+    document.body.appendChild(el);
+    el.getBoundingClientRect();
     requestAnimationFrame(() => el.classList.add('on'));
-    chime();
-    setTimeout(() => { el.classList.remove('on'); setTimeout(nextRaid, 700); }, cfg.dur * 1000);
+    if (!cfg.hold) chime();
+    const clipMs = cfg.clip ? showClip(r) : 0;
+    if (cfg.hold) return;
+    const ms = Math.max(cfg.dur * 1000, clipMs);
+    setTimeout(() => { el.classList.remove('on'); hideClip(); setTimeout(nextRaid, 800); }, ms);
+  }
+  // clip van de raider: zoeken via de Twitch-site, afspelen in de Twitch-clipspeler
+  function clipBox() {
+    let c = document.getElementById('clip');
+    if (!c) { c = document.createElement('div'); c.id = 'clip'; document.body.appendChild(c); }
+    const [x, y, w, h] = cfg.cbox;
+    Object.assign(c.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
+    return c;
+  }
+  function hideClip() { const c = document.getElementById('clip'); if (c) { c.classList.remove('on'); setTimeout(() => { if (!c.classList.contains('on')) c.innerHTML = ''; }, 600); } }
+  function showClip(r) {
+    const c = clipBox();
+    // bij een test: een clip van je eigen kanaal als voorbeeld
+    const login = r.test ? cfg.ch : r.login;
+    if (cfg.hold || !login) {
+      c.innerHTML = '<div class="ph">🎬 Clip van ' + esc(r.name) + '</div>';
+      requestAnimationFrame(() => c.classList.add('on'));
+      return cfg.hold ? 0 : cfg.clipdur * 1000;
+    }
+    findClip(login).then((id) => {
+      if (!id) { if (r.test) { c.innerHTML = '<div class="ph">🎬 Geen clips gevonden van ' + esc(login) + '</div>'; c.classList.add('on'); setTimeout(hideClip, 4000); } return; }
+      c.innerHTML = '<iframe allow="autoplay" src="https://clips.twitch.tv/embed?clip=' + encodeURIComponent(id) + '&parent=' + encodeURIComponent(location.hostname) + '&autoplay=true&muted=' + (cfg.clipsnd ? 'false' : 'true') + '"></iframe>';
+      requestAnimationFrame(() => c.classList.add('on'));
+      setTimeout(hideClip, cfg.clipdur * 1000);
+    });
+    return cfg.clipdur * 1000;
+  }
+  // via de openbare API van de Twitch-site (geen sleutel nodig); werkt dit ooit niet meer, dan komt er alleen geen clip
+  async function findClip(login) {
+    const q = (period) => fetch('https://gql.twitch.tv/gql', { method: 'POST', headers: { 'Client-Id': 'kimne78kx3ncx6brgo4mv6wki5h1ko', 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ query: 'query($l:String!){user(login:$l){clips(first:20,criteria:{period:' + period + ',sort:VIEWS_DESC}){edges{node{slug durationSeconds}}}}}', variables: { l: login } }) })
+      .then((r) => r.json()).then((j) => ((j.data && j.data.user && j.data.user.clips && j.data.user.clips.edges) || []).map((e) => e.node).filter((c) => c.durationSeconds >= 5));
+    try {
+      // populairste clip van de afgelopen maand; geen? dan de populairste ooit
+      let list = await q('LAST_MONTH');
+      if (!list.length) list = await q('ALL_TIME');
+      return list.length ? list[0].slug : '';
+    } catch { return ''; }
   }
 
   // ---------- binnenkomende gebeurtenissen ----------
@@ -254,7 +335,7 @@
     if (cfg.type === 'wall') wall(list);
     else if (cfg.type === 'combo') comboMsg(list, user);
   }
-  function onRaid(name, viewers, avatar) { if (cfg.type === 'raid') raid({ name, viewers, avatar }); }
+  function onRaid(name, viewers, avatar, login, test) { if (cfg.type === 'raid') raid({ name, viewers, avatar: (avatar || '').replace('%s', '300x300'), login: login || '', test }); }
 
   // ---------- chat lezen (anoniem, geen login nodig) ----------
   function parseLine(line) {
@@ -294,7 +375,7 @@
         if (text.startsWith('\u0001ACTION ')) text = text.slice(8, -1);
         onChat(text, m.tags.emotes || '', m.prefix.split('!')[0]);
       } else if (m.command === 'USERNOTICE' && m.tags['msg-id'] === 'raid') {
-        onRaid(m.tags['msg-param-displayName'] || m.tags['display-name'] || '', +m.tags['msg-param-viewerCount'] || 0, m.tags['msg-param-profileImageURL'] || '');
+        onRaid(m.tags['msg-param-displayName'] || m.tags['display-name'] || '', +m.tags['msg-param-viewerCount'] || 0, m.tags['msg-param-profileImageURL'] || '', m.tags['msg-param-login'] || m.tags.login || '');
       }
     });
     ws.onclose = () => { setTimeout(connect, retry); retry = Math.min(retry * 2, 30000); };
@@ -308,16 +389,19 @@
     if (cfg.type === 'combo') { const e = combo.name && Math.random() < .85 ? combo.name : pick(); onChat(e + ' ' + e, '', 'test' + Math.floor(Math.random() * 20)); }
     else onChat(Array.from({ length: 1 + Math.floor(Math.random() * 4) }, pick).join(' '), '', 'test');
   }
-  function testRaid() { const r = DEMO_RAIDERS[Math.floor(Math.random() * DEMO_RAIDERS.length)]; onRaid(r[0], r[1], ''); }
+  // testplaatje: het R5-schild, zodat je ziet waar de profielfoto komt
+  const TEST_AV = new URL('icons/icon-192.png', location.href).href;
+  function testRaid() { const r = DEMO_RAIDERS[Math.floor(Math.random() * DEMO_RAIDERS.length)]; onRaid(r[0], r[1], TEST_AV, r[0].toLowerCase(), true); }
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data || e.data.r5 !== 'test') return;
-    if (cfg.type === 'raid') testRaid();
+    if (cfg.type === 'raid') { if (cfg.hold) { cfg.hold = false; raidQ.length = 0; raidBusy = false; } testRaid(); }
     else for (let i = 0; i < (cfg.type === 'combo' ? cfg.min + 2 : 8); i++) setTimeout(fakeChat, i * 350);
   });
 
   const hint = document.getElementById('hint');
   loadGlobal();
-  if (cfg.test) {
+  if (cfg.hold && cfg.type === 'raid') { onRaid('PixelPiet', 42, TEST_AV, 'pixelpiet', true); }
+  else if (cfg.test) {
     setInterval(() => { if (cfg.type === 'raid') testRaid(); else fakeChat(); }, cfg.type === 'raid' ? (cfg.dur + 3) * 1000 : 900);
     if (cfg.type === 'raid') testRaid();
   }

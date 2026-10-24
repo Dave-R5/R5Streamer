@@ -189,6 +189,15 @@
   .f .imgrow img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--bg); border: 1px solid var(--line); }
   .ov .pv { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: #000; }
   .ov .pv iframe { position: absolute; inset: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; }
+  .vedit { position: absolute; inset: 0; touch-action: none; }
+  .vbox { position: absolute; border: 2px dashed rgba(255,255,255,.75); border-radius: 6px; cursor: move; box-sizing: border-box; }
+  .vbox:hover, .vbox.on { border-color: var(--accent); background: rgba(145,71,255,.12); }
+  .vbox span { position: absolute; left: 0; top: -20px; font-size: 11px; background: rgba(14,14,16,.85); color: #fff; padding: 1px 6px; border-radius: 4px; white-space: nowrap; pointer-events: none; }
+  .vbox .vrz { position: absolute; right: -6px; bottom: -6px; width: 14px; height: 14px; background: var(--accent); border: 2px solid #fff; border-radius: 3px; cursor: nwse-resize; }
+  .vline { position: absolute; background: #ff4f8b; pointer-events: none; }
+  .vline.vx { top: 0; bottom: 0; width: 1px; } .vline.vy { left: 0; right: 0; height: 1px; }
+  .f .fsec { margin: 16px 0 2px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .f .fsec:first-of-type { border-top: 0; padding-top: 0; margin-top: 8px; }
   .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
   .link { font: 12px ui-monospace, Consolas, monospace; color: var(--muted); word-break: break-all; margin-top: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
   .ovchan { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -518,6 +527,7 @@
             <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
             <li><b>Kijkers in de chat</b> nu gesplitst zoals in R5 ModHub: streamer, moderators, VIP's en kijkers (log opnieuw in voor de mods- en VIP-lijst). Smallere scrollbalken.</li>
             <li><b>▣ Eigen indeling</b>: ontwerp je vaste indeling in een klein voorbeeld (vakken slepen, groter of kleiner maken, blokken aan of uit). ▦ Netjes schikken gaat daarna altijd terug naar jouw indeling. Netjes schikken en Indeling staan nu rechtsboven.</li>
+            <li><b>Raid melding helemaal zelf instellen</b>: soort melding (kaart, banner, glas, alleen tekst), kop, tekst, tekstkleur, raket, binnenkomst (inploppen, inzoomen, van boven/onder/links/rechts), geluid (belletje of fanfare) en een <b>clip van de raider</b>. Plek en grootte van de melding en de clip sleep je in het voorbeeld.</li>
             <li><b>Overlays</b>: blokken bovenaan per overlay, die de editor openen.</li>
             <li><b>Raid melding</b> (zonder streepje) met keuze voor profielfoto, eigen afbeelding of geen afbeelding.</li>
             <li><b>Emotes</b>: alle emotes van je kanaal bekijken en per emote aan of uit zetten voor de overlays. Uploaden staat er al, maar werkt nog niet.</li>
@@ -1875,22 +1885,40 @@
       ['size', 'Grootte', 'range', 90, [40, 240, 5, 'px']], ['min', 'Combo vanaf', 'range', 4, [2, 20, 1, '×']],
       ['win', 'Max. tijd tussen twee keer', 'range', 8, [3, 30, 1, 's']], ['color', 'Kleur', 'color', '#9147ff'],
       ['sound', 'Geluidje bij een nieuwe combo', 'check', false], ['vol', 'Volume', 'range', 50, [5, 100, 5, '%']]] },
-    { type: 'raid', name: '🚀 Raid melding', desc: 'Naam, afbeelding en aantal kijkers als iemand je raidt.', fields: [
-      ['text', 'Tekst ({name} = raider, {viewers} = kijkers)', 'text', '{viewers} kijkers komen binnen!'],
+    { type: 'raid', name: '🚀 Raid melding', desc: 'Helemaal zelf in te stellen: uitstraling, tekst, afbeelding, binnenkomst, geluid en een clip van de raider. Plek en grootte sleep je in het voorbeeld.', fields: [
+      ['@', 'Uitstraling'],
+      ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]],
+      ['color', 'Kleur', 'color', '#9147ff'], ['tcolor', 'Tekstkleur', 'color', '#ffffff'],
+      ['rocket', 'Raket als versiering', 'check', true],
+      ['@', 'Tekst'],
+      ['title', 'Kop (leeg = geen kop)', 'text', 'Raid!'],
+      ['text', 'Tekst onder de naam ({name} = raider, {viewers} = kijkers)', 'text', '{viewers} kijkers komen binnen!'],
+      ['@', 'Afbeelding'],
       ['imgmode', 'Afbeelding', 'select', 'avatar', [['avatar', 'Profielfoto van de raider'], ['custom', 'Eigen afbeelding'], ['none', 'Geen afbeelding']]],
       ['img', 'Link naar je eigen afbeelding (png, jpg, gif of webp)', 'image', ''],
-      ['size', 'Grootte', 'range', 64, [40, 120, 4, '']], ['dur', 'Hoe lang op beeld', 'range', 8, [3, 20, 1, 's']],
-      ['color', 'Kleur', 'color', '#9147ff'], ['sound', 'Geluid', 'check', true], ['vol', 'Volume', 'range', 60, [5, 100, 5, '%']]] },
+      ['@', 'Binnenkomst en geluid'],
+      ['ranim', 'Binnenkomen', 'select', 'pop', [['pop', 'Inploppen'], ['zoom', 'Inzoomen'], ['fade', 'Infaden'], ['top', 'Van boven'], ['bottom', 'Van onder'], ['left', 'Van links'], ['right', 'Van rechts']]],
+      ['dur', 'Hoe lang op beeld', 'range', 8, [3, 30, 1, 's']],
+      ['sound', 'Geluid', 'select', 'chime', [['chime', 'Belletje'], ['fanfare', 'Fanfare'], ['none', 'Geen geluid']]], ['vol', 'Volume', 'range', 60, [5, 100, 5, '%']],
+      ['@', 'Clip van de raider'],
+      ['clip', 'Een clip van de raider afspelen', 'check', false],
+      ['clipdur', 'Clip maximaal', 'range', 20, [5, 60, 1, 's']], ['clipsnd', 'Clip met geluid', 'check', true]] },
   ];
   const ovCfg = store.get('ov', {});
-  OVERLAYS.forEach((o) => { ovCfg[o.type] = Object.assign(Object.fromEntries(o.fields.map((f) => [f[0], f[3]])), ovCfg[o.type] || {}); });
+  OVERLAYS.forEach((o) => { ovCfg[o.type] = Object.assign(Object.fromEntries(o.fields.filter((f) => f[0] !== '@').map((f) => [f[0], f[3]])), ovCfg[o.type] || {}); });
+  Object.values(ovCfg).forEach((c) => { if (c && typeof c === 'object' && !Array.isArray(c)) delete c['@']; });
   if (!Array.isArray(ovCfg.off)) ovCfg.off = [];   // emotes die uit staan voor de overlays
+  // raid: plek en grootte (x,y,b,h op 1920x1080); oude aan/uit-geluid omzetten
+  if (typeof ovCfg.raid.sound === 'boolean') ovCfg.raid.sound = ovCfg.raid.sound ? 'chime' : 'none';
+  if (!ovCfg.raid.box) ovCfg.raid.box = '560,90,800,200';
+  if (!ovCfg.raid.cbox) ovCfg.raid.cbox = '1360,600,520,292';
+  delete ovCfg.raid.size;
   let ovSel = store.get('ovSel', 'wall');
   const ovChan = () => (state.me && !state.demo ? state.me.login : '') || store.get('ovChan', '') || (state.demo ? 'demo' : '');
   const base = location.href.replace(/[#?].*$/, '').replace(/index\.html$/, '').replace(/\/?$/, '/');
   function ovUrl(o, extra) {
     const p = new URLSearchParams({ type: o.type, ch: ovChan() });
-    Object.entries(ovCfg[o.type]).forEach(([k, v]) => { if (k === 'img' && ovCfg[o.type].imgmode !== 'custom') return; p.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : k === 'color' ? String(v).replace('#', '') : v); });
+    Object.entries(ovCfg[o.type]).forEach(([k, v]) => { if (k === 'img' && ovCfg[o.type].imgmode !== 'custom') return; p.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : k === 'color' || k === 'tcolor' ? String(v).replace('#', '') : v); });
     if (o.type !== 'raid' && ovCfg.off.length) p.set('off', ovCfg.off.join(' '));
     Object.entries(extra || {}).forEach(([k, v]) => p.set(k, v));
     return base + 'overlay.html?' + p.toString();
@@ -1915,7 +1943,8 @@
     if (edFor !== o.type || !box.querySelector('.ov')) {
       edFor = o.type;
       box.innerHTML = '<div class="card ov"><div class="f"><h3>' + o.name + '</h3><div class="hint">' + o.desc + '</div>' + o.fields.map((f) => fieldHtml(o, f)).join('') + '</div>' +
-        '<div><div class="pv"><iframe title="Voorbeeld"></iframe></div><div class="acts"><button data-a="test">▶ Test</button><label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-a="loop"> doorlopend testen</label>' +
+        '<div><div class="pv"><iframe title="Voorbeeld"></iframe>' + (o.type === 'raid' ? '<div class="vedit"></div>' : '') + '</div>' +
+        (o.type === 'raid' ? '<p class="hint" style="margin:6px 0 0">✥ Sleep de vakken <b>Melding</b> en <b>Clip</b> in het voorbeeld naar de plek die je wilt; met de hoek rechtsonder maak je ze groter of kleiner. Ze lijnen uit op het midden en de randen.</p>' : '') + '<div class="acts"><button data-a="test">▶ Test</button><label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-a="loop"> doorlopend testen</label>' +
         '<button class="primary" data-a="copy" style="margin-left:auto">📋 Kopieer OBS-link</button></div><div class="link"></div>' +
         (o.type !== 'raid' ? '<p class="hint">' + (ovCfg.off.length ? ovCfg.off.length + ' emote(s) staan uit; ' : '') + 'welke emotes meedoen kies je bij <a href="#" data-ov-go="emotes">😀 Emotes</a>.</p>' : '') + '</div></div>';
       wireOvEditor(o, box);
@@ -1923,6 +1952,7 @@
     refreshOverlay(o);
   }
   function fieldHtml(o, [k, l, t, , x]) {
+    if (k === '@') return '<div class="fsec">' + l + '</div>';
     const id = 'f-' + o.type + '-' + k, v = ovCfg[o.type][k];
     const hide = k === 'img' && ovCfg[o.type].imgmode !== 'custom' ? ' hidden' : '';
     if (t === 'select') return '<label for="' + id + '">' + l + '</label><select id="' + id + '" data-k="' + k + '">' + x.map(([val, lab]) => '<option value="' + val + '"' + (val === v ? ' selected' : '') + '>' + lab + '</option>').join('') + '</select>';
@@ -1934,6 +1964,7 @@
     return '<label for="' + id + '">' + l + '</label><input id="' + id + '" data-k="' + k + '" value="' + esc(v) + '" maxlength="80" autocomplete="off">';
   }
   function wireOvEditor(o, card) {
+    if (o.type === 'raid') wireVedit(o, card);
     card.querySelectorAll('[data-k]').forEach((inp) => {
       const live = inp.tagName === 'INPUT' && inp.type !== 'checkbox';
       inp.addEventListener(live ? 'input' : 'change', () => {
@@ -1941,6 +1972,7 @@
         ovCfg[o.type][k] = inp.type === 'checkbox' ? inp.checked : inp.type === 'range' ? +inp.value : inp.value.trim();
         if (inp.type === 'range') inp.nextElementSibling.textContent = inp.value + inp.nextElementSibling.dataset.u;
         if (k === 'imgmode') card.querySelector('[data-imgbox]').hidden = inp.value !== 'custom';
+        if (k === 'clip' && o.type === 'raid') drawVedit(card);
         if (k === 'img') { const pv = card.querySelector('[data-imgpv]'); if (/^https:\/\//.test(inp.value.trim())) pv.src = inp.value.trim(); else pv.removeAttribute('src'); }
         store.set('ov', ovCfg);
         clearTimeout(card.t); card.t = setTimeout(() => refreshOverlay(o, true), 400);
@@ -1961,7 +1993,59 @@
     if (go) go.onclick = (e) => { e.preventDefault(); ovSel = 'emotes'; store.set('ovSel', ovSel); renderOverlays(); };
     new ResizeObserver(() => scalePv(card)).observe(card.querySelector('.pv'));
   }
-  function scalePv(card) { const pv = card.querySelector('.pv'), f = card.querySelector('iframe'); if (pv && f) f.style.transform = 'scale(' + pv.clientWidth / 1920 + ')'; }
+  function scalePv(card) { const pv = card.querySelector('.pv'), f = card.querySelector('iframe'); if (pv && f) f.style.transform = 'scale(' + pv.clientWidth / 1920 + ')'; if (card.querySelector('.vedit')) drawVedit(card); }
+  // visuele editor voor de raid melding: vakken op het 1920x1080-voorbeeld slepen en vergroten
+  const parseBox = (v) => String(v).split(',').map(Number);
+  function drawVedit(card) {
+    const ve = card.querySelector('.vedit'), pv = card.querySelector('.pv');
+    if (!ve || !pv) return;
+    const sc = pv.clientWidth / 1920, c = ovCfg.raid;
+    const boxes = [['box', '🚀 Melding']].concat(c.clip ? [['cbox', '🎬 Clip']] : []);
+    ve.innerHTML = boxes.map(([k, lab]) => { const [x, y, w, h] = parseBox(c[k]); return '<div class="vbox" data-b="' + k + '" style="left:' + x * sc + 'px;top:' + y * sc + 'px;width:' + w * sc + 'px;height:' + h * sc + 'px"><span>' + lab + ' · ' + w + '×' + h + '</span><i class="vrz"></i></div>'; }).join('') +
+      '<div class="vline vx" hidden></div><div class="vline vy" hidden></div>';
+  }
+  function wireVedit(o, card) {
+    const ve = card.querySelector('.vedit');
+    ve.addEventListener('pointerdown', (e) => {
+      const b = e.target.closest('.vbox');
+      if (!b) return;
+      e.preventDefault();
+      const k = b.dataset.b, resize = e.target.classList.contains('vrz'), pv = card.querySelector('.pv'), sc = pv.clientWidth / 1920;
+      const o0 = parseBox(ovCfg.raid[k]), sx = e.clientX, sy = e.clientY, lx = ve.querySelector('.vx'), ly = ve.querySelector('.vy');
+      let cur = o0.slice();
+      b.classList.add('on');
+      // magneet: midden en randen van het scherm, 10 px marge
+      const snapX = [[0, 0], [960, 960], [1920, 1920], [10, 0], [1910, 1920]], SN = 14;
+      const snap = (v, list) => { let best = null; list.forEach(([p, line]) => { if (Math.abs(v - p) < SN && (!best || Math.abs(v - p) < Math.abs(v - best[0]))) best = [p, line]; }); return best; };
+      const mv = (ev) => {
+        const dx = Math.round((ev.clientX - sx) / sc), dy = Math.round((ev.clientY - sy) / sc);
+        let [x, y, w, h] = o0, gx = null, gy = null;
+        if (resize) {
+          w = Math.max(160, Math.min(1920 - x, w + dx)); h = Math.max(60, Math.min(1080 - y, h + dy));
+          const r = snap(x + w, snapX); if (r) { w = r[0] - x; gx = r[1]; }
+        } else {
+          x = Math.max(0, Math.min(1920 - w, x + dx)); y = Math.max(0, Math.min(1080 - h, y + dy));
+          const cx = snap(x + w / 2, [[960, 960]]), l = snap(x, snapX), r = snap(x + w, snapX);
+          if (cx) { x = 960 - w / 2; gx = 960; } else if (l) { x = l[0]; gx = l[1]; } else if (r) { x = r[0] - w; gx = r[1]; }
+          const cy = snap(y + h / 2, [[540, 540]]), t = snap(y, [[0, 0], [10, 0]]), bt = snap(y + h, [[1080, 1080], [1070, 1080]]);
+          if (cy) { y = 540 - h / 2; gy = 540; } else if (t) { y = t[0]; gy = t[1]; } else if (bt) { y = bt[0] - h; gy = bt[1]; }
+        }
+        cur = [x, y, w, h].map(Math.round);
+        Object.assign(b.style, { left: cur[0] * sc + 'px', top: cur[1] * sc + 'px', width: cur[2] * sc + 'px', height: cur[3] * sc + 'px' });
+        b.querySelector('span').textContent = (k === 'box' ? '🚀 Melding' : '🎬 Clip') + ' · ' + cur[2] + '×' + cur[3];
+        lx.hidden = gx == null; if (gx != null) lx.style.left = gx * sc + 'px';
+        ly.hidden = gy == null; if (gy != null) ly.style.top = gy * sc + 'px';
+      };
+      const up = () => {
+        removeEventListener('pointermove', mv, true); removeEventListener('pointerup', up, true); removeEventListener('pointercancel', up, true);
+        b.classList.remove('on'); lx.hidden = ly.hidden = true;
+        ovCfg.raid[k] = cur.join(','); store.set('ov', ovCfg);
+        refreshOverlay(o, true);
+      };
+      addEventListener('pointermove', mv, true); addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
+    });
+    drawVedit(card);
+  }
   function refreshOverlay(o, force) {
     const card = $('#ovEditor');
     const f = card.querySelector('iframe');
@@ -1969,7 +2053,7 @@
     const okCh = ovChan() && ovChan() !== 'demo';
     card.querySelector('.link').textContent = okCh ? ovUrl(o) : (ovChan() === 'demo' ? 'In de demo is er geen echte link: vul bovenaan je eigen kanaalnaam in.' : 'Vul bovenaan je kanaalnaam in om de link te maken.');
     const loop = card.querySelector('[data-a=loop]').checked;
-    const src = ovUrl(o, Object.assign({ preview: '1' }, loop ? { test: '1' } : {}, okCh ? {} : { ch: '' }));
+    const src = ovUrl(o, Object.assign({ preview: '1' }, loop ? { test: '1' } : o.type === 'raid' ? { hold: '1' } : {}, okCh ? {} : { ch: '' }));
     if ((force || f.dataset.src !== src) && state.page === 'overlays') { f.dataset.src = src; f.src = src; }
     scalePv(card);
   }
