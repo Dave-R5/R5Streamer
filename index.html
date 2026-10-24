@@ -70,10 +70,14 @@
   .w .rz { position: absolute; right: 2px; bottom: 2px; width: 16px; height: 16px; cursor: nwse-resize; touch-action: none;
     background: linear-gradient(135deg, transparent 50%, var(--line) 50%, var(--line) 60%, transparent 60%, transparent 70%, var(--line) 70%, var(--line) 80%, transparent 80%); opacity: .8; }
   .w .rz:hover { opacity: 1; filter: brightness(1.8); }
-  .w.dragging { opacity: .45; }
-  .w.drop-before { box-shadow: -4px 0 0 var(--accent); }
-  .w.drop-after { box-shadow: 4px 0 0 var(--accent); }
+  /* vrij plaatsen zoals in R5 ModHub: elk blok staat op zijn eigen plek (raster van 8 px, magneet naar andere blokken) */
+  .grid.free { display: block; position: relative; }
+  .grid.free > .w { position: absolute; margin: 0; }
+  .grid.free > .w:not(.moving):not(.sizing) { transition: left .15s ease, top .15s ease; }
+  .grid.settling > .w { transition: none !important; }
+  .w.moving { box-shadow: 0 10px 30px rgba(0,0,0,.6); opacity: .92; }
   .w.sizing { outline: 2px dashed var(--accent); outline-offset: 2px; }
+  .snapline { position: absolute; background: var(--accent); pointer-events: none; z-index: 9999; }
   body.moving, body.moving * { cursor: grabbing !important; user-select: none; }
   @media (max-width: 1000px) { .grid > .w { grid-column: span 12 !important; } }
 
@@ -121,7 +125,9 @@
   .list .row img { height: 24px; }
   .list .row .rk { color: var(--muted); width: 18px; text-align: right; font-size: 12px; }
   .list .row .dm { display: block; color: var(--muted); font-size: 12px; }
-  .list .row .amt { color: #3ecf6e; font-weight: 700; }
+  .list .row .amt { color: #3ecf6e; font-weight: 700; white-space: nowrap; }
+  .list .row .bitsamt { color: #b58cff; }
+  .dnote { padding: 4px 0 8px; border-bottom: 1px solid var(--line); margin-bottom: 2px; }
   .filters { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
   .filters button { font-size: 12px; padding: 2px 9px; border-radius: 12px; color: var(--muted); }
   .filters button.on { color: var(--text); border-color: var(--accent); }
@@ -198,6 +204,11 @@
   .scopes .ok { color: #3ecf6e; } .scopes .no { color: #ff6b6b; }
   code { font: 12px ui-monospace, Consolas, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
   .integ { padding: 4px 14px 12px; }
+  .ovhead { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .ovhead .ovchan { margin: 0; }
+  details.obs { margin-top: 8px; } details.obs summary { cursor: pointer; user-select: none; } details.obs[open] summary { margin-bottom: 4px; }
+  .intpick { display: flex; gap: 22px; flex-wrap: wrap; margin: 4px 0 6px; }
+  h3.sub { font-size: 13px; margin: 18px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding-top: 12px; border-top: 1px solid var(--line); }
   .integ ol { margin: 8px 0 4px; padding-left: 20px; font-size: 12px; color: var(--muted); }
   .integ .st-ok { color: #3ecf6e; } .integ .st-err { color: #ff6b6b; }
   .warn { font-size: 12px; color: var(--gold); margin: 6px 0 0; }
@@ -266,12 +277,12 @@
   </div>
 
   <section class="page" id="page-overview">
-    <div class="bar" data-need-dash><span class="hint" id="ovFor"></span><span class="sp"></span><button data-layout="overview" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button></div>
+    <div class="bar" data-need-dash><span class="hint" id="ovFor"></span><span class="sp"></span><button data-tidy="overview" title="Alle blokken netjes naast en onder elkaar zetten, zonder gaten">▦ Netjes schikken</button><button data-layout="overview" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button></div>
     <div class="grid" id="grid-overview" data-need-dash></div>
   </section>
 
   <section class="page" id="page-live" hidden>
-    <div class="bar" data-need-dash><span class="hint">Tijdens je stream: chat, kijkers en wat er gebeurt.</span><span class="sp"></span><button data-layout="live" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button></div>
+    <div class="bar" data-need-dash><span class="hint">Tijdens je stream: chat, kijkers en wat er gebeurt.</span><span class="sp"></span><button data-tidy="live" title="Alle blokken netjes naast en onder elkaar zetten, zonder gaten">▦ Netjes schikken</button><button data-layout="live" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button></div>
     <div class="grid" id="grid-live" data-need-dash></div>
   </section>
 
@@ -279,20 +290,23 @@
   <section class="page" id="page-overlays" hidden>
     <div class="grid">
       <div class="card s12">
-        <h2>🎨 Overlays voor OBS</h2>
-        <div class="ovchan">
-          <label for="ovChan" class="hint">Kanaal</label>
-          <input id="ovChan" placeholder="jouw kanaalnaam" autocomplete="off">
-          <span class="hint" id="ovChanHint"></span>
+        <div class="ovhead">
+          <h2 style="margin:0">🎨 Overlays voor OBS</h2>
+          <div class="ovchan">
+            <label for="ovChan" class="hint">Kanaal</label>
+            <input id="ovChan" placeholder="jouw kanaalnaam" autocomplete="off">
+            <span class="hint" id="ovChanHint"></span>
+          </div>
         </div>
-        <div class="obs">
+        <details class="obs" id="obsHelp">
+          <summary class="hint">ℹ Hoe zet ik een overlay in OBS?</summary>
           <ol>
             <li>Kies hieronder een overlay, stel hem in en kijk in het voorbeeld hoe het eruitziet (▶ Test).</li>
             <li>Klik op <b>📋 Kopieer OBS-link</b>.</li>
             <li>In OBS: <b>Bronnen → + → Browser</b>, plak de link bij <b>URL</b>, breedte <b>1920</b>, hoogte <b>1080</b>.</li>
           </ol>
           <p class="hint">De overlays lezen alleen je openbare chat. Er staat geen inlogcode in de link, dus je kunt hem gerust gebruiken.</p>
-        </div>
+        </details>
       </div>
       <div class="s12 ovtiles" id="ovTiles"></div>
       <div class="s12" id="ovEditor"></div>
@@ -320,13 +334,19 @@
         <p class="hint">In de demo wordt niets opgeslagen en gaat er niets naar Twitch.</p>
       </div>
       <div class="card s12">
-        <h2>🔌 Koppelingen</h2>
-        <label class="optrow"><input type="checkbox" id="intOn"> Koppelingen met andere diensten gebruiken (bijv. voor donaties)</label>
-        <div id="intBox" hidden>
-          <details class="help-sec" id="seBox">
+        <h2>📊 Overzicht en Live</h2>
+        <label class="optrow"><input type="checkbox" id="optBots" checked> Bekende bots niet meetellen bij top-chatters (Nightbot, StreamElements, …)</label>
+        <label for="optBotList" class="hint">Extra namen om niet mee te tellen (komma's ertussen)</label>
+        <input id="optBotList" placeholder="bijv. mijnbot, soundalerts" autocomplete="off">
+        <label class="optrow"><input type="checkbox" id="optTitle"> Kijkers en live-tijd in de titel van het browsertabblad</label>
+        <p class="hint">Blokken zet je vrij neer door ze aan ⠿ te slepen (ze lijnen vanzelf uit, net als in R5 ModHub); met de hoek rechtsonder maak je ze groter of kleiner. Aan- of uitzetten doe je met <b>✎ Indeling</b>, alles weer strak zetten met <b>▦ Netjes schikken</b>.</p>
+        <h3 class="sub">🔌 Koppelingen</h3>
+        <p class="hint" style="margin-top:0">Zet een vinkje bij de dienst die je gebruikt; dan verschijnt het vak om hem te koppelen. Zo zie je je donaties bij Overzicht en Live.</p>
+        <div class="intpick"><label class="chk"><input type="checkbox" id="seOn"> 🟢 StreamElements</label><label class="chk"><input type="checkbox" id="tpOn"> 🟣 TipeeeStream</label></div>
+        <div id="intBox">
+          <details class="help-sec" id="seBox" hidden>
             <summary><span class="hi">🟢</span>StreamElements<small id="seSum">niet gekoppeld</small></summary>
             <div class="integ f">
-              <label class="chk"><input type="checkbox" id="seOn"> StreamElements gebruiken voor donaties (tips)</label>
               <label for="seId">Account ID</label>
               <input id="seId" placeholder="bijv. 5f1a2b3c4d5e6f7a8b9c0d1e" autocomplete="off" spellcheck="false">
               <label for="seJwt">JWT Token</label>
@@ -340,10 +360,9 @@
               <p class="warn">⚠ De JWT Token is geheim, net als een wachtwoord: deel hem met niemand. Hij blijft alleen op dit apparaat en gaat alleen naar StreamElements. Bij exporteren gaat hij niet mee.</p>
             </div>
           </details>
-          <details class="help-sec" id="tpBox">
+          <details class="help-sec" id="tpBox" hidden>
             <summary><span class="hi">🟣</span>TipeeeStream<small id="tpSum">niet gekoppeld</small></summary>
             <div class="integ f">
-              <label class="chk"><input type="checkbox" id="tpOn"> TipeeeStream gebruiken voor donaties</label>
               <label for="tpKey">API key</label>
               <input id="tpKey" type="password" placeholder="bijv. 3f9a1c…" autocomplete="off" spellcheck="false">
               <div class="acts"><button class="primary" id="tpTest">Verbinding testen</button><button id="tpClear">Wissen</button><span class="hint" id="tpState"></span></div>
@@ -355,18 +374,10 @@
               <p class="warn">⚠ De API key is geheim, net als een wachtwoord: deel hem met niemand. Hij blijft alleen op dit apparaat en gaat alleen naar TipeeeStream. Bij exporteren gaat hij niet mee.</p>
             </div>
           </details>
-          <p class="hint">Gebruik je beide? Dan worden de donaties samengevoegd. Meer koppelingen (bijv. Streamlabs of Ko-fi) komen later.</p>
+          <p class="hint" style="margin-bottom:0">Gebruik je beide? Dan worden de donaties samengevoegd. Meer koppelingen (bijv. Streamlabs of Ko-fi) komen later.</p>
         </div>
       </div>
-      <div class="card s6">
-        <h2>📊 Overzicht en Live</h2>
-        <label class="optrow"><input type="checkbox" id="optBots" checked> Bekende bots niet meetellen bij top-chatters (Nightbot, StreamElements, …)</label>
-        <label for="optBotList" class="hint">Extra namen om niet mee te tellen (komma's ertussen)</label>
-        <input id="optBotList" placeholder="bijv. mijnbot, soundalerts" autocomplete="off">
-        <label class="optrow"><input type="checkbox" id="optTitle"> Kijkers en live-tijd in de titel van het browsertabblad</label>
-        <p class="hint">Blokken verplaats je door ze aan ⠿ te slepen; met de hoek rechtsonder maak je ze groter of kleiner. Aan- of uitzetten doe je met <b>✎ Indeling</b>.</p>
-      </div>
-      <div class="card s6">
+      <div class="card s12">
         <h2>💾 Gegevens</h2>
         <p class="hint" style="margin-top:0">Alles staat alleen op dit apparaat (in je browser). Met exporteren maak je een back-up of zet je het over naar een ander apparaat.</p>
         <div class="row">
@@ -388,7 +399,7 @@
 <div class="modal-bg" id="layModal">
   <div class="modal">
     <h2 id="layTitle">Indeling</h2>
-    <p class="hint" style="margin:0">Zet blokken en tegels aan of uit. Verplaatsen doe je door een blok aan ⠿ te slepen, de grootte met de hoek rechtsonder (dubbelklik op de hoek zet hem terug).</p>
+    <p class="hint" style="margin:0">Zet blokken en tegels aan of uit. Verplaatsen doe je door een blok aan ⠿ te slepen naar elke plek die je wilt; het lijnt vanzelf uit op de andere blokken. De grootte verander je met de hoek rechtsonder (dubbelklik op de hoek zet hem terug). ▦ Netjes schikken zet alles weer strak naast elkaar.</p>
     <h3>Blokken</h3>
     <div class="lay-list" id="layBlocks"></div>
     <h3>Tegels met cijfers</h3>
@@ -447,7 +458,7 @@
       <summary><span class="hi">⚙</span>Instellingen<small>account, koppelingen en gegevens</small></summary>
       <ul>
         <li>In- en uitloggen, en zien welke rechten R5 StreamerHub van Twitch heeft.</li>
-        <li><b>Koppelingen</b>: zet het vinkje aan en klap <b>StreamElements</b> of <b>TipeeeStream</b> open. Vul je gegevens in (met uitleg waar je ze vindt); dan zie je je donaties in het overzicht en bij Live.</li>
+        <li><b>Koppelingen</b> (onder Overzicht en Live): zet het vinkje bij <b>StreamElements</b> of <b>TipeeeStream</b>; dan verschijnt het vak om te koppelen. Vul je gegevens in (met uitleg waar je ze vindt); dan zie je je donaties in het overzicht en bij Live.</li>
         <li>Bots niet meetellen bij de top-chatters.</li>
         <li><b>Exporteren / importeren</b> van je instellingen, indeling en streamcijfers.</li>
       </ul>
@@ -459,8 +470,9 @@
           <summary>Nieuw sinds 1.0 <small>24 okt 2026</small></summary>
           <ul>
             <li><b>Nieuw tabblad Live</b>: chat (ook zelf sturen), minispeler die op pauze start, kijkerslijst, activiteit en donaties.</li>
-            <li><b>Zelf indelen</b>: blokken op Overzicht en Live verslepen, groter of kleiner maken, en blokken en tegels aan of uit zetten met ✎ Indeling.</li>
-            <li><b>Donaties via StreamElements en TipeeeStream</b>: nieuwe koppelingen bij ⚙ Instellingen → Koppelingen. Donaties komen in een tegel, in de activiteit en in een eigen blok.</li>
+            <li><b>Zelf indelen zoals in R5 ModHub</b>: blokken op Overzicht en Live vrij neerzetten waar je wilt (ze lijnen vanzelf uit en schuiven opzij), vrij groter of kleiner maken, en blokken en tegels aan of uit zetten met ✎ Indeling. ▦ Netjes schikken zet alles weer strak.</li>
+            <li><b>Donaties via StreamElements en TipeeeStream</b>: zet bij ⚙ Instellingen → Overzicht en Live een vinkje per dienst. Donaties komen in een tegel, in de activiteit en in het blok <b>Donaties + Bits</b>, samen met wie hoeveel bits gaf.</li>
+            <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
             <li><b>Overlays</b>: blokken bovenaan per overlay, die de editor openen.</li>
             <li><b>Raid melding</b> (zonder streepje) met keuze voor profielfoto, eigen afbeelding of geen afbeelding.</li>
             <li><b>Emotes</b>: alle emotes van je kanaal bekijken en per emote aan of uit zetten voor de overlays. Uploaden staat er al, maar werkt nog niet.</li>
@@ -546,7 +558,7 @@
   }
   function newSession(id, start, title, game) {
     return { id, start, end: start, title, game, vh: [], raidsIn: [], msgs: 0, chatters: {}, emotes: {}, bits: 0, subs: 0, gifts: 0,
-      follows: 0, redeems: 0, feed: [], donations: [], folStart: state.followers, subStart: state.subs };
+      follows: 0, redeems: 0, feed: [], donations: [], cheers: [], folStart: state.followers, subStart: state.subs };
   }
   function shown() { return cur || (state.demo ? null : sessions[0]) || null; }
 
@@ -737,7 +749,12 @@
     cur.chatters[login] = (cur.chatters[login] || [0, name || login]);
     cur.chatters[login][0]++;
     emotesIn(text, emTag).forEach(([n, u]) => { const e = cur.emotes[n] || (cur.emotes[n] = [0, u]); e[0]++; });
-    if (bits) event('bits', '💎', (name || login) + ' gaf ' + bits + ' bits', text.replace(/\b[a-z]+\d+\b/gi, '').trim(), { bits });
+    if (bits) {
+      const msg = text.replace(/\b[a-z]+\d+\b/gi, '').trim();
+      (cur.cheers = cur.cheers || []).push({ t: Date.now(), name: name || login, bits, msg });
+      if (cur.cheers.length > 300) cur.cheers.shift();
+      event('bits', '💎', (name || login) + ' gaf ' + bits + ' bits', msg, { bits });
+    }
     dirty();
   }
   function event(kind, ic, text, sub, add, t) {
@@ -770,7 +787,7 @@
 
   // ---------- koppelingen: StreamElements (donaties) ----------
   // De JWT Token blijft op dit apparaat en gaat alleen naar api.streamelements.com.
-  const integ = Object.assign({ on: false }, store.get('integ', {}));
+  const integ = Object.assign({}, store.get('integ', {}), { on: true });   // 'on' was het oude algemene vinkje; nu telt het vinkje per dienst
   integ.se = Object.assign({ on: false, id: '', jwt: '' }, integ.se || {});
   integ.tp = Object.assign({ on: false, key: '' }, integ.tp || {});
   const saveInteg = () => store.set('integ', integ);
@@ -825,8 +842,8 @@
   }
   setInterval(donPoll, 30000);
   function renderInteg() {
-    $('#intOn').checked = integ.on;
-    $('#intBox').hidden = !integ.on;
+    $('#seBox').hidden = !integ.se.on;
+    $('#tpBox').hidden = !integ.tp.on;
     $('#seOn').checked = integ.se.on;
     if (document.activeElement !== $('#seId')) $('#seId').value = integ.se.id;
     if (document.activeElement !== $('#seJwt')) $('#seJwt').value = integ.se.jwt;
@@ -838,8 +855,7 @@
     $('#tpState').innerHTML = tp.status ? '<span class="' + (tp.ok ? 'st-ok' : 'st-err') + '">' + esc(tp.ok ? '✓ Verbonden met TipeeeStream' : '✗ ' + tp.status) + '</span>' : '';
     $('#seState').innerHTML = se.status ? '<span class="' + (se.ok ? 'st-ok' : 'st-err') + '">' + esc(se.ok ? '✓ Verbonden met StreamElements' : '✗ ' + se.status) + '</span>' : '';
   }
-  $('#intOn').onchange = (e) => { integ.on = e.target.checked; saveInteg(); renderInteg(); if (integ.on && !integ.se.id && !integ.tp.key) $('#seBox').open = true; donPoll(); renderDash(); };
-  $('#seOn').onchange = (e) => { integ.se.on = e.target.checked; saveInteg(); renderInteg(); donPoll(); renderDash(); };
+  $('#seOn').onchange = (e) => { integ.se.on = e.target.checked; saveInteg(); renderInteg(); if (integ.se.on && !(integ.se.id && integ.se.jwt)) $('#seBox').open = true; donPoll(); renderDash(); };
   $('#seId').oninput = (e) => { integ.se.id = e.target.value.trim(); se.ok = false; se.status = ''; saveInteg(); renderInteg(); };
   $('#seJwt').oninput = (e) => { integ.se.jwt = e.target.value.trim().replace(/^Bearer\s+/i, ''); se.ok = false; se.status = ''; saveInteg(); renderInteg(); };
   $('#seTest').onclick = async () => {
@@ -852,7 +868,7 @@
   };
   $('#seClear').onclick = () => { integ.se = { on: false, id: '', jwt: '' }; se.tips = null; se.ok = false; se.status = ''; saveInteg(); renderInteg(); renderDash(); toast('StreamElements-gegevens gewist.'); };
 
-  $('#tpOn').onchange = (e) => { integ.tp.on = e.target.checked; saveInteg(); renderInteg(); donPoll(); renderDash(); };
+  $('#tpOn').onchange = (e) => { integ.tp.on = e.target.checked; saveInteg(); renderInteg(); if (integ.tp.on && !integ.tp.key) $('#tpBox').open = true; donPoll(); renderDash(); };
   $('#tpKey').oninput = (e) => { integ.tp.key = e.target.value.trim(); tp.ok = false; tp.status = ''; saveInteg(); renderInteg(); };
   $('#tpTest').onclick = async () => {
     if (!integ.tp.key) return toast('Vul eerst je API key in.', 'err');
@@ -988,21 +1004,21 @@
     topChat:   { page: 'overview', title: '💬 Top-chatters', span: 4, h: 340, html: () => '<div class="list" data-r="topChat"></div>' },
     topEmo:    { page: 'overview', title: '😀 Meest gebruikte emotes', span: 4, h: 340, html: () => '<div class="list" data-r="topEmo"></div>' },
     followers: { page: 'overview', title: '💜 Nieuwste volgers', span: 4, h: 340, extra: '<span class="hint" data-r="folTotal"></span>', html: () => '<div class="list" data-r="followers"></div>' },
-    donations: { page: 'overview', title: '💰 Donaties', span: 4, h: 300, extra: '<span class="hint" data-r="dsum"></span>', html: () => '<div class="list" data-r="donations"></div>' },
+    donations: { page: 'overview', title: '💰 Donaties + Bits', span: 4, h: 300, extra: '<span class="hint" data-r="dsum"></span>', html: () => '<div class="list" data-r="donations"></div>' },
     history:   { page: 'overview', title: '🗓 Vorige streams', span: 12, h: null, extra: '<span class="hint">cijfers die R5 StreamerHub heeft bijgehouden</span>', html: () => '<div class="tablewrap"><table data-r="history"></table></div>' },
     vods:      { page: 'overview', title: '🎞 Video\'s op Twitch', span: 12, h: null, extra: '<span class="hint">laatste uitzendingen</span>', html: () => '<div class="tablewrap"><table data-r="vods"></table></div>' },
     ltiles:    { page: 'live', title: '🔢 Nu', span: 12, h: null, html: () => '<div class="tiles"></div>' },
     lplayer:   { page: 'live', title: '📺 Minispeler', span: 5, h: 330, html: () => '<div class="player"></div>' },
     lchat:     { page: 'live', title: '💬 Chat', span: 4, h: 640, html: () => '<div class="chat" id="lchat"></div><form class="send"><input placeholder="Stuur een bericht…" maxlength="500" autocomplete="off"><button class="primary">Stuur</button></form>' },
-    lfeed:     { page: 'live', title: '⚡ Activiteit', span: 3, h: 400, html: () => '<div class="filters"></div><div class="feed"></div>' },
+    lfeed:     { page: 'live', title: '⚡ Activiteit', span: 3, h: 640, html: () => '<div class="filters"></div><div class="feed"></div>' },
     lviewers:  { page: 'live', title: '👥 Kijkers in de chat', span: 5, h: 300, extra: '<span class="hint" data-r="vcount"></span>', html: () => '<input class="vsearch" placeholder="Zoek kijker…" autocomplete="off"><div class="list" data-r="viewers"></div>' },
-    ldon:      { page: 'live', title: '💰 Donaties', span: 3, h: 228, extra: '<span class="hint" data-r="dsum"></span>', html: () => '<div class="list" data-r="donations"></div>' },
+    ldon:      { page: 'live', title: '💰 Donaties + Bits', span: 4, h: 300, extra: '<span class="hint" data-r="dsum"></span>', html: () => '<div class="list" data-r="donations"></div>' },
   };
   const DEFAULT_LAYOUT = {
     overview: ['stream', 'tiles', 'graph', 'feed', 'topChat', 'topEmo', 'followers', 'donations', 'history', 'vods'],
     live: ['ltiles', 'lplayer', 'lchat', 'lfeed', 'lviewers', 'ldon'],
   };
-  const DEFAULT_OFF = { overview: ['donations'], live: [] };
+  const DEFAULT_OFF = { overview: [], live: [] };
   // tegels met cijfers; op Live staan er standaard een paar uit
   const TILES = [
     ['viewers', '👁 Kijkers'], ['peak', '📈 Piek'], ['avg', '➗ Gemiddeld'], ['uptime', '⏱ Live-tijd'], ['followers', '💜 Volgers'], ['subs', '⭐ Abonnees'],
@@ -1010,7 +1026,7 @@
   ];
   const TILES_OFF = { overview: ['uptime', 'chatters'], live: ['avg', 'chatters', 'redeems', 'raids'] };
   let layout = store.get('layout', null);
-  function defLayout(page) { return { order: DEFAULT_LAYOUT[page].slice(), off: DEFAULT_OFF[page].slice(), size: {}, tilesOff: TILES_OFF[page].slice() }; }
+  function defLayout(page) { return { order: DEFAULT_LAYOUT[page].slice(), off: DEFAULT_OFF[page].slice(), size: {}, pos: {}, tilesOff: TILES_OFF[page].slice() }; }
   if (!layout || typeof layout !== 'object') layout = {};
   ['overview', 'live'].forEach((p) => {
     const l = layout[p] = Object.assign(defLayout(p), layout[p] || {});
@@ -1022,75 +1038,226 @@
   function buildGrid(page) {
     const g = $('#grid-' + page), l = layout[page];
     Object.keys(W).forEach((id) => { if (WIDGETS[id].page === page) delete W[id]; });
-    g.innerHTML = '';
+    g.innerHTML = ''; g.classList.remove('free');
     l.order.filter((id) => !l.off.includes(id)).forEach((id) => {
-      const d = WIDGETS[id], sz = l.size[id] || {};
+      const d = WIDGETS[id];
       const el = document.createElement('div');
       el.className = 'card w'; el.dataset.w = id;
-      el.innerHTML = '<h2><span class="grip" title="Slepen om te verplaatsen">⠿</span>' + d.title + '<span class="r">' + (d.extra || '') + '</span></h2><div class="wb">' + d.html() + '</div><span class="rz" title="Slepen om groter of kleiner te maken (dubbelklik: standaard)"></span>';
-      applySize(el, sz.span || d.span, sz.h !== undefined ? sz.h : d.h);
+      el.innerHTML = '<h2><span class="grip" title="Slepen om te verplaatsen">⠿</span>' + d.title + '<span class="r">' + (d.extra || '') + '</span></h2><div class="wb">' + d.html() + '</div><span class="rz" title="Slepen om groter of kleiner te maken (dubbelklik: standaardgrootte)"></span>';
       g.appendChild(el);
       W[id] = el;
-      el.querySelector('.grip').addEventListener('pointerdown', (e) => dragCard(e, el, page));
+      el.querySelector('.grip').addEventListener('pointerdown', (e) => freeDrag(e, el, page));
       const rz = el.querySelector('.rz');
-      rz.addEventListener('pointerdown', (e) => resizeCard(e, el, page));
-      rz.addEventListener('dblclick', () => { delete l.size[id]; saveLayout(); applySize(el, d.span, d.h); redrawAfterResize(id); });
+      rz.addEventListener('pointerdown', (e) => freeResize(e, el, page));
+      rz.addEventListener('dblclick', () => { delete l.pos[id]; delete l.size[id]; saveLayout(); placeFree(page); redrawAfterResize(id); });
     });
     wireWidgets(page);
     renderDash(); renderVods();
-  }
-  function applySize(el, span, h) {
-    el.style.gridColumn = 'span ' + span;
-    el.style.height = h ? h + 'px' : '';
-    el.classList.toggle('fixed', !!h);
+    placeFree(page);
   }
   function redrawAfterResize(id) { if (id === 'graph') drawGraph(shown()); }
-  function dragCard(e, el, page) {
+
+  // ---------- vrij plaatsen (zoals R5 ModHub) ----------
+  // pos[id] = {x, y, w, h} in px. Eerst schikt het raster alles netjes; daarna staat elk blok vrij waar je het neerzet.
+  const GRID = 8, SNAP = 12;
+  const freeMq = matchMedia('(max-width: 1000px)');
+  freeMq.addEventListener('change', () => { placeFree('overview'); placeFree('live'); });
+  const visIds = (page) => layout[page].order.filter((id) => !layout[page].off.includes(id) && W[id]);
+  const rectOf = (page, id) => layout[page].pos[id];
+  function applyPos(page, id) {
+    const el = W[id], r = layout[page].pos[id];
+    // auto = zo hoog als de inhoud (tot je hem zelf groter of kleiner maakt)
+    el.style.left = r.x + 'px'; el.style.top = r.y + 'px'; el.style.width = r.w + 'px'; el.style.height = r.auto ? '' : r.h + 'px';
+    el.classList.toggle('fixed', !r.auto);
+  }
+  // blokken die met hun inhoud meegroeien: hoogte bijhouden en wat eronder staat opzij schuiven
+  const freeRO = new ResizeObserver((ents) => {
+    const pages = new Set();
+    ents.forEach((en) => {
+      const el = en.target, id = el.dataset.w, page = WIDGETS[id] && WIDGETS[id].page, r = page && layout[page].pos[id];
+      if (!r || !r.auto || !el.parentElement || !el.parentElement.classList.contains('free') || !el.offsetHeight) return;
+      if (el.offsetHeight !== r.h) { r.h = el.offsetHeight; pages.add(page); }
+    });
+    pages.forEach((page) => { resolveOverlaps(page, null); fitGrid(page); });
+  });
+  function gridMode(page) {
+    // raster (ook op een smal scherm/telefoon): blokken onder en naast elkaar
+    const g = $('#grid-' + page), l = layout[page];
+    g.classList.remove('free'); g.style.height = g.style.minWidth = '';
+    visIds(page).forEach((id) => {
+      const d = WIDGETS[id], sz = l.size[id] || {}, h = sz.h !== undefined ? sz.h : d.h, el = W[id];
+      el.style.left = el.style.top = el.style.width = '';
+      el.style.gridColumn = 'span ' + (sz.span || d.span);
+      el.style.height = h ? h + 'px' : '';
+      el.classList.toggle('fixed', !!h);
+    });
+  }
+  function placeFree(page) {
+    const g = $('#grid-' + page), l = layout[page];
+    if (!g) return;
+    if (!g.offsetWidth) { g.classList.remove('free'); return; }   // tabblad niet zichtbaar: bij openen opnieuw
+    const ids = visIds(page);
+    gridMode(page);
+    if (freeMq.matches) return;
+    // nieuwe blokken: eerst de maat en plek uit het raster overnemen
+    const gr = g.getBoundingClientRect(), meas = {};
+    ids.forEach((id) => {
+      const r = W[id].getBoundingClientRect(), sz = l.size[id] || {}, auto = !(sz.h !== undefined ? sz.h : WIDGETS[id].h);
+      meas[id] = { x: Math.round((r.left - gr.left) / GRID) * GRID, y: Math.round((r.top - gr.top) / GRID) * GRID, w: Math.round(r.width), h: Math.round(r.height), auto };
+      meas[id].w = Math.min(meas[id].w, g.clientWidth - meas[id].x);
+    });
+    const allNew = ids.every((id) => !l.pos[id]);
+    const fresh = ids.filter((id) => !l.pos[id]);
+    g.classList.add('free', 'settling');
+    ids.forEach((id) => { W[id].style.gridColumn = ''; freeRO.observe(W[id]); });
+    if (allNew) { fresh.forEach((id) => { l.pos[id] = meas[id]; }); compactUp(page); }
+    else fresh.forEach((id) => {
+      const m = meas[id], rects = ids.filter((o) => o !== id && l.pos[o]).map((o) => l.pos[o]);
+      l.pos[id] = Object.assign(findSpot(m.w, m.h, rects, g.clientWidth), { w: m.w, h: m.h, auto: m.auto });
+    });
+    ids.forEach((id) => applyPos(page, id));
+    ids.forEach((id) => { const r = l.pos[id]; if (r.auto) r.h = W[id].offsetHeight; });
+    resolveOverlaps(page, null);
+    fitGrid(page);
+    requestAnimationFrame(() => g.classList.remove('settling'));
+    if (fresh.length) saveLayout();
+    ids.forEach(redrawAfterResize);
+  }
+  const hit = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  // blokken mogen niet over elkaar: wat overlapt schuift naar beneden (het gesleepte of vergrote blok blijft staan)
+  function resolveOverlaps(page, fixed) {
+    const l = layout[page], settled = fixed ? [fixed] : [];
+    let changed = false;
+    visIds(page).filter((id) => id !== fixed && l.pos[id]).sort((a, b) => l.pos[a].y - l.pos[b].y || l.pos[a].x - l.pos[b].x).forEach((id) => {
+      const r = l.pos[id];
+      let again = true;
+      while (again) {
+        again = false;
+        for (const o of settled) { const q = l.pos[o]; if (hit(r, q)) { r.y = q.y + q.h + GRID; again = true; changed = true; } }
+      }
+      settled.push(id);
+      applyPos(page, id);
+    });
+    return changed;
+  }
+  // gaten dichten: elk blok schuift zo ver mogelijk omhoog (bij de eerste keer en bij netjes schikken)
+  function compactUp(page) {
+    const l = layout[page], done = [];
+    visIds(page).filter((id) => l.pos[id]).sort((a, b) => l.pos[a].y - l.pos[b].y || l.pos[a].x - l.pos[b].x).forEach((id) => {
+      const r = l.pos[id];
+      let y = 0;
+      done.forEach((o) => { const q = l.pos[o]; if (r.x < q.x + q.w && r.x + r.w > q.x) y = Math.max(y, q.y + q.h + GRID); });
+      r.y = y; done.push(id);
+    });
+  }
+  function findSpot(w, h, rects, width) {
+    const busy = (x, y) => rects.some((r) => x < r.x + r.w + GRID && x + w + GRID > r.x && y < r.y + r.h + GRID && y + h + GRID > r.y);
+    const maxY = rects.reduce((m, r) => Math.max(m, r.y + r.h), 0);
+    for (let y = 0; y <= maxY; y += GRID) for (let x = 0; x + w <= Math.max(width, w); x += GRID) if (!busy(x, y)) return { x, y };
+    return { x: 0, y: maxY + GRID };
+  }
+  function fitGrid(page) {
+    const g = $('#grid-' + page), l = layout[page];
+    if (!g.classList.contains('free')) return;
+    let w = 0, h = 0;
+    visIds(page).forEach((id) => { const r = l.pos[id]; if (r) { w = Math.max(w, r.x + r.w); h = Math.max(h, r.y + r.h); } });
+    g.style.height = h + 'px'; g.style.minWidth = w + 'px';
+  }
+  // magneet: kandidaten [positie, waar de hulplijn komt]
+  function snapCands(page, id, w, h) {
+    const xs = [[0, 0]], ys = [[0, 0]], gw = $('#grid-' + page).clientWidth;
+    xs.push([gw - w, gw]);
+    visIds(page).filter((o) => o !== id).forEach((o) => {
+      const r = layout[page].pos[o];
+      xs.push([r.x, r.x], [r.x + r.w + GRID, r.x + r.w], [r.x + r.w - w, r.x + r.w], [r.x - w - GRID, r.x]);
+      ys.push([r.y, r.y], [r.y + r.h + GRID, r.y + r.h], [r.y + r.h - h, r.y + r.h], [r.y - h - GRID, r.y]);
+    });
+    return [xs, ys];
+  }
+  const snapTo = (v, cands) => { let best = null; cands.forEach((c) => { if (c[0] >= 0 && Math.abs(v - c[0]) < SNAP && (!best || Math.abs(v - c[0]) < Math.abs(v - best[0]))) best = c; }); return best; };
+  function snapLines(g) {
+    const lx = document.createElement('div'), ly = document.createElement('div');
+    lx.className = ly.className = 'snapline';
+    g.appendChild(lx); g.appendChild(ly);
+    return {
+      show(sx, sy) {
+        lx.style.display = sx ? '' : 'none'; lx.style.left = (sx ? sx[1] : 0) + 'px'; lx.style.top = '0'; lx.style.width = '2px'; lx.style.height = g.scrollHeight + 'px';
+        ly.style.display = sy ? '' : 'none'; ly.style.top = (sy ? sy[1] : 0) + 'px'; ly.style.left = '0'; ly.style.height = '2px'; ly.style.width = g.scrollWidth + 'px';
+      },
+      remove() { lx.remove(); ly.remove(); },
+    };
+  }
+  // blok slepen naar elke plek; de rest schuift live opzij, en terug als je verder sleept
+  function freeDrag(e, el, page) {
+    const g = el.parentElement, l = layout[page], id = el.dataset.w, me = l.pos[id];
+    if (!g.classList.contains('free') || !me) return;
     e.preventDefault();
-    const g = el.parentElement, l = layout[page];
-    let target = null, after = false, moved = false;
-    const sx = e.clientX, sy = e.clientY;
-    const clear = () => g.querySelectorAll('.drop-before,.drop-after').forEach((x) => x.classList.remove('drop-before', 'drop-after'));
+    const sx = e.clientX, sy = e.clientY, ox = me.x, oy = me.y;
+    const [xs, ys] = snapCands(page, id, me.w, me.h);
+    const orig = visIds(page).filter((o) => o !== id).map((o) => [o, l.pos[o].x, l.pos[o].y]);
+    let moved = false, lines = null;
+    el.style.zIndex = 5;
     const mv = (ev) => {
-      if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return;
-      if (!moved) { moved = true; el.classList.add('dragging'); document.body.classList.add('moving'); }
-      clear();
-      const over = document.elementFromPoint(ev.clientX, ev.clientY);
-      const c = over && over.closest('.w');
-      target = c && c !== el && c.parentElement === g ? c : null;
-      if (target) { const r = target.getBoundingClientRect(); after = ev.clientX > r.left + r.width / 2; target.classList.add(after ? 'drop-after' : 'drop-before'); }
+      if (!moved) {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 4) return;
+        moved = true; el.classList.add('moving'); document.body.classList.add('moving'); lines = snapLines(g);
+      }
+      ev.preventDefault();
+      const rx = ox + ev.clientX - sx, ry = oy + ev.clientY - sy;
+      const snx = snapTo(rx, xs), sny = snapTo(ry, ys);
+      me.x = Math.max(0, snx ? snx[0] : Math.round(rx / GRID) * GRID);
+      me.y = Math.max(0, sny ? sny[0] : Math.round(ry / GRID) * GRID);
+      applyPos(page, id);
+      orig.forEach(([o, x, y]) => { l.pos[o].x = x; l.pos[o].y = y; });
+      resolveOverlaps(page, id);
+      fitGrid(page);
+      lines.show(snx, sny);
     };
     const up = () => {
-      removeEventListener('pointermove', mv); removeEventListener('pointerup', up);
-      el.classList.remove('dragging'); document.body.classList.remove('moving'); clear();
-      if (!target) return;
-      l.order.splice(l.order.indexOf(el.dataset.w), 1);
-      l.order.splice(l.order.indexOf(target.dataset.w) + (after ? 1 : 0), 0, el.dataset.w);
-      saveLayout();
-      if (after) target.after(el); else target.before(el);
-      drawGraph(shown());
+      removeEventListener('pointermove', mv, true); removeEventListener('pointerup', up, true); removeEventListener('pointercancel', up, true);
+      if (lines) lines.remove();
+      el.classList.remove('moving'); document.body.classList.remove('moving'); el.style.zIndex = '';
+      if (moved) { saveLayout(); fitGrid(page); }
     };
-    addEventListener('pointermove', mv); addEventListener('pointerup', up);
+    addEventListener('pointermove', mv, true); addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
   }
-  function resizeCard(e, el, page) {
+  // hoek rechtsonder: vrij groter of kleiner, met magneet naar de randen van andere blokken
+  function freeResize(e, el, page) {
+    const g = el.parentElement, l = layout[page], id = el.dataset.w, me = l.pos[id];
+    if (!g.classList.contains('free') || !me) return;
     e.preventDefault(); e.stopPropagation();
-    const g = el.parentElement, l = layout[page], id = el.dataset.w;
-    const col = (g.clientWidth - 11 * 12) / 12;
-    const r0 = el.getBoundingClientRect(), sx = e.clientX, sy = e.clientY;
+    const sx = e.clientX, sy = e.clientY, ow = me.w, oh = me.h;
+    const [xs, ys] = snapCands(page, id, 0, 0);
+    const orig = visIds(page).filter((o) => o !== id).map((o) => [o, l.pos[o].x, l.pos[o].y]);
+    const lines = snapLines(g);
     el.classList.add('sizing'); document.body.classList.add('moving');
-    let span = Math.round((r0.width + 12) / (col + 12)), h = Math.round(r0.height);
     const mv = (ev) => {
-      span = Math.max(2, Math.min(12, Math.round((r0.width + ev.clientX - sx + 12) / (col + 12))));
-      h = Math.max(120, Math.min(1400, Math.round(r0.height + ev.clientY - sy)));
-      applySize(el, span, h);
+      ev.preventDefault();
+      const rr = me.x + Math.max(220, ow + ev.clientX - sx), rb = me.y + Math.max(120, oh + ev.clientY - sy);
+      // rechter- en onderrand op de randen van andere blokken
+      const snx = snapTo(rr, xs.map(([, line]) => [line, line])), sny = snapTo(rb, ys.map(([, line]) => [line, line]));
+      me.auto = false;
+      me.w = Math.max(220, (snx ? snx[0] : Math.round(rr / GRID) * GRID) - me.x);
+      me.h = Math.max(120, (sny ? sny[0] : Math.round(rb / GRID) * GRID) - me.y);
+      applyPos(page, id);
+      orig.forEach(([o, x, y]) => { l.pos[o].x = x; l.pos[o].y = y; });
+      resolveOverlaps(page, id);
+      fitGrid(page);
+      lines.show(snx && [0, snx[0]], sny && [0, sny[0]]);
       redrawAfterResize(id);
     };
     const up = () => {
-      removeEventListener('pointermove', mv); removeEventListener('pointerup', up);
-      el.classList.remove('sizing'); document.body.classList.remove('moving');
-      l.size[id] = { span, h }; saveLayout(); redrawAfterResize(id);
+      removeEventListener('pointermove', mv, true); removeEventListener('pointerup', up, true); removeEventListener('pointercancel', up, true);
+      lines.remove(); el.classList.remove('sizing'); document.body.classList.remove('moving');
+      saveLayout(); fitGrid(page); redrawAfterResize(id);
     };
-    addEventListener('pointermove', mv); addEventListener('pointerup', up);
+    addEventListener('pointermove', mv, true); addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
+  }
+  // netjes schikken: volgorde van boven naar beneden houden, plekken opnieuw uit het raster
+  function tidyLayout(page) {
+    const l = layout[page];
+    l.order.sort((a, b) => { const p = l.pos[a], q = l.pos[b]; return !p || !q ? 0 : p.y - q.y || p.x - q.x; });
+    l.pos = {}; saveLayout(); placeFree(page);
   }
   // knoppen en invoer in de blokken koppelen
   const gameIds = {};
@@ -1228,18 +1395,22 @@
     const e = Object.entries(by).sort((a, b) => b[1] - a[1]);
     return e.length ? e.map(([c, a]) => money(a, c)).join(' + ') : money(0, 'EUR');
   }
+  // Donaties + Bits: één lijst van wie wat geeft (geld via de koppelingen, bits uit de chat)
   function renderDonations(s) {
     ['donations', 'ldon'].forEach((id) => {
       const el = R(id, 'donations');
       if (!el) return;
-      const on = state.demo || donActive();
-      const list = state.demo ? (cur ? cur.donations.slice().reverse() : []) : donList();
-      const ss = id === 'ldon' ? cur : s;
-      R(id, 'dsum').textContent = on && ss ? donTotal(ss.donations) + (id === 'ldon' || ss === cur ? ' deze stream' : ' laatste stream') : '';
-      if (!on) { el.innerHTML = '<div class="empty">Koppel StreamElements of TipeeeStream bij ⚙ Instellingen → <b>Koppelingen</b> om je donaties hier te zien.</div>'; return; }
-      if (!state.demo && !donOk()) { el.innerHTML = '<div class="empty">' + (donErr() ? esc(donErr()) + '. Kijk bij ⚙ Instellingen → Koppelingen.' : 'Donaties laden…') + '</div>'; return; }
-      el.innerHTML = list.length ? list.slice(0, 25).map((d) => '<div class="row"><span style="flex:1;min-width:0"><b>' + esc(d.name) + '</b>' + (d.msg ? '<span class="dm">' + esc(d.msg) + '</span>' : '') + '</span><span class="n"><span class="amt">' + money(d.amount, d.cur) + '</span><br>' + ago(d.t) + '</span></div>').join('')
-        : '<div class="empty">Nog geen donaties.</div>';
+      const on = state.demo || donActive(), ss = id === 'ldon' ? cur : s;
+      const dons = !on ? [] : state.demo ? (cur ? cur.donations : []) : donOk() ? donList() : [];
+      const cheers = ss && ss.cheers ? ss.cheers : [];
+      const bitsSum = cheers.reduce((a, c) => a + c.bits, 0);
+      R(id, 'dsum').textContent = ss ? [on ? donTotal(ss.donations) : '', bitsSum ? nl(bitsSum) + ' bits' : ''].filter(Boolean).join(' + ') + (on || bitsSum ? (id === 'ldon' || ss === cur ? ' deze stream' : ' laatste stream') : '') : '';
+      const list = [...dons.map((d) => Object.assign({ k: 'don' }, d)), ...cheers.map((c) => Object.assign({ k: 'bits' }, c))].sort((x, y) => y.t - x.t).slice(0, 40);
+      const note = !on ? '<div class="hint dnote">💰 Donaties zie je hier als je StreamElements of TipeeeStream koppelt bij ⚙ Instellingen.</div>'
+        : !state.demo && !donOk() ? '<div class="hint dnote">' + (donErr() ? esc(donErr()) + '. Kijk bij ⚙ Instellingen.' : 'Donaties laden…') + '</div>' : '';
+      el.innerHTML = note + (list.length ? list.map((d) => '<div class="row"><span style="flex:1;min-width:0"><b>' + esc(d.name) + '</b>' + (d.msg ? '<span class="dm">' + esc(d.msg) + '</span>' : '') + '</span><span class="n">' +
+        (d.k === 'bits' ? '<span class="amt bitsamt">💎 ' + nl(d.bits) + ' bits</span>' : '<span class="amt">💰 ' + money(d.amount, d.cur) + '</span>') + '<br>' + ago(d.t) + '</span></div>').join('')
+        : '<div class="empty">Nog geen ' + (on ? 'donaties of bits' : 'bits') + (ss ? ' deze stream' : '') + '.</div>');
     });
   }
   const sdur = (ms) => dur(ms).replace(/ u /, 'u ').replace(/ min$/, 'm');
@@ -1410,6 +1581,7 @@
   });
   $('#layReset').onclick = () => { layout[layPage] = defLayout(layPage); saveLayout(); buildGrid(layPage); drawLayout(); toast('Standaardindeling hersteld.'); };
   document.querySelectorAll('[data-layout]').forEach((b) => { b.onclick = () => openLayout(b.dataset.layout); });
+  document.querySelectorAll('[data-tidy]').forEach((b) => { b.onclick = () => { tidyLayout(b.dataset.tidy); toast('Blokken netjes geschikt.'); }; });
 
   // ---------- demo ----------
   const DEMO_USERS = ['kaaskop99', 'PixelPiet', 'GamerGirl_NL', 'Henk_de_Tank', 'luna_moon', 'xXSniperXx', 'Bram', 'Nightbot', 'mia_plays', 'Sjoerd'];
@@ -1434,6 +1606,7 @@
       .forEach(([m, kind, ic, text]) => cur.feed.push({ t: now - m * 60000, kind, ic, text, sub: '' }));
     cur.donations.forEach((d) => cur.feed.push({ t: d.t, kind: 'donation', ic: '💰', text: d.name + ' doneerde ' + money(d.amount, d.cur), sub: d.msg }));
     cur.feed.sort((a, b) => b.t - a.t);
+    cur.cheers = [[20, 'PixelPiet', 250, 'GG!'], [44, 'kaaskop99', 100, '']].map(([m, name, bits, msg]) => ({ t: now - m * 60000, name, bits, msg }));
     for (let i = 0; i < 400; i++) demoChat();
     vods = [];
     Object.entries(TW_BASE).forEach(([n, id]) => put(n, twEmoteUrl(id), 'twitch', true));
@@ -1452,7 +1625,7 @@
     if (!state.demo || !cur) return;
     for (let i = 0; i < 1 + Math.floor(Math.random() * 2); i++) demoChat();
     if (Math.random() < .06) { const n = DEMO_USERS[Math.floor(Math.random() * 7)] + Math.floor(Math.random() * 99); state.followers++; recentFollows.unshift({ user_name: n, followed_at: new Date().toISOString() }); event('follow', '💜', n + ' volgt je nu', '', { follows: 1 }); }
-    if (Math.random() < .02) event('bits', '💎', DEMO_USERS[Math.floor(Math.random() * 7)] + ' gaf 100 bits', 'lekker bezig!', { bits: 100 });
+    if (Math.random() < .02) { const u = DEMO_USERS[Math.floor(Math.random() * 7)]; cur.cheers.push({ t: Date.now(), name: u, bits: 100, msg: 'lekker bezig!' }); event('bits', '💎', u + ' gaf 100 bits', 'lekker bezig!', { bits: 100 }); }
     if (Math.random() < .015) { const d = { id: 'd' + Date.now(), t: Date.now(), name: DEMO_USERS[Math.floor(Math.random() * 7)], amount: [1, 2, 5][Math.floor(Math.random() * 3)], cur: 'EUR', msg: 'Top stream!' }; cur.donations.push(d); event('donation', '💰', d.name + ' doneerde ' + money(d.amount, d.cur), d.msg, {}); }
     const last = cur.vh[cur.vh.length - 1];
     if (force || Date.now() - last[0] > 60000) cur.vh.push([Date.now(), Math.max(1, last[1] + Math.round(Math.random() * 8 - 3)), 'Minecraft']);
@@ -1671,7 +1844,7 @@
     document.querySelectorAll('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.page === p));
     document.querySelectorAll('.page').forEach((s) => { s.hidden = s.id !== 'page-' + p; });
     $('#welcome').hidden = !!(state.me || state.demo) || !['overview', 'live'].includes(p);
-    if (p === 'overview' || p === 'live') { renderDash(); if (p === 'overview') drawGraph(shown()); if (p === 'live' && W.lchat) $('#lchat').scrollTop = 1e9; }
+    if (p === 'overview' || p === 'live') { if (!$('#grid-' + p).classList.contains('free')) placeFree(p); renderDash(); if (p === 'overview') drawGraph(shown()); if (p === 'live' && W.lchat) $('#lchat').scrollTop = 1e9; }
     if (p === 'overlays') renderOverlays();
   }
   $('#nav').onclick = (e) => { const b = e.target.closest('[data-page]'); if (b) showPage(b.dataset.page); };
