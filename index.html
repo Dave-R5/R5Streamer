@@ -540,6 +540,7 @@
             <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
             <li><b>Kijkers in de chat</b> nu gesplitst zoals in R5 ModHub: streamer, moderators, VIP's en kijkers (log opnieuw in voor de mods- en VIP-lijst). Smallere scrollbalken.</li>
             <li><b>Windows-app</b>: R5 StreamerHub als programma, met automatische updates (⚙ Instellingen → Windows-app). Nieuw logo: rode S.</li>
+            <li>Emote-wall en emote-combo: nieuwe keuze <b>Vrije keuze</b> bij de plek; sleep en vergroot het vak in het voorbeeld.</li>
             <li>Raid-clip start nu vanzelf in de testweergave (zonder geluid in de editor, met geluid in OBS).</li>
             <li><b>▣ Eigen indeling</b>: ontwerp je vaste indeling in een klein voorbeeld (vakken slepen, groter of kleiner maken, blokken aan of uit). ▦ Netjes schikken gaat daarna altijd terug naar jouw indeling. Netjes schikken en Indeling staan nu rechtsboven.</li>
             <li><b>Raid melding helemaal zelf instellen</b>: soort melding (kaart, banner, glas, alleen tekst), kop, tekst, tekstkleur, raket, binnenkomst (inploppen, inzoomen, van boven/onder/links/rechts), geluid (belletje of fanfare) en een <b>clip van de raider</b>. Plek en grootte van de melding en de clip sleep je in het voorbeeld.</li>
@@ -1892,11 +1893,12 @@
   // ---------- overlays ----------
   const OVERLAYS = [
     { type: 'wall', name: '🧱 Emote-wall', desc: 'Emotes uit je chat verschijnen op je scherm.', fields: [
+      ['zone', 'Plek op het scherm', 'select', 'full', [['full', 'Hele scherm'], ['free', 'Vrije keuze (sleep het vak in het voorbeeld)']]],
       ['anim', 'Beweging', 'select', 'rise', [['rise', 'Omhoog zweven'], ['rain', 'Naar beneden regenen'], ['pop', 'Opploppen op een plek'], ['bounce', 'Stuiteren over het scherm']]],
       ['size', 'Grootte', 'range', 72, [24, 200, 4, 'px']], ['dur', 'Hoe lang op beeld', 'range', 6, [2, 20, 1, 's']],
       ['per', 'Maximaal per bericht', 'range', 5, [1, 20, 1, '']], ['max', 'Maximaal tegelijk op beeld', 'range', 60, [5, 200, 5, '']]] },
     { type: 'combo', name: '🔥 Emote-combo', desc: 'Spamt je chat dezelfde emote, dan verschijnt een grote teller.', fields: [
-      ['pos', 'Plek op het scherm', 'select', 'br', [['br', 'Rechtsonder'], ['bl', 'Linksonder'], ['tr', 'Rechtsboven'], ['tl', 'Linksboven'], ['tc', 'Boven in het midden'], ['c', 'Midden']]],
+      ['pos', 'Plek op het scherm', 'select', 'br', [['br', 'Rechtsonder'], ['bl', 'Linksonder'], ['tr', 'Rechtsboven'], ['tl', 'Linksboven'], ['tc', 'Boven in het midden'], ['c', 'Midden'], ['free', 'Vrije keuze (sleep het vak in het voorbeeld)']]],
       ['size', 'Grootte', 'range', 90, [40, 240, 5, 'px']], ['min', 'Combo vanaf', 'range', 4, [2, 20, 1, '×']],
       ['win', 'Max. tijd tussen twee keer', 'range', 8, [3, 30, 1, 's']], ['color', 'Kleur', 'color', '#9147ff'],
       ['sound', 'Geluidje bij een nieuwe combo', 'check', false], ['vol', 'Volume', 'range', 50, [5, 100, 5, '%']]] },
@@ -1928,12 +1930,20 @@
   if (!ovCfg.raid.box) ovCfg.raid.box = '560,90,800,200';
   if (!ovCfg.raid.cbox) ovCfg.raid.cbox = '1360,600,520,292';
   delete ovCfg.raid.size;
+  if (!ovCfg.wall.area) ovCfg.wall.area = '460,140,1000,800';   // emote-wall: eigen vak
+  if (!ovCfg.combo.cbx) ovCfg.combo.cbx = '1380,820,480,200';  // combo: eigen vak
+  // vakken die je in het voorbeeld kunt slepen, per overlay
+  const VBOXES = {
+    raid: (c) => [['box', '🚀 Melding']].concat(c.clip ? [['cbox', '🎬 Clip']] : []),
+    wall: (c) => (c.zone === 'free' ? [['area', '🧱 Emote-vlak']] : []),
+    combo: (c) => (c.pos === 'free' ? [['cbx', '🔥 Combo']] : []),
+  };
   let ovSel = store.get('ovSel', 'wall');
   const ovChan = () => (state.me && !state.demo ? state.me.login : '') || store.get('ovChan', '') || (state.demo ? 'demo' : '');
   const base = location.href.replace(/[#?].*$/, '').replace(/index\.html$/, '').replace(/\/?$/, '/');
   function ovUrl(o, extra) {
     const p = new URLSearchParams({ type: o.type, ch: ovChan() });
-    Object.entries(ovCfg[o.type]).forEach(([k, v]) => { if (k === 'img' && ovCfg[o.type].imgmode !== 'custom') return; p.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : k === 'color' || k === 'tcolor' ? String(v).replace('#', '') : v); });
+    Object.entries(ovCfg[o.type]).forEach(([k, v]) => { const c = ovCfg[o.type]; if ((k === 'img' && c.imgmode !== 'custom') || (k === 'area' && c.zone !== 'free') || (k === 'cbx' && c.pos !== 'free')) return; p.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : k === 'color' || k === 'tcolor' ? String(v).replace('#', '') : v); });
     if (o.type !== 'raid' && ovCfg.off.length) p.set('off', ovCfg.off.join(' '));
     Object.entries(extra || {}).forEach(([k, v]) => p.set(k, v));
     return base + 'overlay.html?' + p.toString();
@@ -1957,9 +1967,9 @@
     const o = OVERLAYS.find((x) => x.type === ovSel) || OVERLAYS[0];
     if (edFor !== o.type || !box.querySelector('.ov')) {
       edFor = o.type;
-      box.innerHTML = '<div class="card ov"><div class="f"><h3>' + o.name + '</h3><div class="hint">' + o.desc + '</div>' + o.fields.map((f) => fieldHtml(o, f)).join('') + '</div>' +
-        '<div><div class="pv"><iframe title="Voorbeeld" allow="autoplay; fullscreen"></iframe>' + (o.type === 'raid' ? '<div class="vedit"></div>' : '') + '</div>' +
-        (o.type === 'raid' ? '<p class="hint" style="margin:6px 0 0">✥ Sleep de vakken <b>Melding</b> en <b>Clip</b> in het voorbeeld naar de plek die je wilt; met de hoek rechtsonder maak je ze groter of kleiner. Ze lijnen uit op het midden en de randen.</p>' : '') + '<div class="acts"><button data-a="test">▶ Test</button><label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-a="loop"> doorlopend testen</label>' +
+      box.innerHTML = '<div class="card ov" data-type="' + o.type + '"><div class="f"><h3>' + o.name + '</h3><div class="hint">' + o.desc + '</div>' + o.fields.map((f) => fieldHtml(o, f)).join('') + '</div>' +
+        '<div><div class="pv"><iframe title="Voorbeeld" allow="autoplay; fullscreen"></iframe><div class="vedit"></div></div>' +
+        '<p class="hint" data-vhint style="margin:6px 0 0"></p>' + '<div class="acts"><button data-a="test">▶ Test</button><label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-a="loop"> doorlopend testen</label>' +
         '<button class="primary" data-a="copy" style="margin-left:auto">📋 Kopieer OBS-link</button></div><div class="link"></div>' +
         (o.type !== 'raid' ? '<p class="hint">' + (ovCfg.off.length ? ovCfg.off.length + ' emote(s) staan uit; ' : '') + 'welke emotes meedoen kies je bij <a href="#" data-ov-go="emotes">😀 Emotes</a>.</p>' : '') + '</div></div>';
       wireOvEditor(o, box);
@@ -1979,7 +1989,7 @@
     return '<label for="' + id + '">' + l + '</label><input id="' + id + '" data-k="' + k + '" value="' + esc(v) + '" maxlength="80" autocomplete="off">';
   }
   function wireOvEditor(o, card) {
-    if (o.type === 'raid') wireVedit(o, card);
+    wireVedit(o, card);
     card.querySelectorAll('[data-k]').forEach((inp) => {
       const live = inp.tagName === 'INPUT' && inp.type !== 'checkbox';
       inp.addEventListener(live ? 'input' : 'change', () => {
@@ -1987,7 +1997,7 @@
         ovCfg[o.type][k] = inp.type === 'checkbox' ? inp.checked : inp.type === 'range' ? +inp.value : inp.value.trim();
         if (inp.type === 'range') inp.nextElementSibling.textContent = inp.value + inp.nextElementSibling.dataset.u;
         if (k === 'imgmode') card.querySelector('[data-imgbox]').hidden = inp.value !== 'custom';
-        if (k === 'clip' && o.type === 'raid') drawVedit(card);
+        if (k === 'clip' || k === 'zone' || k === 'pos') drawVedit(card);
         if (k === 'img') { const pv = card.querySelector('[data-imgpv]'); if (/^https:\/\//.test(inp.value.trim())) pv.src = inp.value.trim(); else pv.removeAttribute('src'); }
         store.set('ov', ovCfg);
         clearTimeout(card.t); card.t = setTimeout(() => refreshOverlay(o, true), 400);
@@ -2009,13 +2019,18 @@
     new ResizeObserver(() => scalePv(card)).observe(card.querySelector('.pv'));
   }
   function scalePv(card) { const pv = card.querySelector('.pv'), f = card.querySelector('iframe'); if (pv && f) f.style.transform = 'scale(' + pv.clientWidth / 1920 + ')'; if (card.querySelector('.vedit')) drawVedit(card); }
-  // visuele editor voor de raid melding: vakken op het 1920x1080-voorbeeld slepen en vergroten
+  // visuele editor (raid, en emote-wall/combo bij vrije keuze): vakken op het 1920x1080-voorbeeld slepen en vergroten
   const parseBox = (v) => String(v).split(',').map(Number);
   function drawVedit(card) {
     const ve = card.querySelector('.vedit'), pv = card.querySelector('.pv');
     if (!ve || !pv) return;
-    const sc = pv.clientWidth / 1920, c = ovCfg.raid;
-    const boxes = [['box', '🚀 Melding']].concat(c.clip ? [['cbox', '🎬 Clip']] : []);
+    const t = card.querySelector('.ov').dataset.type, sc = pv.clientWidth / 1920, c = ovCfg[t];
+    const boxes = VBOXES[t](c), hint = card.querySelector('[data-vhint]');
+    if (t === 'combo') { const r = card.querySelector('[data-k=size]').parentNode; r.hidden = r.previousElementSibling.hidden = !!boxes.length; }
+    if (hint) {
+      hint.hidden = !boxes.length;
+      hint.innerHTML = '✥ Sleep ' + (boxes.length > 1 ? 'de vakken ' : 'het vak ') + boxes.map((b) => '<b>' + b[1].replace(/^\S+ /, '') + '</b>').join(' en ') + ' in het voorbeeld naar de plek die je wilt; met de hoek rechtsonder maak je ' + (boxes.length > 1 ? 'ze' : 'het') + ' groter of kleiner. ' + (boxes.length > 1 ? 'Ze lijnen' : 'Het lijnt') + ' uit op het midden en de randen.' + (t === 'combo' ? ' De grootte van de combo volgt de hoogte van het vak.' : '');
+    }
     ve.innerHTML = boxes.map(([k, lab]) => { const [x, y, w, h] = parseBox(c[k]); return '<div class="vbox" data-b="' + k + '" style="left:' + x * sc + 'px;top:' + y * sc + 'px;width:' + w * sc + 'px;height:' + h * sc + 'px"><span>' + lab + ' · ' + w + '×' + h + '</span><i class="vrz"></i></div>'; }).join('') +
       '<div class="vline vx" hidden></div><div class="vline vy" hidden></div>';
   }
@@ -2026,7 +2041,8 @@
       if (!b) return;
       e.preventDefault();
       const k = b.dataset.b, resize = e.target.classList.contains('vrz'), pv = card.querySelector('.pv'), sc = pv.clientWidth / 1920;
-      const o0 = parseBox(ovCfg.raid[k]), sx = e.clientX, sy = e.clientY, lx = ve.querySelector('.vx'), ly = ve.querySelector('.vy');
+      const lab = (VBOXES[o.type](ovCfg[o.type]).find((x) => x[0] === k) || [, ''])[1];
+      const o0 = parseBox(ovCfg[o.type][k]), sx = e.clientX, sy = e.clientY, lx = ve.querySelector('.vx'), ly = ve.querySelector('.vy');
       let cur = o0.slice();
       b.classList.add('on');
       // magneet: midden en randen van het scherm, 10 px marge
@@ -2047,14 +2063,14 @@
         }
         cur = [x, y, w, h].map(Math.round);
         Object.assign(b.style, { left: cur[0] * sc + 'px', top: cur[1] * sc + 'px', width: cur[2] * sc + 'px', height: cur[3] * sc + 'px' });
-        b.querySelector('span').textContent = (k === 'box' ? '🚀 Melding' : '🎬 Clip') + ' · ' + cur[2] + '×' + cur[3];
+        b.querySelector('span').textContent = lab + ' · ' + cur[2] + '×' + cur[3];
         lx.hidden = gx == null; if (gx != null) lx.style.left = gx * sc + 'px';
         ly.hidden = gy == null; if (gy != null) ly.style.top = gy * sc + 'px';
       };
       const up = () => {
         removeEventListener('pointermove', mv, true); removeEventListener('pointerup', up, true); removeEventListener('pointercancel', up, true);
         b.classList.remove('on'); lx.hidden = ly.hidden = true;
-        ovCfg.raid[k] = cur.join(','); store.set('ov', ovCfg);
+        ovCfg[o.type][k] = cur.join(','); store.set('ov', ovCfg);
         refreshOverlay(o, true);
       };
       addEventListener('pointermove', mv, true); addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);

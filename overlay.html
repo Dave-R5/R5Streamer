@@ -12,8 +12,9 @@
 
   /* emote-wall */
   .em { position: absolute; will-change: transform, opacity; }
-  @keyframes rise { from { transform: translate(0, 0) rotate(0); opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } to { transform: translate(var(--dx), -110vh) rotate(var(--rot)); opacity: 0; } }
-  @keyframes rain { from { transform: translate(0, 0) rotate(0); opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } to { transform: translate(var(--dx), 115vh) rotate(var(--rot)); opacity: 0; } }
+  #area { position: absolute; overflow: hidden; }
+  @keyframes rise { from { transform: translate(0, 0) rotate(0); opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } to { transform: translate(var(--dx), var(--ty, -110vh)) rotate(var(--rot)); opacity: 0; } }
+  @keyframes rain { from { transform: translate(0, 0) rotate(0); opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } to { transform: translate(var(--dx), var(--ty, 115vh)) rotate(var(--rot)); opacity: 0; } }
   @keyframes pop { 0% { transform: scale(0); opacity: 0; } 15% { transform: scale(1.25); opacity: 1; } 25% { transform: scale(1); } 80% { opacity: 1; transform: scale(1); } 100% { transform: scale(.6); opacity: 0; } }
   @keyframes fade { from { opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } to { opacity: 0; } }
 
@@ -28,6 +29,7 @@
   #combo .lbl { position: absolute; left: 0; right: 0; bottom: -1.1em; font-size: .38em; text-align: center; letter-spacing: .1em; color: #ddd; }
   @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.45); } 100% { transform: scale(1); } }
   .pos-tl { top: 4%; left: 4%; } .pos-tr { top: 4%; right: 4%; } .pos-bl { bottom: 8%; left: 4%; } .pos-br { bottom: 8%; right: 4%; }
+  #combo.pos-free { justify-content: center; padding-bottom: .5em; box-sizing: border-box; } #combo.pos-free .lbl { bottom: 0; }
   .pos-c { top: 50%; left: 50%; transform: translate(-50%, -50%); } .pos-tc { top: 4%; left: 50%; transform: translateX(-50%); }
 
   /* raid melding: staat in zijn eigen vak (box), alle maten schalen mee met de hoogte van dat vak (--u = 1% van de hoogte) */
@@ -79,7 +81,10 @@
     anim: P.get('anim') || 'rise',                      // rise | rain | pop | bounce
     min: num('min', 3, 2, 100),                         // combo: vanaf hoeveel keer
     win: num('win', 8, 2, 60),                          // combo: seconden tussen twee keer dezelfde emote
-    pos: P.get('pos') || 'br',
+    pos: P.get('pos') || 'br',                          // combo: vaste plek of 'free' (eigen vak in cbx)
+    zone: P.get('zone') === 'free' ? 'free' : 'full',   // emote-wall: hele scherm of eigen vak (area)
+    area: box(P.get('area'), [460, 140, 1000, 800]),
+    cbx: box(P.get('cbx'), [1380, 820, 480, 200]),
     sound: ['1', 'chime', 'fanfare'].includes(P.get('sound')) ? (P.get('sound') === 'fanfare' ? 'fanfare' : 'chime') : '',
     vol: num('vol', 50, 0, 100),
     text: P.get('text') || '{viewers} kijkers komen binnen!',
@@ -170,16 +175,26 @@
   }
 
   // ---------- emote-wall ----------
+  // eigen vak voor de emote-wall: emotes blijven binnen dit vlak
+  let wallBox = stage;
+  if (cfg.type === 'wall' && cfg.zone === 'free') {
+    wallBox = document.createElement('div'); wallBox.id = 'area';
+    const [x, y, w, h] = cfg.area;
+    Object.assign(wallBox.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
+    stage.appendChild(wallBox);
+  }
+  const wallW = () => (wallBox === stage ? innerWidth : cfg.area[2]), wallH = () => (wallBox === stage ? innerHeight : cfg.area[3]);
   function wall(list) {
     list.slice(0, cfg.per).forEach((e, i) => {
-      if (stage.childElementCount >= cfg.max) return;
+      if (wallBox.querySelectorAll('.em').length >= cfg.max) return;
       const img = new Image();
       img.className = 'em'; img.src = e.url; img.alt = e.name;
       const s = cfg.size * (0.8 + Math.random() * 0.4);
       img.style.height = s + 'px';
-      const W = innerWidth, H = innerHeight, d = cfg.dur * (0.8 + Math.random() * 0.4);
+      const W = wallW(), H = wallH(), d = cfg.dur * (0.8 + Math.random() * 0.4);
       img.style.setProperty('--dx', (Math.random() * 240 - 120) + 'px');
       img.style.setProperty('--rot', (Math.random() * 60 - 30) + 'deg');
+      if (wallBox !== stage) img.style.setProperty('--ty', (cfg.anim === 'rain' ? H + s * 2 : -(H + s * 2)) + 'px');
       if (cfg.anim === 'bounce') { bounce(img, s, d); return; }
       if (cfg.anim === 'rise') { img.style.left = Math.random() * (W - s) + 'px'; img.style.top = H + 'px'; }
       else if (cfg.anim === 'rain') { img.style.left = Math.random() * (W - s) + 'px'; img.style.top = -s + 'px'; }
@@ -187,12 +202,12 @@
       img.style.animation = (cfg.anim === 'pop' ? 'pop' : cfg.anim === 'rain' ? 'rain' : 'rise') + ' ' + d + 's ' + (i * .12) + 's linear both';
       img.onanimationend = () => img.remove();
       img.onerror = () => img.remove();
-      stage.appendChild(img);
+      wallBox.appendChild(img);
     });
   }
   // stuiteren tegen de randen van het beeld, zoals een dvd-logo
   function bounce(img, s, d) {
-    const W = innerWidth, H = innerHeight;
+    const W = wallW(), H = wallH();
     let x = Math.random() * (W - s), y = Math.random() * (H - s);
     const sp = 2.5 + Math.random() * 3, a = Math.random() * Math.PI * 2;
     let vx = Math.cos(a) * sp, vy = Math.sin(a) * sp;
@@ -200,7 +215,7 @@
     img.style.left = '0'; img.style.top = '0';
     img.style.animation = 'fade ' + d + 's linear both';
     img.onerror = () => img.remove();
-    stage.appendChild(img);
+    wallBox.appendChild(img);
     const step = (now) => {
       if (now > end || !img.isConnected) { img.remove(); return; }
       const w = img.offsetWidth || s;
@@ -220,6 +235,10 @@
     const el = document.createElement('div');
     el.id = 'combo'; el.className = 'pos-' + cfg.pos;
     el.style.fontSize = cfg.size + 'px';
+    if (cfg.pos === 'free') {   // eigen vak: midden in het vak, grootte volgt de hoogte van het vak
+      const [x, y, w, h] = cfg.cbx;
+      Object.assign(el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px', fontSize: Math.round(h / 2.9) + 'px' });
+    }
     el.innerHTML = '<img alt=""><span class="x">×</span><span class="n"></span><span class="lbl">COMBO</span>';
     document.body.appendChild(el);
     return (combo.el = el);
