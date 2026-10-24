@@ -231,6 +231,18 @@
   .modal-bg.open { display: flex; }
   .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
   .modal h2 { margin: 0 0 12px; font-size: 16px; }
+  .modal.wide { max-width: 1100px; }
+  .cust { display: flex; gap: 14px; margin-top: 12px; align-items: flex-start; }
+  .cust-canvas { position: relative; flex: 1; min-width: 0; background: var(--bg); border: 1px dashed var(--line); border-radius: 8px; min-height: 300px;
+    background-image: linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: calc(100% / 24) 100%; touch-action: none; }
+  .cust-side { width: 190px; flex-shrink: 0; font-size: 13px; }
+  .cust-side label { display: flex; gap: 6px; margin: 4px 0; color: var(--text); font-size: 13px; }
+  .cbox { position: absolute; background: var(--panel2); border: 1px solid var(--accent); border-radius: 6px; padding: 4px 6px; font-size: 11.5px; overflow: hidden;
+    cursor: grab; user-select: none; box-sizing: border-box; transition: top .12s ease, left .12s ease; }
+  .cbox.moving { cursor: grabbing; z-index: 3; box-shadow: 0 6px 18px rgba(0,0,0,.5); transition: none; opacity: .92; }
+  .cbox .crz { position: absolute; right: 0; bottom: 0; width: 14px; height: 14px; cursor: nwse-resize;
+    background: linear-gradient(135deg, transparent 50%, var(--accent) 50%, var(--accent) 62%, transparent 62%, transparent 74%, var(--accent) 74%, var(--accent) 86%, transparent 86%); }
+  @media (max-width: 700px) { .cust { flex-direction: column; } .cust-side { width: auto; } }
   .modal h3 { margin: 14px 0 4px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   .modal label { display: block; margin: 10px 0 4px; font-size: 12px; color: var(--muted); }
   .modal .row { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; flex-wrap: wrap; }
@@ -273,7 +285,7 @@
     <button data-page="overlays">🎨 Overlays</button>
     <button data-page="settings">⚙ Instellingen</button>
   </nav>
-  <span id="layBtns" data-need-dash><button id="hdrTidy" title="Alle blokken netjes naast en onder elkaar zetten, zonder gaten">▦ Netjes schikken</button><button id="hdrLay" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button></span>
+  <span id="layBtns" data-need-dash><button id="hdrTidy" title="Alle blokken netjes naast en onder elkaar zetten, zonder gaten">▦ Netjes schikken</button><button id="hdrLay" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button><button id="hdrCustom" title="Je eigen vaste indeling ontwerpen; ▦ Netjes schikken gaat daarna altijd terug naar deze indeling">▣ Eigen indeling</button></span>
   <span id="demoBadge" hidden>DEMO</span>
   <button id="helpBtn" title="Hulp: wat kan R5 StreamerHub?">❓</button>
   <span id="account"></span>
@@ -424,6 +436,24 @@
   </div>
 </div>
 
+<!-- Eigen indeling -->
+<div class="modal-bg" id="custModal">
+  <div class="modal wide">
+    <h2 id="custTitle">▣ Eigen indeling</h2>
+    <p class="hint" style="margin:0">Ontwerp hier je vaste indeling. Sleep de vakken naar de plek die je wilt en maak ze met de hoek rechtsonder groter of kleiner. Vink rechts aan welke blokken erin komen. Na <b>Opslaan</b> gaat <b>▦ Netjes schikken</b> altijd terug naar deze indeling.</p>
+    <div class="cust">
+      <div class="cust-canvas" id="custCanvas"></div>
+      <div class="cust-side"><h3 style="margin-top:0">Blokken</h3><div id="custBlocks"></div></div>
+    </div>
+    <div class="row">
+      <button id="custFromCur" title="De indeling die nu op de pagina staat hierin overnemen">Huidige overnemen</button>
+      <button id="custStd" style="margin-right:auto" title="Terug naar de standaardindeling van R5 StreamerHub">Standaard</button>
+      <button data-close>Annuleren</button>
+      <button class="primary" id="custSave">Opslaan</button>
+    </div>
+  </div>
+</div>
+
 <!-- Hulp -->
 <div class="modal-bg" id="helpModal">
   <div class="modal">
@@ -487,6 +517,7 @@
             <li><b>Donaties via StreamElements en TipeeeStream</b>: zet bij ⚙ Instellingen → Overzicht en Live een vinkje per dienst. Donaties komen in een tegel, in de activiteit en in het blok <b>Donaties + Bits</b>, samen met wie hoeveel bits gaf.</li>
             <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
             <li><b>Kijkers in de chat</b> nu gesplitst zoals in R5 ModHub: streamer, moderators, VIP's en kijkers (log opnieuw in voor de mods- en VIP-lijst). Smallere scrollbalken.</li>
+            <li><b>▣ Eigen indeling</b>: ontwerp je vaste indeling in een klein voorbeeld (vakken slepen, groter of kleiner maken, blokken aan of uit). ▦ Netjes schikken gaat daarna altijd terug naar jouw indeling. Netjes schikken en Indeling staan nu rechtsboven.</li>
             <li><b>Overlays</b>: blokken bovenaan per overlay, die de editor openen.</li>
             <li><b>Raid melding</b> (zonder streepje) met keuze voor profielfoto, eigen afbeelding of geen afbeelding.</li>
             <li><b>Emotes</b>: alle emotes van je kanaal bekijken en per emote aan of uit zetten voor de overlays. Uploaden staat er al, maar werkt nog niet.</li>
@@ -1161,7 +1192,7 @@
     const fresh = ids.filter((id) => !l.pos[id]);
     g.classList.add('free', 'settling');
     ids.forEach((id) => { W[id].style.gridColumn = ''; freeRO.observe(W[id]); });
-    if (allNew) { fresh.forEach((id) => { l.pos[id] = meas[id]; }); defaultFree(page, g.clientWidth); compactUp(page); }
+    if (allNew) { fresh.forEach((id) => { l.pos[id] = meas[id]; }); defaultFree(page, g.clientWidth); if (!l.custom) compactUp(page); }
     else fresh.forEach((id) => {
       const m = meas[id], rects = ids.filter((o) => o !== id && l.pos[o]).map((o) => l.pos[o]);
       l.pos[id] = Object.assign(findSpot(m.w, m.h, rects, g.clientWidth), { w: m.w, h: m.h, auto: m.auto });
@@ -1195,7 +1226,9 @@
   // [kolom-start, kolom-breedte (deel van de breedte), hoogte, onder blok]
   const DEFAULT_FREE = { live: { lchat: [0, .29, 830], lfeed: [.29, .24, 830], ldon: [.53, .24, 464], lplayer: [.53, .24, 358, 'ldon'], lviewers: [.77, .23, 830] } };
   function defaultFree(page, gw) {
-    const d = DEFAULT_FREE[page], l = layout[page];
+    const l = layout[page];
+    if (l.custom) { customToPos(page, gw); return; }
+    const d = DEFAULT_FREE[page];
     if (!d) return;
     const top = visIds(page).filter((id) => !d[id]).reduce((m, id) => Math.max(m, l.pos[id].y + l.pos[id].h + GRID), 0);
     Object.entries(d).forEach(([id, [fx, fw, h, under]]) => {
@@ -1651,10 +1684,136 @@
     if (b) { l.off = l.off.filter((x) => x !== b); if (!e.target.checked) l.off.push(b); saveLayout(); buildGrid(layPage); }
     if (t) { l.tilesOff = l.tilesOff.filter((x) => x !== t); if (!e.target.checked) l.tilesOff.push(t); saveLayout(); renderDash(); }
   });
-  $('#layReset').onclick = () => { layout[layPage] = defLayout(layPage); saveLayout(); buildGrid(layPage); drawLayout(); toast('Standaardindeling hersteld.'); };
+  $('#layReset').onclick = () => { layout[layPage] = defLayout(layPage);   // ook je eigen indeling vergeten
+ saveLayout(); buildGrid(layPage); drawLayout(); toast('Standaardindeling hersteld.'); };
   document.querySelectorAll('[data-layout]').forEach((b) => { b.onclick = () => openLayout(b.dataset.layout); });
   $('#hdrTidy').onclick = () => { tidyLayout(state.page); toast('Blokken netjes geschikt.'); };
   $('#hdrLay').onclick = () => openLayout(state.page);
+
+  // ---------- eigen indeling (vaste indeling die de streamer zelf ontwerpt) ----------
+  // custom = { off: [...], items: { id: { fx, fw, y, h } } }: fx/fw = deel van de breedte, y/h in px
+  const CCOLS = 24;
+  function customToPos(page, gw) {
+    const l = layout[page], c = l.custom;
+    Object.entries(c.items).forEach(([id, it]) => {
+      if (!l.pos[id] || !W[id]) return;
+      const x = Math.round(it.fx * gw / GRID) * GRID, x2 = it.fx + it.fw >= .999 ? gw : Math.round((it.fx + it.fw) * gw / GRID) * GRID - GRID;
+      l.pos[id] = { x, y: it.y, w: Math.max(200, x2 - x), h: it.h, auto: false };
+    });
+  }
+  let cust = null;   // { page, off: Set, items: { id: {fx, fw, y, h} } }
+  function custFrom(page, src) {
+    const l = layout[page], gw = $('#grid-' + page).clientWidth || 1400, items = {};
+    if (src === 'custom' && l.custom) return { page, off: new Set(l.custom.off), items: JSON.parse(JSON.stringify(l.custom.items)) };
+    if (src === 'std') {
+      const d = DEFAULT_FREE[page] || {}, off = new Set(DEFAULT_OFF[page]);
+      let y = 0;
+      // blokken zonder vaste plek: onder elkaar, rij voor rij in 12 kolommen zoals het raster
+      let rowX = 0, rowY = 0, rowH = 0;
+      DEFAULT_LAYOUT[page].forEach((id) => {
+        const w = WIDGETS[id];
+        if (d[id]) return;
+        const fw = w.span / 12, h = w.h || (id === 'ltiles' || id === 'tiles' ? 130 : id === 'stream' ? 130 : 220);
+        if (rowX + fw > 1.001) { rowX = 0; rowY += rowH + GRID; rowH = 0; }
+        items[id] = { fx: rowX, fw, y: rowY, h }; rowX += fw; rowH = Math.max(rowH, h);
+      });
+      y = rowY + rowH + (rowH ? GRID : 0);
+      Object.entries(d).forEach(([id, [fx, fw, h, under]]) => { items[id] = { fx, fw, y: under && items[under] ? items[under].y + items[under].h + GRID : y, h }; });
+      return { page, off, items };
+    }
+    // huidige indeling op de pagina
+    visIds(page).forEach((id) => { const r = l.pos[id]; if (r) items[id] = { fx: r.x / gw, fw: Math.min(1, r.w / gw), y: r.y, h: r.h }; });
+    return { page, off: new Set(l.off), items };
+  }
+  function openCustom(page) {
+    if (freeMq.matches) return toast('Eigen indeling maken kan op een groter scherm (computer of tablet in liggende stand).', 'err');
+    cust = custFrom(page, layout[page].custom ? 'custom' : 'cur');
+    $('#custTitle').textContent = '▣ Eigen indeling: ' + (page === 'live' ? 'Live' : 'Overzicht');
+    $('#custModal').classList.add('open');
+    drawCust();
+  }
+  function drawCust() {
+    const cv = $('#custCanvas'), cw = cv.clientWidth, gw = $('#grid-' + cust.page).clientWidth || 1400, sc = cw / gw;
+    $('#custBlocks').innerHTML = DEFAULT_LAYOUT[cust.page].map((id) => '<label><input type="checkbox" data-cb="' + id + '"' + (cust.off.has(id) ? '' : ' checked') + '> ' + WIDGETS[id].title + '</label>').join('');
+    cv.innerHTML = '';
+    let bottom = 0;
+    DEFAULT_LAYOUT[cust.page].filter((id) => !cust.off.has(id)).forEach((id) => {
+      const it = cust.items[id];
+      const b = document.createElement('div');
+      b.className = 'cbox'; b.dataset.id = id;
+      b.innerHTML = WIDGETS[id].title + '<span class="crz"></span>';
+      b.style.left = it.fx * cw + 'px'; b.style.width = it.fw * cw - 4 + 'px';
+      b.style.top = it.y * sc + 'px'; b.style.height = Math.max(18, it.h * sc - 3) + 'px';
+      bottom = Math.max(bottom, (it.y + it.h) * sc);
+      cv.appendChild(b);
+      b.addEventListener('pointerdown', (e) => custPointer(e, b, id, e.target.classList.contains('crz')));
+    });
+    cv.style.height = Math.max(300, bottom + 60) + 'px';
+  }
+  // blokken mogen niet over elkaar: wat overlapt schuift naar beneden (zoals op de pagina zelf)
+  function custResolve(fixed) {
+    const ids = DEFAULT_LAYOUT[cust.page].filter((id) => !cust.off.has(id)), it = cust.items;
+    const hitC = (a, b) => a.fx < b.fx + b.fw - 1e-6 && a.fx + a.fw > b.fx + 1e-6 && a.y < b.y + b.h && a.y + a.h > b.y;
+    const done = fixed ? [fixed] : [];
+    ids.filter((id) => id !== fixed).sort((a, b) => it[a].y - it[b].y || it[a].fx - it[b].fx).forEach((id) => {
+      let again = true;
+      while (again) { again = false; for (const o of done) if (hitC(it[id], it[o])) { it[id].y = it[o].y + it[o].h + GRID; again = true; } }
+      done.push(id);
+    });
+  }
+  function custPointer(e, b, id, resize) {
+    e.preventDefault(); e.stopPropagation();
+    const cv = $('#custCanvas'), cw = cv.clientWidth, gw = $('#grid-' + cust.page).clientWidth || 1400, sc = cw / gw, col = 1 / CCOLS;
+    const it = cust.items[id], sx = e.clientX, sy = e.clientY, o = Object.assign({}, it);
+    const orig = Object.fromEntries(Object.entries(cust.items).map(([k, v]) => [k, v.y]));
+    b.classList.add('moving');
+    const mv = (ev) => {
+      const dx = (ev.clientX - sx) / cw, dy = (ev.clientY - sy) / sc;
+      if (resize) {
+        it.fw = Math.min(1 - it.fx, Math.max(col * 3, Math.round((o.fw + dx) / col) * col));
+        it.h = Math.max(120, Math.round((o.h + dy) / GRID) * GRID);
+      } else {
+        it.fx = Math.min(1 - it.fw, Math.max(0, Math.round((o.fx + dx) / col) * col));
+        it.y = Math.max(0, Math.round((o.y + dy) / GRID) * GRID);
+      }
+      Object.entries(orig).forEach(([k, y]) => { if (k !== id) cust.items[k].y = y; });
+      custResolve(id);
+      cv.querySelectorAll('.cbox').forEach((el) => {
+        const r = cust.items[el.dataset.id];
+        el.style.left = r.fx * cw + 'px'; el.style.width = r.fw * cw - 4 + 'px'; el.style.top = r.y * sc + 'px'; el.style.height = Math.max(18, r.h * sc - 3) + 'px';
+      });
+    };
+    const up = () => { removeEventListener('pointermove', mv, true); removeEventListener('pointerup', up, true); removeEventListener('pointercancel', up, true); drawCust(); };
+    addEventListener('pointermove', mv, true); addEventListener('pointerup', up, true); addEventListener('pointercancel', up, true);
+  }
+  $('#custBlocks').addEventListener('change', (e) => {
+    const id = e.target.dataset.cb;
+    if (!id) return;
+    if (e.target.checked) {
+      cust.off.delete(id);
+      if (!cust.items[id]) {
+        const bottom = Object.entries(cust.items).filter(([k]) => !cust.off.has(k)).reduce((m, [, r]) => Math.max(m, r.y + r.h + GRID), 0);
+        cust.items[id] = { fx: 0, fw: WIDGETS[id].span / 12, y: bottom, h: WIDGETS[id].h || 220 };
+      }
+      custResolve(id);
+    } else cust.off.add(id);
+    drawCust();
+  });
+  $('#custFromCur').onclick = () => { cust = custFrom(cust.page, 'cur'); drawCust(); };
+  $('#custStd').onclick = () => { cust = custFrom(cust.page, 'std'); drawCust(); };
+  $('#custSave').onclick = () => {
+    const page = cust.page, l = layout[page], items = {};
+    DEFAULT_LAYOUT[page].filter((id) => !cust.off.has(id) && cust.items[id]).forEach((id) => { items[id] = cust.items[id]; });
+    l.custom = { off: [...cust.off], items };
+    l.off = [...cust.off];
+    l.order.sort((a, b) => (items[a] ? items[a].y : 1e9) - (items[b] ? items[b].y : 1e9) || (items[a] ? items[a].fx : 0) - (items[b] ? items[b].fx : 0));
+    l.pos = {}; saveLayout();
+    $('#custModal').classList.remove('open');
+    buildGrid(page);
+    toast('Je eigen indeling is opgeslagen. ▦ Netjes schikken gaat voortaan terug naar deze indeling.', 'ok');
+  };
+  $('#hdrCustom').onclick = () => openCustom(state.page);
+  addEventListener('resize', () => { if (cust && $('#custModal').classList.contains('open')) drawCust(); });
 
   // ---------- demo ----------
   const DEMO_USERS = ['kaaskop99', 'PixelPiet', 'GamerGirl_NL', 'Henk_de_Tank', 'luna_moon', 'xXSniperXx', 'Bram', 'Nightbot', 'mia_plays', 'Sjoerd'];
