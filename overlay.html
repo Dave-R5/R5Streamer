@@ -310,7 +310,7 @@
     }
     findClip(login).then((id) => {
       if (!id) { if (r.test) { c.innerHTML = '<div class="ph">🎬 Geen clips gevonden van ' + esc(login) + '</div>'; c.classList.add('on'); setTimeout(hideClip, 4000); } return; }
-      c.innerHTML = '<iframe allow="autoplay" src="https://clips.twitch.tv/embed?clip=' + encodeURIComponent(id) + '&parent=' + encodeURIComponent(location.hostname) + '&autoplay=true&muted=' + (cfg.clipsnd ? 'false' : 'true') + '"></iframe>';
+      c.innerHTML = '<iframe allow="autoplay" src="https://clips.twitch.tv/embed?clip=' + encodeURIComponent(id) + '&parent=' + encodeURIComponent(location.hostname) + '&autoplay=true&muted=' + (cfg.clipsnd && !holdMode ? 'false' : 'true') + '"></iframe>';
       requestAnimationFrame(() => c.classList.add('on'));
       setTimeout(hideClip, cfg.clipdur * 1000);
     });

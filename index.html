@@ -540,6 +540,7 @@
             <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
             <li><b>Kijkers in de chat</b> nu gesplitst zoals in R5 ModHub: streamer, moderators, VIP's en kijkers (log opnieuw in voor de mods- en VIP-lijst). Smallere scrollbalken.</li>
             <li><b>Windows-app</b>: R5 StreamerHub als programma, met automatische updates (⚙ Instellingen → Windows-app). Nieuw logo: rode S.</li>
+            <li>Raid-clip start nu vanzelf in de testweergave (zonder geluid in de editor, met geluid in OBS).</li>
             <li><b>▣ Eigen indeling</b>: ontwerp je vaste indeling in een klein voorbeeld (vakken slepen, groter of kleiner maken, blokken aan of uit). ▦ Netjes schikken gaat daarna altijd terug naar jouw indeling. Netjes schikken en Indeling staan nu rechtsboven.</li>
             <li><b>Raid melding helemaal zelf instellen</b>: soort melding (kaart, banner, glas, alleen tekst), kop, tekst, tekstkleur, raket, binnenkomst (inploppen, inzoomen, van boven/onder/links/rechts), geluid (belletje of fanfare) en een <b>clip van de raider</b>. Plek en grootte van de melding en de clip sleep je in het voorbeeld.</li>
             <li><b>Overlays</b>: blokken bovenaan per overlay, die de editor openen.</li>
@@ -1957,7 +1958,7 @@
     if (edFor !== o.type || !box.querySelector('.ov')) {
       edFor = o.type;
       box.innerHTML = '<div class="card ov"><div class="f"><h3>' + o.name + '</h3><div class="hint">' + o.desc + '</div>' + o.fields.map((f) => fieldHtml(o, f)).join('') + '</div>' +
-        '<div><div class="pv"><iframe title="Voorbeeld"></iframe>' + (o.type === 'raid' ? '<div class="vedit"></div>' : '') + '</div>' +
+        '<div><div class="pv"><iframe title="Voorbeeld" allow="autoplay; fullscreen"></iframe>' + (o.type === 'raid' ? '<div class="vedit"></div>' : '') + '</div>' +
         (o.type === 'raid' ? '<p class="hint" style="margin:6px 0 0">✥ Sleep de vakken <b>Melding</b> en <b>Clip</b> in het voorbeeld naar de plek die je wilt; met de hoek rechtsonder maak je ze groter of kleiner. Ze lijnen uit op het midden en de randen.</p>' : '') + '<div class="acts"><button data-a="test">▶ Test</button><label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-a="loop"> doorlopend testen</label>' +
         '<button class="primary" data-a="copy" style="margin-left:auto">📋 Kopieer OBS-link</button></div><div class="link"></div>' +
         (o.type !== 'raid' ? '<p class="hint">' + (ovCfg.off.length ? ovCfg.off.length + ' emote(s) staan uit; ' : '') + 'welke emotes meedoen kies je bij <a href="#" data-ov-go="emotes">😀 Emotes</a>.</p>' : '') + '</div></div>';
