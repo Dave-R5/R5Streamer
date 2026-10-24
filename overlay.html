@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>R5 StreamerHub overlay</title>
+<style>
+  /* Doorzichtig: dit is een Browserbron in OBS. */
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; font-family: "Segoe UI", system-ui, sans-serif; }
+  body.preview { background: repeating-conic-gradient(#202024 0 25%, #18181b 0 50%) 0 0 / 24px 24px; }
+  #stage { position: fixed; inset: 0; pointer-events: none; }
+
+  /* emote-wall */
+  .em { position: absolute; will-change: transform, opacity; }
+  @keyframes rise { from { transform: translate(0, 0) rotate(0); opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } to { transform: translate(var(--dx), -110vh) rotate(var(--rot)); opacity: 0; } }
+  @keyframes rain { from { transform: translate(0, 0) rotate(0); opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } to { transform: translate(var(--dx), 115vh) rotate(var(--rot)); opacity: 0; } }
+  @keyframes pop { 0% { transform: scale(0); opacity: 0; } 15% { transform: scale(1.25); opacity: 1; } 25% { transform: scale(1); } 80% { opacity: 1; transform: scale(1); } 100% { transform: scale(.6); opacity: 0; } }
+  @keyframes fade { from { opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } to { opacity: 0; } }
+
+  /* emote-combo */
+  #combo { position: absolute; display: flex; align-items: center; gap: .25em; color: #fff; font-weight: 800;
+    text-shadow: 0 0 8px rgba(0,0,0,.9), 0 3px 0 rgba(0,0,0,.6); opacity: 0; transition: opacity .35s; }
+  #combo.on { opacity: 1; }
+  #combo img { height: 1.6em; }
+  #combo .x { font-size: .7em; color: var(--accent); }
+  #combo .n { display: inline-block; }
+  #combo .n.bump { animation: bump .3s; }
+  #combo .lbl { position: absolute; left: 0; right: 0; bottom: -1.1em; font-size: .38em; text-align: center; letter-spacing: .1em; color: #ddd; }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.45); } 100% { transform: scale(1); } }
+  .pos-tl { top: 4%; left: 4%; } .pos-tr { top: 4%; right: 4%; } .pos-bl { bottom: 8%; left: 4%; } .pos-br { bottom: 8%; right: 4%; }
+  .pos-c { top: 50%; left: 50%; transform: translate(-50%, -50%); } .pos-tc { top: 4%; left: 50%; transform: translateX(-50%); }
+
+  /* raid-melding */
+  #raid { position: absolute; left: 50%; top: 12%; transform: translate(-50%, -40px) scale(.9); opacity: 0; transition: transform .5s cubic-bezier(.2,1.4,.4,1), opacity .4s;
+    display: flex; align-items: center; gap: 22px; padding: 20px 34px 20px 20px; border-radius: 22px; color: #fff;
+    background: linear-gradient(135deg, var(--accent), #1f1f23 75%); box-shadow: 0 12px 40px rgba(0,0,0,.55), 0 0 0 3px rgba(255,255,255,.12) inset; max-width: 86vw; }
+  #raid.on { transform: translate(-50%, 0) scale(1); opacity: 1; }
+  #raid img { width: 110px; height: 110px; border-radius: 50%; border: 4px solid #fff; background: #000; flex-shrink: 0; }
+  #raid .top { font-size: 20px; letter-spacing: .14em; text-transform: uppercase; opacity: .85; font-weight: 700; }
+  #raid .name { font-size: 46px; font-weight: 800; line-height: 1.05; overflow-wrap: anywhere; }
+  #raid .sub { font-size: 24px; margin-top: 4px; }
+  #raid .rocket { position: absolute; right: -24px; top: -30px; font-size: 64px; animation: fly 1.4s ease-in-out infinite alternate; }
+  @keyframes fly { from { transform: translate(0, 0) rotate(-8deg); } to { transform: translate(8px, -10px) rotate(6deg); } }
+
+  #hint { position: fixed; left: 10px; bottom: 8px; font: 12px system-ui, sans-serif; color: #a0a0ab; background: rgba(14,14,16,.8); padding: 4px 8px; border-radius: 6px; display: none; }
+  body.preview #hint { display: block; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="hint"></div>
+<script>
+(() => {
+  'use strict';
+  // Instellingen staan in de link, zodat deze pagina zonder login en zonder server werkt.
+  const P = new URLSearchParams(location.search);
+  const num = (k, d, lo, hi) => { const v = parseFloat(P.get(k)); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+  const cfg = {
+    type: P.get('type') || 'wall',                     // wall | combo | raid
+    ch: (P.get('ch') || '').toLowerCase().replace(/[^a-z0-9_]/g, ''),
+    size: num('size', 64, 16, 400),
+    dur: num('dur', 6, 1, 60),
+    max: num('max', 60, 1, 400),                        // emote-wall: maximaal tegelijk op beeld
+    per: num('per', 5, 1, 50),                          // emote-wall: maximaal per bericht
+    anim: P.get('anim') || 'rise',                      // rise | rain | pop | bounce
+    min: num('min', 3, 2, 100),                         // combo: vanaf hoeveel keer
+    win: num('win', 8, 2, 60),                          // combo: seconden tussen twee keer dezelfde emote
+    pos: P.get('pos') || 'br',
+    sound: P.get('sound') === '1',
+    vol: num('vol', 50, 0, 100),
+    text: P.get('text') || '{viewers} kijkers komen binnen!',
+    color: /^[0-9a-f]{6}$/i.test(P.get('color') || '') ? '#' + P.get('color') : '#9147ff',
+    test: P.get('test') === '1',
+    preview: P.get('preview') === '1',
+  };
+  document.documentElement.style.setProperty('--accent', cfg.color);
+  if (cfg.preview) document.body.classList.add('preview');
+  const stage = document.getElementById('stage');
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // ---------- emotes van 7TV, BTTV en FFZ (Twitch-emotes komen met de chat mee) ----------
+  // een paar vaste Twitch-emotes, zodat testen ook werkt voordat de rest geladen is
+  const TW_BASE = { Kappa: '25', LUL: '425618', PogChamp: '305954156', '<3': '9', SeemsGood: '64138', BibleThump: '86', HeyGuys: '30259', VoHiYo: '81274' };
+  const emo = {};
+  Object.entries(TW_BASE).forEach(([n, id]) => { emo[n] = 'https://static-cdn.jtvnw.net/emoticons/v2/' + id + '/default/dark/3.0'; });
+  const getJson = (u) => fetch(u).then((r) => r.ok ? r.json() : null).catch(() => null);
+  const BTTV = 'https://api.betterttv.net/3/cached/';
+  function addStv(list) { (list || []).forEach((e) => { const h = e.data && e.data.host; if (h && h.url) emo[e.name] = 'https:' + h.url + '/4x.webp'; }); }
+  function addBttv(list) { (list || []).forEach((e) => { emo[e.code] = 'https://cdn.betterttv.net/emote/' + e.id + '/3x'; }); }
+  function addFfz(list) { (list || []).forEach((e) => { const i = e.images || {}; const u = i['4x'] || i['2x'] || i['1x']; if (u) emo[e.code] = u; }); }
+  async function loadGlobal() {
+    const [s, b, f] = await Promise.all([getJson('https://7tv.io/v3/emote-sets/global'), getJson(BTTV + 'emotes/global'), getJson(BTTV + 'frankerfacez/emotes/global')]);
+    if (s) addStv(s.emotes); if (Array.isArray(b)) addBttv(b); if (Array.isArray(f)) addFfz(f);
+  }
+  let chanLoaded = false;
+  async function loadChannel(roomId) {
+    if (chanLoaded) return; chanLoaded = true;
+    const [s, b, f] = await Promise.all([getJson('https://7tv.io/v3/users/twitch/' + roomId), getJson(BTTV + 'users/twitch/' + roomId), getJson(BTTV + 'frankerfacez/users/twitch/' + roomId)]);
+    if (b) addBttv([...(b.channelEmotes || []), ...(b.sharedEmotes || [])]);
+    if (Array.isArray(f)) addFfz(f);
+    if (s && s.emote_set) addStv(s.emote_set.emotes);
+  }
+  const twUrl = (id) => 'https://static-cdn.jtvnw.net/emoticons/v2/' + encodeURIComponent(id) + '/default/dark/3.0';
+
+  // alle emotes in een bericht, op volgorde: [{name, url}]
+  function emotesIn(text, tag) {
+    const chars = Array.from(text), found = [], twAt = {};
+    if (tag) tag.split('/').forEach((e) => {
+      const [id, pos] = e.split(':');
+      if (pos) pos.split(',').forEach((p) => { const [a, b] = p.split('-').map(Number); twAt[a] = { b, id }; });
+    });
+    let word = '', start = 0;
+    const flush = () => { if (word && emo[word]) found.push({ name: word, url: emo[word], at: start }); word = ''; };
+    for (let i = 0; i < chars.length; i++) {
+      if (twAt[i]) { flush(); const t = twAt[i]; found.push({ name: chars.slice(i, t.b + 1).join(''), url: twUrl(t.id), at: i }); i = t.b; continue; }
+      if (/\s/.test(chars[i])) { flush(); continue; }
+      if (!word) start = i;
+      word += chars[i];
+    }
+    flush();
+    return found.sort((x, y) => x.at - y.at);
+  }
+
+  // ---------- geluid (zelf gemaakt, geen bestand nodig) ----------
+  let actx = null;
+  function chime() {
+    if (!cfg.sound) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const t = actx.currentTime, g = actx.createGain();
+      g.connect(actx.destination);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(cfg.vol / 100 * .5, t + .02); g.gain.exponentialRampToValueAtTime(.001, t + 1.6);
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+        const o = actx.createOscillator(); o.type = 'triangle'; o.frequency.value = f;
+        o.connect(g); o.start(t + i * .11); o.stop(t + 1.6);
+      });
+    } catch {}
+  }
+
+  // ---------- emote-wall ----------
+  function wall(list) {
+    list.slice(0, cfg.per).forEach((e, i) => {
+      if (stage.childElementCount >= cfg.max) return;
+      const img = new Image();
+      img.className = 'em'; img.src = e.url; img.alt = e.name;
+      const s = cfg.size * (0.8 + Math.random() * 0.4);
+      img.style.height = s + 'px';
+      const W = innerWidth, H = innerHeight, d = cfg.dur * (0.8 + Math.random() * 0.4);
+      img.style.setProperty('--dx', (Math.random() * 240 - 120) + 'px');
+      img.style.setProperty('--rot', (Math.random() * 60 - 30) + 'deg');
+      if (cfg.anim === 'bounce') { bounce(img, s, d); return; }
+      if (cfg.anim === 'rise') { img.style.left = Math.random() * (W - s) + 'px'; img.style.top = H + 'px'; }
+      else if (cfg.anim === 'rain') { img.style.left = Math.random() * (W - s) + 'px'; img.style.top = -s + 'px'; }
+      else { img.style.left = Math.random() * (W - s) + 'px'; img.style.top = Math.random() * (H - s) + 'px'; }
+      img.style.animation = (cfg.anim === 'pop' ? 'pop' : cfg.anim === 'rain' ? 'rain' : 'rise') + ' ' + d + 's ' + (i * .12) + 's linear both';
+      img.onanimationend = () => img.remove();
+      img.onerror = () => img.remove();
+      stage.appendChild(img);
+    });
+  }
+  // stuiteren tegen de randen van het beeld, zoals een dvd-logo
+  function bounce(img, s, d) {
+    const W = innerWidth, H = innerHeight;
+    let x = Math.random() * (W - s), y = Math.random() * (H - s);
+    const sp = 2.5 + Math.random() * 3, a = Math.random() * Math.PI * 2;
+    let vx = Math.cos(a) * sp, vy = Math.sin(a) * sp;
+    const end = performance.now() + d * 1000;
+    img.style.left = '0'; img.style.top = '0';
+    img.style.animation = 'fade ' + d + 's linear both';
+    img.onerror = () => img.remove();
+    stage.appendChild(img);
+    const step = (now) => {
+      if (now > end || !img.isConnected) { img.remove(); return; }
+      const w = img.offsetWidth || s;
+      x += vx; y += vy;
+      if (x < 0 || x > W - w) { vx = -vx; x = Math.max(0, Math.min(W - w, x)); }
+      if (y < 0 || y > H - s) { vy = -vy; y = Math.max(0, Math.min(H - s, y)); }
+      img.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  // ---------- emote-combo ----------
+  const combo = { name: '', url: '', n: 0, last: 0, users: new Set(), hide: null, el: null };
+  function comboEl() {
+    if (combo.el) return combo.el;
+    const el = document.createElement('div');
+    el.id = 'combo'; el.className = 'pos-' + cfg.pos;
+    el.style.fontSize = cfg.size + 'px';
+    el.innerHTML = '<img alt=""><span class="x">×</span><span class="n"></span><span class="lbl">COMBO</span>';
+    document.body.appendChild(el);
+    return (combo.el = el);
+  }
+  function comboMsg(list, user) {
+    if (!list.length) return;
+    const now = Date.now();
+    // telt per bericht één keer; een andere emote breekt de combo als de huidige niet meer in het bericht zit
+    const same = list.find((e) => e.name === combo.name);
+    if (same && now - combo.last < cfg.win * 1000) {
+      combo.n++; combo.last = now; combo.users.add(user);
+    } else {
+      if (combo.n >= cfg.min) endCombo();
+      const e = list[0];
+      Object.assign(combo, { name: e.name, url: e.url, n: 1, last: now, users: new Set([user]) });
+    }
+    if (combo.n >= cfg.min) showCombo();
+  }
+  function showCombo() {
+    const el = comboEl();
+    const img = el.querySelector('img');
+    if (img.getAttribute('src') !== combo.url) img.src = combo.url;
+    const n = el.querySelector('.n');
+    n.textContent = combo.n;
+    n.classList.remove('bump'); void n.offsetWidth; n.classList.add('bump');
+    el.classList.add('on');
+    if (combo.n === cfg.min) chime();
+    clearTimeout(combo.hide);
+    combo.hide = setTimeout(endCombo, Math.max(cfg.win, cfg.dur) * 1000);
+  }
+  function endCombo() {
+    clearTimeout(combo.hide);
+    if (combo.el) combo.el.classList.remove('on');
+    combo.n = 0; combo.name = '';
+  }
+
+  // ---------- raid-melding ----------
+  const raidQ = [];
+  let raidBusy = false;
+  function raid(r) { raidQ.push(r); if (!raidBusy) nextRaid(); }
+  function nextRaid() {
+    const r = raidQ.shift();
+    if (!r) { raidBusy = false; return; }
+    raidBusy = true;
+    let el = document.getElementById('raid');
+    if (!el) { el = document.createElement('div'); el.id = 'raid'; document.body.appendChild(el); }
+    const sub = cfg.text.replace(/\{name\}/g, r.name).replace(/\{viewers\}/g, r.viewers.toLocaleString('nl-NL'));
+    el.innerHTML = '<span class="rocket">🚀</span>' + (r.avatar ? '<img src="' + esc(r.avatar) + '" alt="">' : '') +
+      '<div><div class="top">Raid!</div><div class="name">' + esc(r.name) + '</div><div class="sub">' + esc(sub) + '</div></div>';
+    el.style.zoom = cfg.size / 64;
+    requestAnimationFrame(() => el.classList.add('on'));
+    chime();
+    setTimeout(() => { el.classList.remove('on'); setTimeout(nextRaid, 700); }, cfg.dur * 1000);
+  }
+
+  // ---------- binnenkomende gebeurtenissen ----------
+  function onChat(text, emotesTag, user) {
+    const list = emotesIn(text, emotesTag);
+    if (cfg.type === 'wall') wall(list);
+    else if (cfg.type === 'combo') comboMsg(list, user);
+  }
+  function onRaid(name, viewers, avatar) { if (cfg.type === 'raid') raid({ name, viewers, avatar }); }
+
+  // ---------- chat lezen (anoniem, geen login nodig) ----------
+  function parseLine(line) {
+    const m = { tags: {}, prefix: '', command: '', params: [] };
+    let i = 0;
+    if (line[0] === '@') {
+      const sp = line.indexOf(' ');
+      line.slice(1, sp).split(';').forEach((kv) => {
+        const eq = kv.indexOf('=');
+        m.tags[kv.slice(0, eq)] = kv.slice(eq + 1).replace(/\\s/g, ' ').replace(/\\:/g, ';').replace(/\\\\/g, '\\');
+      });
+      i = sp + 1;
+    }
+    if (line[i] === ':') { const sp = line.indexOf(' ', i); m.prefix = line.slice(i + 1, sp); i = sp + 1; }
+    const rest = line.slice(i), ti = rest.indexOf(' :');
+    const parts = (ti >= 0 ? rest.slice(0, ti) : rest).split(' ').filter(Boolean);
+    m.command = parts.shift(); m.params = parts;
+    if (ti >= 0) m.params.push(rest.slice(ti + 2));
+    return m;
+  }
+  let retry = 1000;
+  function connect() {
+    const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+    ws.onopen = () => {
+      retry = 1000;
+      ws.send('CAP REQ :twitch.tv/tags twitch.tv/commands');
+      ws.send('NICK justinfan' + Math.floor(Math.random() * 1e6));
+      ws.send('JOIN #' + cfg.ch);
+    };
+    ws.onmessage = (e) => e.data.split('\r\n').forEach((l) => {
+      if (!l) return;
+      const m = parseLine(l);
+      if (m.command === 'PING') ws.send('PONG :' + (m.params[0] || 'tmi.twitch.tv'));
+      else if (m.command === 'ROOMSTATE' && m.tags['room-id']) loadChannel(m.tags['room-id']);
+      else if (m.command === 'PRIVMSG') {
+        let text = m.params[1] || '';
+        if (text.startsWith('\u0001ACTION ')) text = text.slice(8, -1);
+        onChat(text, m.tags.emotes || '', m.prefix.split('!')[0]);
+      } else if (m.command === 'USERNOTICE' && m.tags['msg-id'] === 'raid') {
+        onRaid(m.tags['msg-param-displayName'] || m.tags['display-name'] || '', +m.tags['msg-param-viewerCount'] || 0, m.tags['msg-param-profileImageURL'] || '');
+      }
+    });
+    ws.onclose = () => { setTimeout(connect, retry); retry = Math.min(retry * 2, 30000); };
+  }
+
+  // ---------- testen vanuit R5 StreamerHub ----------
+  const DEMO_RAIDERS = [['PixelPiet', 42], ['luna_moon', 128], ['Henk_de_Tank', 7]];
+  function fakeChat() {
+    const names = Object.keys(emo);
+    const pick = () => names[Math.floor(Math.random() * Math.min(names.length, 40))];
+    if (cfg.type === 'combo') { const e = combo.name && Math.random() < .85 ? combo.name : pick(); onChat(e + ' ' + e, '', 'test' + Math.floor(Math.random() * 20)); }
+    else onChat(Array.from({ length: 1 + Math.floor(Math.random() * 4) }, pick).join(' '), '', 'test');
+  }
+  function testRaid() { const r = DEMO_RAIDERS[Math.floor(Math.random() * DEMO_RAIDERS.length)]; onRaid(r[0], r[1], ''); }
+  window.addEventListener('message', (e) => {
+    if (e.origin !== location.origin || !e.data || e.data.r5 !== 'test') return;
+    if (cfg.type === 'raid') testRaid();
+    else for (let i = 0; i < (cfg.type === 'combo' ? cfg.min + 2 : 8); i++) setTimeout(fakeChat, i * 350);
+  });
+
+  const hint = document.getElementById('hint');
+  loadGlobal();
+  if (cfg.test) {
+    setInterval(() => { if (cfg.type === 'raid') testRaid(); else fakeChat(); }, cfg.type === 'raid' ? (cfg.dur + 3) * 1000 : 900);
+    if (cfg.type === 'raid') testRaid();
+  }
+  if (cfg.ch) connect();
+  hint.textContent = cfg.ch ? 'Voorbeeld: luistert naar de chat van ' + cfg.ch : 'Voorbeeld (nog geen kanaal ingevuld)';
+})();
+</script>
+</body>
+</html>

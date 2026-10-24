@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "R5 StreamerHub",
+  "short_name": "R5 StreamerHub",
+  "description": "R5 StreamerHub: streamtool voor Twitch. Overzicht van je eigen kanaal en overlays voor OBS.",
+  "lang": "nl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0e0e10",
+  "theme_color": "#18181b",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
