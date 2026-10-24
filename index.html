@@ -65,7 +65,7 @@
   /* blokken: slepen om te verplaatsen, hoek om de grootte te veranderen */
   .w { position: relative; display: flex; flex-direction: column; }
   .w > .wb { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-  .w.fixed > .wb { overflow: auto; scrollbar-gutter: stable; padding-right: 4px; margin-right: -8px; }
+  .w.fixed > .wb { overflow: auto; }
   /* smalle, donkere scrollbalken die niet over de tekst vallen */
   * { scrollbar-width: thin; scrollbar-color: #3a3a44 transparent; }
   ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -121,6 +121,8 @@
 
   /* activiteit en lijsten */
   .feed, .list { flex: 1; min-height: 60px; overflow-y: auto; font-size: 13px; }
+  /* scrollbalk iets naar rechts, met wat ruimte tot de tekst */
+  .feed, .list, .chat { padding-right: 10px; margin-right: -10px; }
   .feed .it { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
   .feed .it .t { color: var(--muted); font-size: 11px; min-width: 38px; padding-top: 2px; }
   .feed .it .w2 { flex: 1; word-break: break-word; }
@@ -147,7 +149,7 @@
   .tablewrap { overflow-x: auto; }
 
   /* live: chat, speler, kijkers */
-  .chat { flex: 1; min-height: 120px; overflow-y: auto; font-size: 13.5px; padding-right: 4px; }
+  .chat { flex: 1; min-height: 120px; overflow-y: auto; font-size: 13.5px; }
   .chat .m { padding: 2px 0; word-wrap: break-word; }
   .chat .m .tm { color: var(--muted); font-size: 11px; margin-right: 4px; }
   .chat .m .bd { font-size: 10px; font-weight: 700; border-radius: 3px; padding: 0 4px; margin-right: 3px; vertical-align: 1px; background: var(--line); }
