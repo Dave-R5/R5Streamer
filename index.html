@@ -134,6 +134,8 @@
   .list .row .dm { display: block; color: var(--muted); font-size: 12px; }
   .list .row .amt { color: #3ecf6e; font-weight: 700; white-space: nowrap; }
   .list .row .bitsamt { color: #b58cff; }
+  .list .vgroup { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 10px 0 3px; }
+  .list .vgroup:first-child { padding-top: 2px; } .list .vgroup span { font-weight: 400; }
   .dnote { padding: 4px 0 8px; border-bottom: 1px solid var(--line); margin-bottom: 2px; }
   .filters { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
   .filters button { font-size: 12px; padding: 2px 9px; border-radius: 12px; color: var(--muted); }
@@ -480,6 +482,7 @@
             <li><b>Zelf indelen zoals in R5 ModHub</b>: blokken op Overzicht en Live vrij neerzetten waar je wilt (ze lijnen vanzelf uit en schuiven opzij), vrij groter of kleiner maken, en blokken en tegels aan of uit zetten met ✎ Indeling. ▦ Netjes schikken zet alles weer strak.</li>
             <li><b>Donaties via StreamElements en TipeeeStream</b>: zet bij ⚙ Instellingen → Overzicht en Live een vinkje per dienst. Donaties komen in een tegel, in de activiteit en in het blok <b>Donaties + Bits</b>, samen met wie hoeveel bits gaf.</li>
             <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
+            <li><b>Kijkers in de chat</b> nu gesplitst zoals in R5 ModHub: streamer, moderators, VIP's en kijkers (log opnieuw in voor de mods- en VIP-lijst). Smallere scrollbalken.</li>
             <li><b>Overlays</b>: blokken bovenaan per overlay, die de editor openen.</li>
             <li><b>Raid melding</b> (zonder streepje) met keuze voor profielfoto, eigen afbeelding of geen afbeelding.</li>
             <li><b>Emotes</b>: alle emotes van je kanaal bekijken en per emote aan of uit zetten voor de overlays. Uploaden staat er al, maar werkt nog niet.</li>
@@ -521,9 +524,9 @@
   const VERSION = '1.0 + updates';
   // Client ID van de Twitch-app "R5 StreamerHub". Een Client ID is openbaar (geen wachtwoord).
   const CLIENT_ID = 'rjm1bqkmvmfpbqwn8wxvon05v8mu3d';
-  const SCOPES = ['moderator:read:followers', 'channel:read:subscriptions', 'bits:read', 'channel:read:redemptions', 'channel:manage:broadcast', 'moderator:read:chatters', 'user:write:chat'];
+  const SCOPES = ['moderator:read:followers', 'channel:read:subscriptions', 'bits:read', 'channel:read:redemptions', 'channel:manage:broadcast', 'moderator:read:chatters', 'user:write:chat', 'moderation:read', 'channel:read:vips'];
   const SCOPE_LABEL = { 'moderator:read:followers': 'volgers', 'channel:read:subscriptions': 'abonnees', 'bits:read': 'bits',
-    'channel:read:redemptions': 'kanaalpunten', 'channel:manage:broadcast': 'titel en categorie', 'moderator:read:chatters': 'kijkerslijst', 'user:write:chat': 'chat sturen' };
+    'channel:read:redemptions': 'kanaalpunten', 'channel:manage:broadcast': 'titel en categorie', 'moderator:read:chatters': 'kijkerslijst', 'user:write:chat': 'chat sturen', 'moderation:read': 'mods', 'channel:read:vips': "VIP's" };
   const BOTS = ['nightbot', 'streamelements', 'streamlabs', 'moobot', 'fossabot', 'wizebot', 'soundalerts', 'sery_bot', 'kofistreambot', 'botrixoficial', 'commanderroot', 'pokemoncommunitygame'];
   const $ = (s, el) => (el || document).querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -983,13 +986,45 @@
         const p = { broadcaster_id: state.me.user_id, moderator_id: state.me.user_id, first: 1000 };
         if (after) p.after = after;
         const j = await helix('GET', 'chat/chatters', p);
-        all.push(...j.data.map((u) => u.user_name || u.user_login));
+        all.push(...j.data.map((u) => ({ name: u.user_name || u.user_login, login: u.user_login })));
         after = j.pagination && j.pagination.cursor;
         if (!after) break;
       }
-      chatters = all.sort((a, b) => a.localeCompare(b));
+      chatters = all.sort((a, b) => a.name.localeCompare(b.name));
     } catch { chatters = null; }
+    await loadRoles();
     renderViewers();
+  }
+  // mods en VIP's van je kanaal (zoals in R5 ModHub); lukt dat niet, dan via api.ivr.fi en de badges in de chat
+  let roles = {}, rolesAt = 0;
+  async function loadRoles() {
+    if (!state.me || Date.now() - rolesAt < 5 * 60000) return;
+    const r = {};
+    const grab = async (path, role) => {
+      let after = '';
+      for (let i = 0; i < 20; i++) {
+        const p = { broadcaster_id: state.me.user_id, first: 100 };
+        if (after) p.after = after;
+        const j = await helix('GET', path, p);
+        j.data.forEach((u) => { if (!r[u.user_login]) r[u.user_login] = role; });
+        after = j.pagination && j.pagination.cursor;
+        if (!after) break;
+      }
+    };
+    let modsOk = false, vipsOk = false;
+    if (hasScope('moderation:read')) try { await grab('moderation/moderators', 1); modsOk = true; } catch {}
+    if (hasScope('channel:read:vips')) try { await grab('channels/vips', 2); vipsOk = true; } catch {}
+    if (!modsOk || !vipsOk) {
+      try {
+        const res = await fetch('https://api.ivr.fi/v2/twitch/modvip/' + encodeURIComponent(state.me.login));
+        if (res.ok) {
+          const j = await res.json();
+          if (!modsOk) (j.mods || []).forEach((u) => { if (u.login && !r[u.login]) r[u.login] = 1; });
+          if (!vipsOk) (j.vips || []).forEach((u) => { if (u.login && !r[u.login]) r[u.login] = 2; });
+        }
+      } catch {}
+    }
+    roles = r; rolesAt = Date.now();
   }
   function record(s, v, game) {
     const a = s.vh, now = Date.now();
@@ -1475,12 +1510,20 @@
   function renderViewers() {
     if (!W.lviewers) return;
     const q = $('.vsearch', W.lviewers).value.trim().toLowerCase();
-    const list = state.demo ? DEMO_USERS.concat(['tomtom', 'Ellie_NL', 'koffiekop']).sort((a, b) => a.localeCompare(b)) : chatters;
+    const list = state.demo ? DEMO_USERS.concat(['tomtom', 'Ellie_NL', 'koffiekop']).map((n) => ({ name: n, login: n.toLowerCase() })) : chatters;
     R('lviewers', 'vcount').textContent = list ? nl(list.length) + ' in de chat' : '';
     const el = R('lviewers', 'viewers');
     if (!list) { el.innerHTML = '<div class="empty">' + (state.me && !hasScope('moderator:read:chatters') ? 'Log opnieuw in om de kijkerslijst te zien.' : 'Laden…') + '</div>'; return; }
-    const f = list.filter((n) => !q || n.toLowerCase().includes(q));
-    el.innerHTML = f.length ? f.slice(0, 500).map((n) => '<div class="row"><span style="color:' + nameColor(n) + '">' + esc(n) + '</span></div>').join('') : '<div class="empty">Niemand gevonden.</div>';
+    // rollen ook uit de badges in de chat halen
+    const seen = {};
+    chatBuf.forEach((m) => { if (!m.name || !m.badges) return; const b = m.badges; const r = /broadcaster/.test(b) ? 0 : /moderator/.test(b) ? 1 : /vip/.test(b) ? 2 : null; if (r !== null) seen[m.name.toLowerCase()] = r; });
+    const me = state.demo ? '' : state.me ? state.me.login : '';
+    const groups = [['🎥 Streamer', []], ['🛡 Moderators', []], ["💎 VIP's", []], ['👥 Kijkers', []]];
+    list.filter((u) => !q || u.name.toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name))
+      .forEach((u) => groups[u.login === me ? 0 : seen[u.login] ?? roles[u.login] ?? 3][1].push(u));
+    const html = groups.filter(([, l]) => l.length).map(([t, l]) => '<div class="vgroup">' + t + ' <span>(' + nl(l.length) + ')</span></div>' +
+      l.slice(0, 500).map((u) => '<div class="row"><span style="color:' + nameColor(u.name) + '">' + esc(u.name) + '</span></div>').join('')).join('');
+    el.innerHTML = html || '<div class="empty">Niemand gevonden.</div>';
   }
   let playerFor = '';
   function renderPlayer(force) {
