@@ -404,6 +404,7 @@
             <li><code>${random.1-100}</code> willekeurig getal · <code>${random.pick a|b|c}</code> willekeurig één van de keuzes</li>
             <li><code>${1}</code>, <code>${2}</code> … losse woorden na het command · <code>${args}</code> alles na het command</li>
             <li><code>${commands}</code> lijst met alle commands die aan staan</li>
+            <li>Over een ander kanaal (zoals bij StreamElements): <code>${channel ${1}}</code> naam · <code>${game ${1}}</code> laatst gespeelde categorie · <code>${title ${1}}</code> titel · <code>${url ${1}}</code> link naar het kanaal</li>
           </ul>
         </details>
       </div>
@@ -928,7 +929,7 @@
     { id: 'game', name: 'game', aliases: ['categorie'], resp: 'We spelen nu ${game}.', level: 'all', cd: 10, ucd: 30, on: true, uses: 0, def: true },
     { id: 'title', name: 'title', aliases: ['titel'], resp: 'Titel: ${title}', level: 'all', cd: 10, ucd: 30, on: true, uses: 0, def: true },
     { id: 'commands', name: 'commands', aliases: ['cmds'], resp: 'Commands: ${commands}', level: 'all', cd: 15, ucd: 60, on: true, uses: 0, def: true },
-    { id: 'so', name: 'so', aliases: ['shoutout'], resp: 'Ga zeker eens kijken bij ${touser}: https://twitch.tv/${touser} 💜', level: 'mod', cd: 5, ucd: 0, on: true, uses: 0, def: true },
+    { id: 'so', name: 'so', aliases: ['shoutout'], resp: 'Shoutout naar ${channel ${1}}! Heeft voor het laatst ${game ${1}} gespeeld op https://twitch.tv/${channel ${1}} 💜', level: 'mod', cd: 5, ucd: 0, on: true, uses: 0, def: true },
     { id: 'lurk', name: 'lurk', aliases: [], resp: 'Fijn dat je er bent, ${user}! Geniet van je lurk 👀', level: 'all', cd: 0, ucd: 60, on: true, uses: 0, def: true },
     { id: 'dice', name: 'dobbel', aliases: ['dice'], resp: '${user} gooit een ${random.1-6} 🎲', level: 'all', cd: 3, ucd: 10, on: false, uses: 0, def: true },
   ];
@@ -940,11 +941,34 @@
   const userLevel = (login, badges) => (state.me && login === state.me.login) || /broadcaster/.test(badges || '') ? 4 : /moderator/.test(badges || '') ? 3 : /vip/.test(badges || '') ? 2 : /subscriber|founder/.test(badges || '') ? 1 : 0;
   const lvlNum = (l) => Math.max(0, CMD_LEVELS.findIndex((x) => x[0] === l));
   const findCmd = (word) => cmds.find((c) => c.on && (c.name === word || (c.aliases || []).includes(word)));
-  function cmdVars(c, login, name, args) {
+  // zoals StreamElements: ${game ${1}}, ${channel ${1}}, ${title ${1}} gaan over een ander kanaal (bijv. bij !so @naam)
+  async function cmdOut(c, login, name, args) {
+    let text = c.resp.replace(/\$\{(\w+)\s+\$\{([^}]+)\}\}/g, (m, fn, inner) => '${' + fn + ' ' + cmdVars({ resp: '${' + inner + '}', uses: c.uses }, login, name, args).replace(/^@/, '').split(/\s+/)[0] + '}');
+    const want = [...new Set([...text.matchAll(/\$\{(?:game|channel|title|url)\s+@?(\w{1,25})\}/g)].map((m) => m[1].toLowerCase()))].slice(0, 5);
+    const look = {};
+    if (want.length && state.me && !state.demo) {
+      try {
+        const u = await helix('GET', 'users', want.map((l) => ['login', l]));
+        const users = (u && u.data) || [];
+        const ch = users.length ? await helix('GET', 'channels', users.map((x) => ['broadcaster_id', x.id])) : null;
+        users.forEach((x) => { const i = ((ch && ch.data) || []).find((y) => y.broadcaster_id === x.id) || {}; look[x.login] = { name: x.display_name, login: x.login, game: i.game_name || '', title: i.title || '' }; });
+      } catch {}
+    }
+    return cmdVars(Object.assign({}, c, { resp: text }), login, name, args, look);
+  }
+  function cmdVars(c, login, name, args, look) {
     const live = !!cur, v = live && cur.vh.length ? cur.vh[cur.vh.length - 1][1] : 0;
     const to = (args[0] || '').replace(/^@/, '') || name || login;
     return c.resp.replace(/\$\{([^}]+)\}/g, (m, k) => {
       k = k.trim();
+      const o = /^(game|channel|title|url)\s+@?(\w{1,25})$/.exec(k);
+      if (o) {
+        const x = (look || {})[o[2].toLowerCase()] || (state.demo ? { name: o[2], login: o[2].toLowerCase(), game: 'Minecraft', title: 'Demo-stream' } : null);
+        if (o[1] === 'channel') return x ? x.name : o[2];
+        if (o[1] === 'url') return 'https://twitch.tv/' + (x ? x.login : o[2].toLowerCase());
+        if (o[1] === 'game') return x && x.game ? x.game : 'iets onbekends';
+        return x ? x.title : '';
+      }
       if (k === 'user') return name || login;
       if (k === 'touser') return to;
       if (k === 'channel') return (state.user && state.user.display_name) || (state.me && state.me.login) || 'dit kanaal';
@@ -979,11 +1003,12 @@
     }
     cmdLast[c.id] = now; cmdUserLast[c.id + ':' + login] = now;
     c.uses = (c.uses || 0) + 1; saveCmds();
-    const out = cmdVars(c, login, name, parts);
-    if (!out.trim()) return;
-    cmdSent.push({ text: out, t: now }); if (cmdSent.length > 20) cmdSent.shift();
-    sendChat(out);
-    if (state.page === 'commands') renderCmds();
+    cmdOut(c, login, name, parts).then((out) => {
+      if (!out.trim()) return;
+      cmdSent.push({ text: out, t: Date.now() }); if (cmdSent.length > 20) cmdSent.shift();
+      sendChat(out);
+      if (state.page === 'commands') renderCmds();
+    });
   }
   let cmdFilter = 'all', cmdEdit = null;
   function renderCmds() {
@@ -1042,7 +1067,9 @@
     const t = e.target.value.trim(), out = $('#cmdTryOut');
     if (!t.startsWith('!')) { out.textContent = ''; return; }
     const parts = t.slice(1).split(/\s+/), c = findCmd((parts.shift() || '').toLowerCase());
-    out.textContent = c ? '→ ' + cmdVars(c, (state.me && state.me.login) || 'jij', (state.user && state.user.display_name) || 'jij', parts) : 'Geen command met die naam (of hij staat uit).';
+    if (!c) { out.textContent = 'Geen command met die naam (of hij staat uit).'; return; }
+    clearTimeout(out.t);
+    out.t = setTimeout(async () => { out.textContent = '→ ' + await cmdOut(c, (state.me && state.me.login) || 'jij', (state.user && state.user.display_name) || 'jij', parts); }, 300);
   };
 
   async function sendChat(text) {
