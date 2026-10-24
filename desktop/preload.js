@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld('r5app', {
   onUpdate: (fn) => ipcRenderer.on('r5:update-state', (_e, u) => fn(u)),
   // eigen emotes: action = 'list' | 'add' (naam, base64, extensie) | 'remove' (naam) | 'folder'
   emotes: (action, name, data, ext) => ipcRenderer.invoke('r5:emotes', String(action || 'list'), name, data, ext),
+  // vaste overlay-link: instellingen (de lange link-query) bewaren onder <naam>/<soort>
+  overlay: (user, kind, query) => ipcRenderer.invoke('r5:overlay', user, kind, query),
   prompt: (message, value) => ipcRenderer.sendSync('r5:prompt', String(message ?? ''), value == null ? '' : String(value)),
 });
 

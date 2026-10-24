@@ -68,6 +68,31 @@
 (() => {
   'use strict';
   // Instellingen staan in de link, zodat deze pagina zonder login en zonder server werkt.
+  // Vaste link: overlay.html?<naam>/<soort> (bijv. ?dave_r5/alerts). De instellingen komen uit de
+  // Windows-app op deze pc; verandert er iets, dan wordt de overlay binnen een paar seconden bijgewerkt.
+  const fixed = /^\?(\w{2,25})\/(\w{2,20})$/.exec(location.search);
+  if (fixed) {
+    document.getElementById('stage').remove();
+    const hint = document.getElementById('hint');
+    const f = document.createElement('iframe');
+    f.allow = 'autoplay';
+    f.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;background:transparent';
+    document.body.appendChild(f);
+    let cur = null;
+    const load = async () => {
+      try {
+        const r = await fetch('http://127.0.0.1:17565/o/' + fixed[1].toLowerCase() + '/' + fixed[2].toLowerCase(), { cache: 'no-store' });
+        const q = r.ok ? await r.text() : '';
+        if (!q) throw new Error(r.status === 404 ? 'leeg' : 'fout');
+        if (q !== cur) { cur = q; f.src = 'overlay.html?' + q; }
+        hint.style.display = 'none';
+      } catch (e) {
+        if (cur == null) { hint.textContent = e.message === 'leeg' ? 'Nog geen instellingen: open Overlays in de R5 StreamerHub-app.' : 'R5 StreamerHub-app niet gevonden: start de app op deze pc.'; hint.style.display = 'block'; }
+      }
+    };
+    load(); setInterval(load, 5000);
+    return;
+  }
   const P = new URLSearchParams(location.search);
   // Alles-in-één: één OBS-bron met alle gekozen overlays, elk als eigen laag. Elke overlay staat in een
   // eigen parameter o.<soort> (o.wall, o.combo, o.raid, en later nieuwe meldingen), dus nieuwe soorten doen vanzelf mee.

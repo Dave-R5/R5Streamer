@@ -546,6 +546,7 @@
             <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
             <li><b>Kijkers in de chat</b> nu gesplitst zoals in R5 ModHub: streamer, moderators, VIP's en kijkers (log opnieuw in voor de mods- en VIP-lijst). Smallere scrollbalken.</li>
             <li><b>Windows-app</b>: R5 StreamerHub als programma, met automatische updates (⚙ Instellingen → Windows-app). Nieuw logo: rode S.</li>
+            <li>Windows-app 1.1.5: <b>vaste link</b> voor Alles in één (overlay.html?jouwnaam/alerts). Die blijft hetzelfde; wijzigingen komen vanzelf door zolang de app open staat.</li>
             <li><b>🧩 Alles in één</b> bij Overlays: één OBS-bron met emote-wall, combo en raid melding samen. Nieuwe meldingen doen later vanzelf mee.</li>
             <li>Eigen emotes (Windows-app 1.1.0): upload ze in de app (😀 Emotes bij Overlays) of voeg ze toe met een link. Ze doen mee in de emote-wall en de combo.</li>
             <li>Windows-app 1.0.5: na het inloggen bij Twitch gaat de app nu vanzelf door naar R5 StreamerHub.</li>
@@ -2115,16 +2116,30 @@
     Object.entries(extra || {}).forEach(([k, v]) => p.set(k, v));
     return base + 'overlay.html?' + p.toString();
   };
+  // vaste link via de Windows-app: overlay.html?<naam>/alerts; de app bewaart de instellingen, de site houdt ze bij
+  const appFixed = !!(window.r5app && window.r5app.overlay);
+  const fixedUrl = () => base + 'overlay.html?' + ovChan() + '/alerts';
+  let fixedLast = '';
+  const syncFixed = () => {
+    if (!appFixed || !ovChan() || ovChan() === 'demo') return;
+    const q = allUrl().split('?')[1];
+    if (q === fixedLast) return;
+    fixedLast = q;
+    window.r5app.overlay(ovChan(), 'alerts', q).catch(() => { fixedLast = ''; });
+  };
+  if (appFixed) setInterval(syncFixed, 2000);
   function renderAllEditor(box) {
     box.innerHTML = '<div class="card ov"><div class="f"><h3>🧩 Alles in één</h3><div class="hint">Eén browserbron in OBS (1920 × 1080) met alles wat je aanvinkt. Elke overlay stel je in bij zijn eigen tegel; deze link neemt die instellingen mee. Na een wijziging kopieer je de link opnieuw.</div>' +
       '<div class="fsec">Doet mee</div>' + OVERLAYS.map((o) => '<label class="chk"><input type="checkbox" data-inc="' + o.type + '"' + (ovCfg.all.skip.includes(o.type) ? '' : ' checked') + '> ' + o.name + '</label>').join('') +
       '<p class="hint">Komen er later nieuwe meldingen bij, dan staan ze hier ook en doen ze vanzelf mee.</p></div>' +
       '<div><div class="pv"><iframe title="Voorbeeld" allow="autoplay; fullscreen"></iframe></div><div class="acts"><button data-a="test">▶ Test</button><label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-a="loop"> doorlopend testen</label>' +
-      '<button class="primary" data-a="copy" style="margin-left:auto">📋 Kopieer OBS-link</button></div><div class="link"></div></div></div>';
+      '<button class="primary" data-a="copy" style="margin-left:auto">📋 Kopieer OBS-link</button></div><div class="link"></div>' +
+      '<p class="hint">' + (appFixed ? '🔗 Dit is een <b>vaste link</b>: die blijft altijd hetzelfde. Wat je verandert, neemt de overlay binnen een paar seconden over. De Windows-app moet daarvoor open staan tijdens het streamen.' : 'In de Windows-app krijg je een <b>vaste link</b> (…/overlay.html?jouwnaam/alerts) die hetzelfde blijft als je iets verandert. Hier in de browser kopieer je de link na een wijziging opnieuw.') + '</p></div></div>';
     const card = box.querySelector('.ov'), f = card.querySelector('iframe'), pv = card.querySelector('.pv');
     const refresh = () => {
       const okCh = ovChan() && ovChan() !== 'demo', loop = card.querySelector('[data-a=loop]').checked;
-      card.querySelector('.link').textContent = okCh ? allUrl() : 'Vul bovenaan je kanaalnaam in om de link te maken.';
+      card.querySelector('.link').textContent = okCh ? (appFixed ? fixedUrl() : allUrl()) : 'Vul bovenaan je kanaalnaam in om de link te maken.';
+      syncFixed();
       const src = allUrl(Object.assign({ preview: '1' }, loop ? { test: '1' } : { hold: '1' }, okCh ? {} : { ch: '' }));
       if (f.dataset.src !== src) { f.dataset.src = src; f.src = src; }
     };
@@ -2137,7 +2152,8 @@
     card.querySelector('[data-a=copy]').onclick = async () => {
       if (!ovChan() || ovChan() === 'demo') return toast('Vul eerst je kanaalnaam in.', 'err');
       if (OVERLAYS.every((o) => ovCfg.all.skip.includes(o.type))) return toast('Vink minstens één overlay aan.', 'err');
-      const url = allUrl();
+      syncFixed();
+      const url = appFixed ? fixedUrl() : allUrl();
       try { await navigator.clipboard.writeText(url); toast('Link gekopieerd. Plak hem in OBS als Browserbron (1920 × 1080).', 'ok'); }
       catch { prompt('Kopieer deze link:', url); }
     };

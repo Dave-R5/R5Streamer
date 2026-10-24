@@ -315,14 +315,38 @@ function emoteList() {
     return fs.readdirSync(emoteDir()).map((f) => { const m = /^(\w{2,25})\.(png|jpe?g|gif|webp)$/i.exec(f); return m && { name: m[1], file: f, url: emoteUrl(f) }; }).filter(Boolean);
   } catch { return []; }
 }
+// Vaste overlay-links (bijv. overlay.html?dave_r5/alerts): de site bewaart de instellingen hier,
+// de overlay in OBS haalt ze op via http://127.0.0.1:17565/o/<naam>/<soort>. Alleen op deze pc.
+const overlayFile = () => path.join(app.getPath('userData'), 'overlays.json');
+let overlays = null;
+const loadOverlays = () => { if (!overlays) { try { overlays = JSON.parse(fs.readFileSync(overlayFile(), 'utf8')) || {}; } catch { overlays = {}; } } return overlays; };
+ipcMain.handle('r5:overlay', async (e, user, kind, query) => {
+  if (!fromSite(e)) return false;
+  user = String(user || '').toLowerCase(); kind = String(kind || '').toLowerCase(); query = String(query || '');
+  if (!/^\w{2,25}$/.test(user) || !/^\w{2,20}$/.test(kind) || query.length > 30000) return false;
+  const o = loadOverlays();
+  if (o[user + '/' + kind] === query) return true;
+  o[user + '/' + kind] = query;
+  fs.writeFileSync(overlayFile(), JSON.stringify(o));
+  return true;
+});
 function startEmoteServer() {
   const srv = http.createServer((req, res) => {
+    // https-pagina (OBS) die deze pc vraagt: Chrome wil daar een extra toestemming voor (Private Network Access)
+    const head = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Private-Network': 'true', 'Access-Control-Allow-Methods': 'GET', 'Cache-Control': 'no-store' };
+    if (req.method === 'OPTIONS') { res.writeHead(204, head); return res.end(); }
+    const om = /^\/o\/(\w{2,25})\/(\w{2,20})$/.exec((req.url || '').split('?')[0].toLowerCase());
+    if (om) {
+      const q = loadOverlays()[om[1] + '/' + om[2]];
+      res.writeHead(q == null ? 404 : 200, { ...head, 'Content-Type': 'text/plain; charset=utf-8' });
+      return res.end(q == null ? '' : q);
+    }
     const m = /^\/emotes\/([^/?]+)/.exec(req.url || '');
     const f = m && decodeURIComponent(m[1]), ext = f && (/\.(\w+)$/.exec(f) || [])[1];
     if (!f || !/^\w{2,25}\.(png|jpe?g|gif|webp)$/i.test(f)) { res.writeHead(404); return res.end(); }
     fs.readFile(path.join(emoteDir(), f), (err, data) => {
       if (err) { res.writeHead(404); return res.end(); }
-      res.writeHead(200, { 'Content-Type': EMOTE_TYPES[ext.toLowerCase()], 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' });
+      res.writeHead(200, { ...head, 'Content-Type': EMOTE_TYPES[ext.toLowerCase()] });
       res.end(data);
     });
   });
