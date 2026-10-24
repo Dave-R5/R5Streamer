@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('r5app', {
   // in-place updates: action = 'state' | 'check' | 'download' | 'install'; onUpdate(fn) krijgt elke wijziging
   update: (action) => ipcRenderer.invoke('r5:update', String(action || 'state')),
   onUpdate: (fn) => ipcRenderer.on('r5:update-state', (_e, u) => fn(u)),
+  // eigen emotes: action = 'list' | 'add' (naam, base64, extensie) | 'remove' (naam) | 'folder'
+  emotes: (action, name, data, ext) => ipcRenderer.invoke('r5:emotes', String(action || 'list'), name, data, ext),
   prompt: (message, value) => ipcRenderer.sendSync('r5:prompt', String(message ?? ''), value == null ? '' : String(value)),
 });
 

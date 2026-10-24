@@ -5,6 +5,7 @@ const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const http = require('http');
 const crypto = require('crypto');
+const fs = require('fs');
 
 const START_URL = 'https://r5streamer.daver5.nl/';
 const inApp = (url) => url.startsWith(START_URL);
@@ -303,7 +304,50 @@ Menu.setApplicationMenu(Menu.buildFromTemplate([
 ]));
 
 app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+// Eigen emotes: opgeslagen in de app-map en voor OBS te zien via http://127.0.0.1:17565/emotes/<bestand>
+// (alleen op deze pc, alleen zolang de app draait).
+const EMOTE_PORT = 17565;
+const EMOTE_TYPES = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp' };
+const emoteDir = () => path.join(app.getPath('userData'), 'emotes');
+const emoteUrl = (f) => `http://127.0.0.1:${EMOTE_PORT}/emotes/${encodeURIComponent(f)}`;
+function emoteList() {
+  try {
+    return fs.readdirSync(emoteDir()).map((f) => { const m = /^(\w{2,25})\.(png|jpe?g|gif|webp)$/i.exec(f); return m && { name: m[1], file: f, url: emoteUrl(f) }; }).filter(Boolean);
+  } catch { return []; }
+}
+function startEmoteServer() {
+  const srv = http.createServer((req, res) => {
+    const m = /^\/emotes\/([^/?]+)/.exec(req.url || '');
+    const f = m && decodeURIComponent(m[1]), ext = f && (/\.(\w+)$/.exec(f) || [])[1];
+    if (!f || !/^\w{2,25}\.(png|jpe?g|gif|webp)$/i.test(f)) { res.writeHead(404); return res.end(); }
+    fs.readFile(path.join(emoteDir(), f), (err, data) => {
+      if (err) { res.writeHead(404); return res.end(); }
+      res.writeHead(200, { 'Content-Type': EMOTE_TYPES[ext.toLowerCase()], 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' });
+      res.end(data);
+    });
+  });
+  srv.on('error', () => {});
+  srv.listen(EMOTE_PORT, '127.0.0.1');
+}
+ipcMain.handle('r5:emotes', async (e, action, name, data, ext) => {
+  if (!fromSite(e)) return [];
+  const dir = emoteDir();
+  if (action === 'add') {
+    name = String(name || ''); ext = String(ext || '').toLowerCase();
+    if (!/^\w{2,25}$/.test(name) || !EMOTE_TYPES[ext]) throw new Error('Ongeldige naam of bestandstype.');
+    const buf = Buffer.from(String(data || ''), 'base64');
+    if (!buf.length || buf.length > 3 * 1024 * 1024) throw new Error('Het plaatje mag maximaal 3 MB zijn.');
+    fs.mkdirSync(dir, { recursive: true });
+    emoteList().filter((x) => x.name.toLowerCase() === name.toLowerCase()).forEach((x) => fs.rmSync(path.join(dir, x.file), { force: true }));
+    fs.writeFileSync(path.join(dir, name + '.' + ext), buf);
+  }
+  if (action === 'remove') emoteList().filter((x) => x.name === String(name)).forEach((x) => fs.rmSync(path.join(dir, x.file), { force: true }));
+  if (action === 'folder') { fs.mkdirSync(dir, { recursive: true }); shell.openPath(dir); }
+  return emoteList();
+});
+
 app.whenReady().then(() => {
+  startEmoteServer();
   createWindow();
   setTimeout(checkForUpdates, 10_000);
   setInterval(checkForUpdates, 4 * 60 * 60 * 1000);

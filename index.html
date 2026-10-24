@@ -216,6 +216,12 @@
   .em:hover { border-color: var(--accent); }
   .drop { border: 2px dashed var(--line); border-radius: 10px; padding: 18px; text-align: center; color: var(--muted); margin-top: 10px; }
   .drop b { color: var(--text); }
+  .drop.over { border-color: var(--accent); background: rgba(145,71,255,.08); }
+  .cemlist { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+  .cem { display: flex; align-items: center; gap: 6px; background: var(--bg2, #1f1f23); border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px 4px 8px; }
+  .cem img { height: 28px; max-width: 56px; object-fit: contain; }
+  .cem small { color: var(--muted); }
+  .cem button { padding: 0 6px; min-height: 0; line-height: 20px; }
   .soonpill { display: inline-block; font-size: 10.5px; font-weight: 700; color: var(--gold); background: #3d2a00; border: 1px solid #6b4a00; border-radius: 10px; padding: 0 7px; margin-left: 6px; vertical-align: 1px; }
 
   /* instellingen */
@@ -515,7 +521,7 @@
         <li><b>Emote-wall</b>: emotes uit je chat vliegen omhoog, regenen naar beneden, ploppen op of stuiteren over je scherm.</li>
         <li><b>Emote-combo</b>: spamt je chat dezelfde emote, dan verschijnt een grote teller (bijv. <b>PogChamp × 12</b>).</li>
         <li><b>Raid melding</b>: naam, profielfoto (of je eigen afbeelding) en aantal kijkers, met geluid als je wilt.</li>
-        <li><b>Emotes</b>: alle emotes van je kanaal (Twitch, 7TV, BTTV, FFZ). Klik op een emote om hem uit of aan te zetten voor de emote-wall en combo. Zelf emotes uploaden komt later.</li>
+        <li><b>Emotes</b>: alle emotes van je kanaal (Twitch, 7TV, BTTV, FFZ). Klik op een emote om hem uit of aan te zetten voor de emote-wall en combo. Eigen emotes upload je in de Windows-app, of je voegt ze toe met een link.</li>
         <li>Klik op <b>📋 Kopieer OBS-link</b> en plak hem in OBS als Browserbron (1920 × 1080). De overlays werken zonder inloggen en zonder dat R5 StreamerHub open staat.</li>
       </ul>
     </details>
@@ -540,6 +546,7 @@
             <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
             <li><b>Kijkers in de chat</b> nu gesplitst zoals in R5 ModHub: streamer, moderators, VIP's en kijkers (log opnieuw in voor de mods- en VIP-lijst). Smallere scrollbalken.</li>
             <li><b>Windows-app</b>: R5 StreamerHub als programma, met automatische updates (⚙ Instellingen → Windows-app). Nieuw logo: rode S.</li>
+            <li>Eigen emotes (Windows-app 1.1.0): upload ze in de app (😀 Emotes bij Overlays) of voeg ze toe met een link. Ze doen mee in de emote-wall en de combo.</li>
             <li>Windows-app 1.0.5: na het inloggen bij Twitch gaat de app nu vanzelf door naar R5 StreamerHub.</li>
             <li>Emote-wall en emote-combo: nieuwe keuze <b>Vrije keuze</b> bij de plek; sleep en vergroot het vak in het voorbeeld.</li>
             <li>Raid-clip start nu vanzelf in de testweergave (zonder geluid in de editor, met geluid in OBS).</li>
@@ -1926,6 +1933,9 @@
   OVERLAYS.forEach((o) => { ovCfg[o.type] = Object.assign(Object.fromEntries(o.fields.filter((f) => f[0] !== '@').map((f) => [f[0], f[3]])), ovCfg[o.type] || {}); });
   Object.values(ovCfg).forEach((c) => { if (c && typeof c === 'object' && !Array.isArray(c)) delete c['@']; });
   if (!Array.isArray(ovCfg.off)) ovCfg.off = [];   // emotes die uit staan voor de overlays
+  if (!Array.isArray(ovCfg.cem)) ovCfg.cem = [];   // eigen emotes: [{name, url}] (url = https of de Windows-app op 127.0.0.1:17565)
+  const appEmotes = !!(window.r5app && window.r5app.emotes);
+  if (appEmotes) window.r5app.emotes('list').then((list) => { ovCfg.cem = ovCfg.cem.filter((c) => !c.url.startsWith('http://127.0.0.1:')).concat(list.map((x) => ({ name: x.name, url: x.url }))); store.set('ov', ovCfg); if (ovSel === 'emotes' && state.page === 'overlays') renderOvEditor(); }).catch(() => {});
   // raid: plek en grootte (x,y,b,h op 1920x1080); oude aan/uit-geluid omzetten
   if (typeof ovCfg.raid.sound === 'boolean') ovCfg.raid.sound = ovCfg.raid.sound ? 'chime' : 'none';
   if (!ovCfg.raid.box) ovCfg.raid.box = '560,90,800,200';
@@ -1946,6 +1956,7 @@
     const p = new URLSearchParams({ type: o.type, ch: ovChan() });
     Object.entries(ovCfg[o.type]).forEach(([k, v]) => { const c = ovCfg[o.type]; if ((k === 'img' && c.imgmode !== 'custom') || (k === 'area' && c.zone !== 'free') || (k === 'cbx' && c.pos !== 'free')) return; p.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : k === 'color' || k === 'tcolor' ? String(v).replace('#', '') : v); });
     if (o.type !== 'raid' && ovCfg.off.length) p.set('off', ovCfg.off.join(' '));
+    if (o.type !== 'raid' && ovCfg.cem.length) p.set('cem', ovCfg.cem.map((c) => c.name + '|' + c.url).join(' '));
     Object.entries(extra || {}).forEach(([k, v]) => p.set(k, v));
     return base + 'overlay.html?' + p.toString();
   }
@@ -1954,7 +1965,7 @@
     if (document.activeElement !== inp) inp.value = ovChan();
     inp.disabled = !!(state.me && !state.demo);
     $('#ovChanHint').textContent = state.me && !state.demo ? 'je eigen kanaal (ingelogd)' : 'vul je kanaalnaam in, inloggen is niet nodig';
-    const tiles = OVERLAYS.map((o) => [o.type, o.name, o.desc]).concat([['emotes', '😀 Emotes', 'Kies welke emotes in de emote-wall en combo mogen. Uploaden komt later.']]);
+    const tiles = OVERLAYS.map((o) => [o.type, o.name, o.desc]).concat([['emotes', '😀 Emotes', 'Kies welke emotes in de emote-wall en combo mogen, en voeg je eigen emotes toe.']]);
     $('#ovTiles').innerHTML = tiles.map(([t, n, d]) => '<button class="ovtile' + (ovSel === t ? ' on' : '') + '" data-ov="' + t + '"><b>' + n + '</b><small>' + d + '</small>' +
       (t === 'emotes' ? '<small data-emcount>' + emCountText() + '</small>' : '') + '</button>').join('');
     renderOvEditor();
@@ -2094,14 +2105,49 @@
   // emotes: bekijken en per emote aan/uit voor de overlays
   const SRC_LABEL = { twitch: 'Twitch', '7tv': '7TV', bttv: 'BTTV', ffz: 'FFZ' };
   const emState = { q: '', src: 'all', scope: 'chan' };
+  // eigen emotes (Windows-app: bestanden in de app-map; browser: links)
+  async function addCemFiles(files, card) {
+    let n = 0;
+    for (const f of files) {
+      const ext = ((/\.(png|jpe?g|gif|webp)$/i.exec(f.name) || [])[1] || '').toLowerCase();
+      if (!ext) { toast(f.name + ': alleen png, jpg, gif of webp.', 'err'); continue; }
+      if (f.size > 3 * 1024 * 1024) { toast(f.name + ': maximaal 3 MB.', 'err'); continue; }
+      let name = f.name.replace(/\.[^.]+$/, '').replace(/\W/g, '').slice(0, 25);
+      if (name.length < 2) name = (prompt('Welke naam typ je in de chat voor ' + f.name + '?', '') || '').replace(/\W/g, '').slice(0, 25);
+      if (name.length < 2) continue;
+      const data = await new Promise((ok) => { const rd = new FileReader(); rd.onload = () => ok(String(rd.result).split(',')[1]); rd.readAsDataURL(f); });
+      try {
+        const list = await window.r5app.emotes('add', name, data, ext === 'jpeg' ? 'jpg' : ext);
+        ovCfg.cem = ovCfg.cem.filter((c) => !c.url.startsWith('http://127.0.0.1:') && c.name.toLowerCase() !== name.toLowerCase()).concat(list.map((x) => ({ name: x.name, url: x.url })));
+        n++;
+      } catch (e) { toast(f.name + ': ' + String(e.message || e).replace(/^.*Error: /, ''), 'err'); }
+    }
+    store.set('ov', ovCfg); drawCem(card);
+    if (n) toast(n + ' emote' + (n === 1 ? '' : 's') + ' toegevoegd. Kopieer de OBS-link opnieuw.', 'ok');
+  }
+  async function removeCem(name, card) {
+    const c = ovCfg.cem.find((x) => x.name === name);
+    if (c && c.url.startsWith('http://127.0.0.1:') && appEmotes) { try { await window.r5app.emotes('remove', name); } catch {} }
+    ovCfg.cem = ovCfg.cem.filter((x) => x.name !== name); store.set('ov', ovCfg); drawCem(card);
+  }
+  function drawCem(card) {
+    const el = $('[data-e=cem]', card);
+    if (!el) return;
+    el.innerHTML = ovCfg.cem.length ? ovCfg.cem.map((c) => '<span class="cem" title="' + esc(c.url) + '"><img src="' + esc(c.url) + '" alt=""><b>' + esc(c.name) + '</b>' +
+      (c.url.startsWith('http://127.0.0.1:') && !appEmotes ? '<small>alleen in de app</small>' : '') + '<button data-e="cdel" data-n="' + esc(c.name) + '" title="Verwijderen">✕</button></span>').join('') : '<span class="hint">Nog geen eigen emotes.</span>';
+  }
   function renderEmoteEditor(box) {
     let card = box.querySelector('.emcard');
     if (!card) {
       box.innerHTML = '<div class="card emcard"><h3 style="margin:0 0 4px">😀 Emotes voor de overlays</h3><div class="hint">Klik op een emote om hem uit (grijs) of weer aan te zetten. Uitgezette emotes verschijnen niet in de emote-wall en de combo. Na een wijziging kopieer je de OBS-link opnieuw.</div>' +
         '<div class="emtools"><input data-e="q" placeholder="Zoek emote…" autocomplete="off"><div class="filters" data-e="scope" style="margin:0"></div><div class="filters" data-e="src" style="margin:0"></div>' +
         '<span style="margin-left:auto" class="hint" data-e="count"></span><button data-e="allon">Alles aan</button><button data-e="alloff">Getoonde uit</button></div><div class="emgrid" data-e="grid"></div>' +
-        '<div class="drop"><b>⬆ Eigen emotes uploaden</b><span class="soonpill">KOMT LATER</span><br>Sleep hier straks je eigen plaatjes naartoe om ze in je overlays te gebruiken. Dit komt in een volgende versie, samen met de Windows-app.' +
-        '<div class="acts" style="justify-content:center"><button data-e="upload">Kies bestanden…</button></div></div></div>';
+        '<div class="drop" data-e="drop"><b>⬆ Eigen emotes</b><br>' + (appEmotes
+          ? 'Sleep plaatjes hierheen of kies bestanden (png, jpg, gif of webp, max. 3 MB). De bestandsnaam wordt de naam die je in de chat typt, bijvoorbeeld <b>daveHype</b>. OBS ziet je eigen emotes zolang de Windows-app open staat.' +
+            '<div class="acts" style="justify-content:center"><button data-e="upload">Kies bestanden…</button><button data-e="folder">📁 Map openen</button><input type="file" data-e="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden></div>'
+          : 'Plaatjes uploaden kan in de Windows-app (⚙ Instellingen → Windows-app). Hier voeg je een emote toe met een link naar een plaatje dat online staat.' +
+            '<div class="acts" style="justify-content:center"><input data-e="cname" placeholder="Naam, bijv. daveHype" maxlength="25" autocomplete="off" style="width:170px"><input data-e="curl" placeholder="https://…/plaatje.png" autocomplete="off" style="flex:1;min-width:200px;max-width:380px"><button data-e="cadd">Toevoegen</button></div>') +
+        '<div class="cemlist" data-e="cem"></div></div></div>';
       card = box.querySelector('.emcard');
       $('[data-e=q]', card).oninput = (e) => { emState.q = e.target.value.trim().toLowerCase(); drawEmotes(card); };
       card.onclick = (e) => {
@@ -2111,10 +2157,26 @@
         if (!a) return;
         if (a.dataset.e === 'allon') { ovCfg.off = []; store.set('ov', ovCfg); drawEmotes(card); }
         if (a.dataset.e === 'alloff') { const set = new Set(ovCfg.off); visibleEmotes().forEach(([n]) => set.add(n)); ovCfg.off = [...set]; store.set('ov', ovCfg); drawEmotes(card); }
-        if (a.dataset.e === 'upload') toast('Emotes uploaden komt in een volgende versie (in de Windows-app).');
+        if (a.dataset.e === 'upload') $('[data-e=file]', card).click();
+        if (a.dataset.e === 'folder') window.r5app.emotes('folder');
+        if (a.dataset.e === 'cadd') {
+          const n = $('[data-e=cname]', card).value.trim(), u = $('[data-e=curl]', card).value.trim();
+          if (!/^\w{2,25}$/.test(n)) return toast('Geef een naam van 2 tot 25 letters of cijfers, zonder spaties.', 'err');
+          if (!/^https:\/\/\S+$/.test(u)) return toast('Plak een link die begint met https://', 'err');
+          ovCfg.cem = ovCfg.cem.filter((c) => c.name.toLowerCase() !== n.toLowerCase()).concat({ name: n, url: u }); store.set('ov', ovCfg);
+          $('[data-e=cname]', card).value = $('[data-e=curl]', card).value = ''; drawCem(card); toast('Emote ' + n + ' toegevoegd. Kopieer de OBS-link opnieuw.', 'ok');
+        }
+        if (a.dataset.e === 'cdel') removeCem(a.dataset.n, card);
       };
+      const fi = $('[data-e=file]', card), drop = $('[data-e=drop]', card);
+      if (fi) fi.onchange = () => { addCemFiles([...fi.files], card); fi.value = ''; };
+      if (appEmotes) {
+        drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('over'); };
+        drop.ondragleave = () => drop.classList.remove('over');
+        drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('over'); addCemFiles([...e.dataTransfer.files], card); };
+      }
     }
-    drawEmotes(card);
+    drawEmotes(card); drawCem(card);
   }
   function visibleEmotes() {
     return Object.entries(emo).filter(([n, e]) => (emState.scope === 'all' || e.ch) && (emState.src === 'all' || e.src === emState.src) && (!emState.q || n.toLowerCase().includes(emState.q)))

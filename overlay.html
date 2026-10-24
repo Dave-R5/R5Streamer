@@ -91,7 +91,9 @@
     color: /^[0-9a-f]{6}$/i.test(P.get('color') || '') ? '#' + P.get('color') : '#9147ff',
     test: P.get('test') === '1',
     preview: P.get('preview') === '1',
-    off: new Set((P.get('off') || '').split(' ').filter(Boolean)),   // emotes die de streamer heeft uitgezet
+    off: new Set((P.get('off') || '').split(' ').filter(Boolean)),
+    // eigen emotes van de streamer: "naam|link naam|link" (link = https of de Windows-app op 127.0.0.1)
+    cem: Object.fromEntries((P.get('cem') || '').split(' ').map((x) => x.split('|')).filter(([n, u]) => /^\w{2,25}$/.test(n || '') && /^(https:\/\/|http:\/\/127\.0\.0\.1:17565\/)/.test(u || ''))),   // emotes die de streamer heeft uitgezet
     imgmode: P.get('imgmode') || 'avatar',              // raid: avatar | custom | none
     style: P.get('style') || 'card',                    // raid: card | banner | glass | text
     title: P.get('title') ?? 'Raid!',
@@ -119,12 +121,14 @@
   Object.entries(TW_BASE).forEach(([n, id]) => { emo[n] = 'https://static-cdn.jtvnw.net/emoticons/v2/' + id + '/default/dark/3.0'; });
   const getJson = (u) => fetch(u).then((r) => r.ok ? r.json() : null).catch(() => null);
   const BTTV = 'https://api.betterttv.net/3/cached/';
+  Object.assign(emo, cfg.cem);
   function addStv(list) { (list || []).forEach((e) => { const h = e.data && e.data.host; if (h && h.url) emo[e.name] = 'https:' + h.url + '/4x.webp'; }); }
   function addBttv(list) { (list || []).forEach((e) => { emo[e.code] = 'https://cdn.betterttv.net/emote/' + e.id + '/3x'; }); }
   function addFfz(list) { (list || []).forEach((e) => { const i = e.images || {}; const u = i['4x'] || i['2x'] || i['1x']; if (u) emo[e.code] = u; }); }
   async function loadGlobal() {
     const [s, b, f] = await Promise.all([getJson('https://7tv.io/v3/emote-sets/global'), getJson(BTTV + 'emotes/global'), getJson(BTTV + 'frankerfacez/emotes/global')]);
     if (s) addStv(s.emotes); if (Array.isArray(b)) addBttv(b); if (Array.isArray(f)) addFfz(f);
+    Object.assign(emo, cfg.cem);   // eigen emotes gaan voor
   }
   let chanLoaded = false;
   async function loadChannel(roomId) {
@@ -133,6 +137,7 @@
     if (b) addBttv([...(b.channelEmotes || []), ...(b.sharedEmotes || [])]);
     if (Array.isArray(f)) addFfz(f);
     if (s && s.emote_set) addStv(s.emote_set.emotes);
+    Object.assign(emo, cfg.cem);
   }
   const twUrl = (id) => 'https://static-cdn.jtvnw.net/emoticons/v2/' + encodeURIComponent(id) + '/default/dark/3.0';
 
@@ -404,7 +409,8 @@
   const DEMO_RAIDERS = [['PixelPiet', 42], ['luna_moon', 128], ['Henk_de_Tank', 7]];
   function fakeChat() {
     const names = Object.keys(emo);
-    const pick = () => names[Math.floor(Math.random() * Math.min(names.length, 40))];
+    const own = Object.keys(cfg.cem);   // eigen emotes komen in de test vaker langs
+    const pick = () => (own.length && Math.random() < .5 ? own[Math.floor(Math.random() * own.length)] : names[Math.floor(Math.random() * Math.min(names.length, 40))]);
     if (cfg.type === 'combo') { const e = combo.name && Math.random() < .85 ? combo.name : pick(); onChat(e + ' ' + e, '', 'test' + Math.floor(Math.random() * 20)); }
     else onChat(Array.from({ length: 1 + Math.floor(Math.random() * 4) }, pick).join(' '), '', 'test');
   }
