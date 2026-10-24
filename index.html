@@ -546,6 +546,7 @@
             <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
             <li><b>Kijkers in de chat</b> nu gesplitst zoals in R5 ModHub: streamer, moderators, VIP's en kijkers (log opnieuw in voor de mods- en VIP-lijst). Smallere scrollbalken.</li>
             <li><b>Windows-app</b>: R5 StreamerHub als programma, met automatische updates (⚙ Instellingen → Windows-app). Nieuw logo: rode S.</li>
+            <li><b>🧩 Alles in één</b> bij Overlays: één OBS-bron met emote-wall, combo en raid melding samen. Nieuwe meldingen doen later vanzelf mee.</li>
             <li>Eigen emotes (Windows-app 1.1.0): upload ze in de app (😀 Emotes bij Overlays) of voeg ze toe met een link. Ze doen mee in de emote-wall en de combo.</li>
             <li>Windows-app 1.0.5: na het inloggen bij Twitch gaat de app nu vanzelf door naar R5 StreamerHub.</li>
             <li>Emote-wall en emote-combo: nieuwe keuze <b>Vrije keuze</b> bij de plek; sleep en vergroot het vak in het voorbeeld.</li>
@@ -1965,7 +1966,7 @@
     if (document.activeElement !== inp) inp.value = ovChan();
     inp.disabled = !!(state.me && !state.demo);
     $('#ovChanHint').textContent = state.me && !state.demo ? 'je eigen kanaal (ingelogd)' : 'vul je kanaalnaam in, inloggen is niet nodig';
-    const tiles = OVERLAYS.map((o) => [o.type, o.name, o.desc]).concat([['emotes', '😀 Emotes', 'Kies welke emotes in de emote-wall en combo mogen, en voeg je eigen emotes toe.']]);
+    const tiles = [['all', '🧩 Alles in één', 'Eén OBS-bron met al je overlays en meldingen samen. Kies welke meedoen.']].concat(OVERLAYS.map((o) => [o.type, o.name, o.desc])).concat([['emotes', '😀 Emotes', 'Kies welke emotes in de emote-wall en combo mogen, en voeg je eigen emotes toe.']]);
     $('#ovTiles').innerHTML = tiles.map(([t, n, d]) => '<button class="ovtile' + (ovSel === t ? ' on' : '') + '" data-ov="' + t + '"><b>' + n + '</b><small>' + d + '</small>' +
       (t === 'emotes' ? '<small data-emcount>' + emCountText() + '</small>' : '') + '</button>').join('');
     renderOvEditor();
@@ -1976,6 +1977,7 @@
   function renderOvEditor() {
     const box = $('#ovEditor');
     if (ovSel === 'emotes') { edFor = 'emotes'; return renderEmoteEditor(box); }
+    if (ovSel === 'all') { edFor = 'all'; return renderAllEditor(box); }
     const o = OVERLAYS.find((x) => x.type === ovSel) || OVERLAYS[0];
     if (edFor !== o.type || !box.querySelector('.ov')) {
       edFor = o.type;
@@ -2105,6 +2107,43 @@
   // emotes: bekijken en per emote aan/uit voor de overlays
   const SRC_LABEL = { twitch: 'Twitch', '7tv': '7TV', bttv: 'BTTV', ffz: 'FFZ' };
   const emState = { q: '', src: 'all', scope: 'chan' };
+  // alles-in-één: één link met elke gekozen overlay als eigen laag (o.<soort>); nieuwe soorten in OVERLAYS doen vanzelf mee
+  if (!ovCfg.all || !Array.isArray(ovCfg.all.skip)) ovCfg.all = { skip: [] };
+  const allUrl = (extra) => {
+    const p = new URLSearchParams({ type: 'all', ch: ovChan() });
+    OVERLAYS.filter((o) => !ovCfg.all.skip.includes(o.type)).forEach((o) => { const q = new URLSearchParams(ovUrl(o).split('?')[1]); q.delete('type'); q.delete('ch'); p.set('o.' + o.type, q.toString()); });
+    Object.entries(extra || {}).forEach(([k, v]) => p.set(k, v));
+    return base + 'overlay.html?' + p.toString();
+  };
+  function renderAllEditor(box) {
+    box.innerHTML = '<div class="card ov"><div class="f"><h3>🧩 Alles in één</h3><div class="hint">Eén browserbron in OBS (1920 × 1080) met alles wat je aanvinkt. Elke overlay stel je in bij zijn eigen tegel; deze link neemt die instellingen mee. Na een wijziging kopieer je de link opnieuw.</div>' +
+      '<div class="fsec">Doet mee</div>' + OVERLAYS.map((o) => '<label class="chk"><input type="checkbox" data-inc="' + o.type + '"' + (ovCfg.all.skip.includes(o.type) ? '' : ' checked') + '> ' + o.name + '</label>').join('') +
+      '<p class="hint">Komen er later nieuwe meldingen bij, dan staan ze hier ook en doen ze vanzelf mee.</p></div>' +
+      '<div><div class="pv"><iframe title="Voorbeeld" allow="autoplay; fullscreen"></iframe></div><div class="acts"><button data-a="test">▶ Test</button><label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-a="loop"> doorlopend testen</label>' +
+      '<button class="primary" data-a="copy" style="margin-left:auto">📋 Kopieer OBS-link</button></div><div class="link"></div></div></div>';
+    const card = box.querySelector('.ov'), f = card.querySelector('iframe'), pv = card.querySelector('.pv');
+    const refresh = () => {
+      const okCh = ovChan() && ovChan() !== 'demo', loop = card.querySelector('[data-a=loop]').checked;
+      card.querySelector('.link').textContent = okCh ? allUrl() : 'Vul bovenaan je kanaalnaam in om de link te maken.';
+      const src = allUrl(Object.assign({ preview: '1' }, loop ? { test: '1' } : { hold: '1' }, okCh ? {} : { ch: '' }));
+      if (f.dataset.src !== src) { f.dataset.src = src; f.src = src; }
+    };
+    card.querySelectorAll('[data-inc]').forEach((c) => (c.onchange = () => {
+      const set = new Set(ovCfg.all.skip); if (c.checked) set.delete(c.dataset.inc); else set.add(c.dataset.inc);
+      ovCfg.all.skip = [...set]; store.set('ov', ovCfg); refresh();
+    }));
+    card.querySelector('[data-a=loop]').onchange = refresh;
+    card.querySelector('[data-a=test]').onclick = () => { try { f.contentWindow.postMessage({ r5: 'test' }, location.origin); } catch {} };
+    card.querySelector('[data-a=copy]').onclick = async () => {
+      if (!ovChan() || ovChan() === 'demo') return toast('Vul eerst je kanaalnaam in.', 'err');
+      if (OVERLAYS.every((o) => ovCfg.all.skip.includes(o.type))) return toast('Vink minstens één overlay aan.', 'err');
+      const url = allUrl();
+      try { await navigator.clipboard.writeText(url); toast('Link gekopieerd. Plak hem in OBS als Browserbron (1920 × 1080).', 'ok'); }
+      catch { prompt('Kopieer deze link:', url); }
+    };
+    new ResizeObserver(() => { f.style.transform = 'scale(' + pv.clientWidth / 1920 + ')'; }).observe(pv);
+    refresh();
+  }
   // eigen emotes (Windows-app: bestanden in de app-map; browser: links)
   async function addCemFiles(files, card) {
     let n = 0;

@@ -69,6 +69,28 @@
   'use strict';
   // Instellingen staan in de link, zodat deze pagina zonder login en zonder server werkt.
   const P = new URLSearchParams(location.search);
+  // Alles-in-één: één OBS-bron met alle gekozen overlays, elk als eigen laag. Elke overlay staat in een
+  // eigen parameter o.<soort> (o.wall, o.combo, o.raid, en later nieuwe meldingen), dus nieuwe soorten doen vanzelf mee.
+  if (P.get('type') === 'all') {
+    document.getElementById('stage').remove(); document.getElementById('hint').remove();
+    const frames = [...P.keys()].filter((k) => /^o\.\w+$/.test(k)).map((k, i) => {
+      const q = new URLSearchParams(P.get(k));
+      q.set('type', k.slice(2)); q.set('ch', P.get('ch') || '');
+      ['test', 'hold'].forEach((x) => (P.get(x) ? q.set(x, P.get(x)) : q.delete(x)));
+      if (P.get('preview') && i === 0) q.set('preview', '1'); else q.delete('preview');   // ruitjes en hint één keer, op de onderste laag
+      const f = document.createElement('iframe');
+      f.allow = 'autoplay';
+      f.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;background:transparent';
+      f.src = 'overlay.html?' + q.toString();
+      document.body.appendChild(f);
+      return f;
+    });
+    window.addEventListener('message', (e) => {
+      if (e.origin !== location.origin || !e.data || e.data.r5 !== 'test') return;
+      frames.forEach((f) => { try { f.contentWindow.postMessage(e.data, location.origin); } catch {} });
+    });
+    return;
+  }
   const box = (v, d) => { const a = String(v || '').split(',').map(Number); return a.length === 4 && a.every(isFinite) ? a : d; };
   const num = (k, d, lo, hi) => { const v = parseFloat(P.get(k)); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
   const cfg = {
