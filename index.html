@@ -325,7 +325,7 @@
         </div>
         <div class="scopes" id="scopes"></div>
         <details style="margin-top:8px"><summary class="hint" style="cursor:pointer">Lukt inloggen niet?</summary>
-          <p class="hint">Twitch stuurt je na het inloggen terug naar <code id="redirUri"></code>. Dit adres moet precies zo (met https, zonder / aan het eind) bij <b>OAuth-omleidings-URL's</b> staan in de Twitch dev console van de app R5 StreamerHub. Krijg je een foutmelding van Twitch, stuur dan een screenshot via ❓.</p>
+          <p class="hint">Twitch stuurt je na het inloggen terug naar <code id="redirUri"></code>. Dit adres moet precies zo (met https en de / aan het eind) bij <b>OAuth-omleidings-URL's</b> staan in de Twitch dev console van de app R5 StreamerHub. Krijg je een foutmelding van Twitch, stuur dan een screenshot via ❓.</p>
         </details>
       </div>
       <div class="card s6">
@@ -563,8 +563,7 @@
   function shown() { return cur || (state.demo ? null : sessions[0]) || null; }
 
   // ---------- inloggen ----------
-  // op de hoofdpagina zonder / aan het eind: de Twitch dev console slaat het adres zo op
-  const redirectUri = (location.origin + location.pathname.replace(/index\.html$/, '')).replace(/^(https?:\/\/[^/]+)\/$/, '$1');
+  const redirectUri = location.origin + location.pathname.replace(/index\.html$/, '');
   function readTokenFromHash() {
     const h = new URLSearchParams(location.hash.slice(1)), q = new URLSearchParams(location.search);
     const err = h.get('error') || q.get('error');
