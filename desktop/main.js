@@ -209,34 +209,36 @@ async function startLogin(authorizeUrl) {
   login = { state, servers, win: w, timer: setTimeout(stopLogin, 15 * 60 * 1000) };
   w.on('closed', () => { if (login && login.win === w) stopLogin(); });
 
-  if (await hasTwitchLogin()) return w.loadURL(u.toString());
   // Eerste keer: inloggen bij twitch.tv, daarna meteen door naar autoriseren.
   // Twitch stuurt na het inloggen soms gewoon naar de startpagina; daarom drie signalen:
   // het auth-token-cookie, een pagina buiten het inlogscherm, of een korte controle elke seconde.
-  let done = false;
+  // Komt het venster na het autoriseren tóch weer op twitch.tv terecht (Twitch was nog niet klaar
+  // met inloggen en stuurde door naar de startpagina), dan opnieuw autoriseren: maximaal 4 keer.
+  let tries = 0, last = 0;
   const goAuthorize = () => {
-    if (done || w.isDestroyed()) return;
-    done = true;
+    if (w.isDestroyed() || tries >= 4 || Date.now() - last < 1500) return;
+    tries++; last = Date.now();
     if (login && login.onCookie) session.defaultSession.cookies.removeListener('changed', login.onCookie);
     if (login) login.onCookie = null;
     clearInterval(poll);
-    w.loadURL(u.toString());
+    setTimeout(() => { if (!w.isDestroyed()) w.loadURL(u.toString()); }, tries > 1 ? 800 : 0);
   };
   login.onCookie = (_e, cookie, _cause, removed) => {
     if (!removed && cookie.name === 'auth-token' && /twitch\.tv$/.test(cookie.domain)) goAuthorize();
   };
   session.defaultSession.cookies.on('changed', login.onCookie);
-  const poll = setInterval(() => { hasTwitchLogin().then((ok) => ok && goAuthorize()).catch(() => {}); }, 1000);
+  const poll = setInterval(() => { if (!tries) hasTwitchLogin().then((ok) => ok && goAuthorize()).catch(() => {}); }, 1000);
   w.on('closed', () => clearInterval(poll));
   const onNav = (_e, url) => {
     let h;
     try { h = new URL(url); } catch { return; }
     if (/(^|\.)twitch\.tv$/.test(h.hostname) && h.hostname !== 'id.twitch.tv' && h.hostname !== 'passport.twitch.tv'
-        && !/^\/(login|signup|passport|two_factor|verify)/.test(h.pathname)) goAuthorize();
+        && !/^\/(login|signup|passport|two_factor|verify)/.test(h.pathname)) setTimeout(goAuthorize, Math.max(300, last + 1600 - Date.now()));
   };
   w.webContents.on('did-navigate', onNav);
   w.webContents.on('did-navigate-in-page', onNav);
-  w.loadURL('https://www.twitch.tv/login');
+  if (await hasTwitchLogin()) goAuthorize();
+  else w.loadURL('https://www.twitch.tv/login');
 }
 
 if (!app.requestSingleInstanceLock()) app.quit();

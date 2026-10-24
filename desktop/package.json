@@ -1,7 +1,7 @@
 {
   "name": "r5-streamerhub",
   "productName": "R5 StreamerHub",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "R5 StreamerHub, streamtool voor Twitch, als Windows-app (laadt r5streamer.daver5.nl)",
   "main": "main.js",
   "author": "Dave",
