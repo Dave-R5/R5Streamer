@@ -229,6 +229,7 @@
   .ovhead { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
   .ovhead .ovchan { margin: 0; }
   details.obs { margin-top: 8px; } details.obs summary { cursor: pointer; user-select: none; } details.obs[open] summary { margin-bottom: 4px; }
+  .exe-bar { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; margin: 8px 0; max-width: 420px; } .exe-bar div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
   .intpick { display: flex; gap: 22px; flex-wrap: wrap; margin: 4px 0 6px; }
   h3.sub { font-size: 13px; margin: 18px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding-top: 12px; border-top: 1px solid var(--line); }
   .integ ol { margin: 8px 0 4px; padding-left: 20px; font-size: 12px; color: var(--muted); }
@@ -421,6 +422,18 @@
           <button id="wipeBtn" style="color:var(--danger)">Streamcijfers wissen</button>
         </div>
       </div>
+      <div class="card s12" id="exeCard">
+        <h2>🖥 Windows-app</h2>
+        <div id="exeWeb">
+          <p class="hint" style="margin-top:0">R5 StreamerHub kan ook als programma op je Windows-pc. Hij werkt zichzelf bij en blijft doorlopen (chat, cijfers, grafiek) als hij achter een ander venster staat.</p>
+          <button class="primary" id="exeGet">⬇ Download de Windows-app</button>
+        </div>
+        <div id="exeApp" hidden>
+          <div class="hint" id="exeState"></div>
+          <div class="exe-bar" id="exeBar" hidden><div></div></div>
+          <div class="row" style="justify-content:flex-start"><button id="exeCheck">Zoeken naar updates</button><button class="primary" id="exeDownload" hidden>Downloaden</button></div>
+        </div>
+      </div>
       <div class="card s12">
         <h2>ℹ Over</h2>
         <p class="hint" style="margin:0">R5 StreamerHub <b id="ver"></b> · gemaakt door DaveR5 · zusje van <a href="https://r5mod.daver5.nl/" target="_blank" rel="noopener">R5 ModHub</a> (voor mods). Vragen of ideeën? Klik op ❓.</p>
@@ -526,6 +539,7 @@
             <li><b>Donaties via StreamElements en TipeeeStream</b>: zet bij ⚙ Instellingen → Overzicht en Live een vinkje per dienst. Donaties komen in een tegel, in de activiteit en in het blok <b>Donaties + Bits</b>, samen met wie hoeveel bits gaf.</li>
             <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
             <li><b>Kijkers in de chat</b> nu gesplitst zoals in R5 ModHub: streamer, moderators, VIP's en kijkers (log opnieuw in voor de mods- en VIP-lijst). Smallere scrollbalken.</li>
+            <li><b>Windows-app</b>: R5 StreamerHub als programma, met automatische updates (⚙ Instellingen → Windows-app). Nieuw logo: rode S.</li>
             <li><b>▣ Eigen indeling</b>: ontwerp je vaste indeling in een klein voorbeeld (vakken slepen, groter of kleiner maken, blokken aan of uit). ▦ Netjes schikken gaat daarna altijd terug naar jouw indeling. Netjes schikken en Indeling staan nu rechtsboven.</li>
             <li><b>Raid melding helemaal zelf instellen</b>: soort melding (kaart, banner, glas, alleen tekst), kop, tekst, tekstkleur, raket, binnenkomst (inploppen, inzoomen, van boven/onder/links/rechts), geluid (belletje of fanfare) en een <b>clip van de raider</b>. Plek en grootte van de melding en de clip sleep je in het voorbeeld.</li>
             <li><b>Overlays</b>: blokken bovenaan per overlay, die de editor openen.</li>
@@ -2118,6 +2132,42 @@
   $('#optBotList').oninput = (e) => { opts.botList = e.target.value; saveOpts(); renderDash(); };
   $('#optTitle').onchange = (e) => { opts.tabTitle = e.target.checked; saveOpts(); renderDash(); };
   $('#logoutBtn').onclick = logout;
+  // Windows-app: in de app zelf zoeken naar updates; in de browser de .exe van de nieuwste release downloaden
+  if (window.r5app && window.r5app.update) {
+    $('#exeWeb').hidden = true; $('#exeApp').hidden = false;
+    let told = '';
+    const renderExe = (u) => {
+      if (!u) return;
+      $('#exeState').textContent = {
+        disabled: u.message, idle: 'Versie ' + u.currentVersion + '. Nog niet gecontroleerd.', checking: 'Bezig met zoeken naar updates…',
+        latest: 'Versie ' + u.currentVersion + '. Je hebt de nieuwste versie.', available: 'Versie ' + u.currentVersion + '. Nieuwe versie ' + u.version + ' is beschikbaar.',
+        downloading: 'Downloaden… ' + (u.percent || 0) + '%', ready: 'Versie ' + u.version + ' is klaar. De app installeert hem op dezelfde plek en start daarna opnieuw.', error: u.message,
+      }[u.status] || '';
+      $('#exeBar').hidden = u.status !== 'downloading';
+      $('#exeBar div').style.width = (u.percent || 0) + '%';
+      const act = { available: ['download', 'Downloaden'], ready: ['install', 'Installeren en herstarten'] }[u.status];
+      $('#exeDownload').hidden = !act;
+      if (act) { $('#exeDownload').dataset.action = act[0]; $('#exeDownload').textContent = act[1]; }
+      $('#exeCheck').disabled = ['disabled', 'checking', 'downloading'].includes(u.status);
+      const key = u.status + u.version;
+      if ((u.status === 'available' || u.status === 'ready') && told !== key) { told = key; toast('Nieuwe versie ' + u.version + ' van de Windows-app, zie ⚙ Instellingen.', 'ok'); }
+    };
+    window.r5app.onUpdate(renderExe);
+    $('#exeCheck').onclick = async () => renderExe(await window.r5app.update('check'));
+    $('#exeDownload').onclick = async (e) => renderExe(await window.r5app.update(e.currentTarget.dataset.action));
+    window.r5app.update('state').then(renderExe);
+  } else {
+    $('#exeCard').hidden = /Android|iPhone|iPad|Mobile/.test(navigator.userAgent);
+    $('#exeGet').onclick = async () => {
+      try {
+        const j = await (await fetch('https://api.github.com/repos/Dave-R5/R5Streamer/releases/latest')).json();
+        const exe = (j.assets || []).find((x) => /\.exe$/i.test(x.name));
+        if (!exe) throw 0;
+        location.href = exe.browser_download_url;
+        toast('Download van ' + exe.name + ' gestart.', 'ok');
+      } catch { window.open('https://github.com/Dave-R5/R5Streamer/releases/latest', '_blank'); }
+    };
+  }
   $('#exportBtn').onclick = () => {
     // zonder de geheime StreamElements-token en TipeeeStream-key
     const data = { app: 'R5 StreamerHub', version: VERSION, opts, ov: ovCfg, ovChan: store.get('ovChan', ''), layout, integ: { on: integ.on, se: { on: integ.se.on, id: integ.se.id }, tp: { on: integ.tp.on } }, sessions };

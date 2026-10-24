@@ -1,0 +1,48 @@
+{
+  "name": "r5-streamerhub",
+  "productName": "R5 StreamerHub",
+  "version": "1.0.0",
+  "description": "R5 StreamerHub, streamtool voor Twitch, als Windows-app (laadt r5streamer.daver5.nl)",
+  "main": "main.js",
+  "author": "Dave",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis --publish never"
+  },
+  "devDependencies": {
+    "electron": "44.9.1",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "nl.daver5.r5streamerhub",
+    "productName": "R5 StreamerHub",
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "R5-StreamerHub-Setup-${version}.exe",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "R5 StreamerHub"
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://github.com/Dave-R5/R5Streamer/releases/latest/download"
+      }
+    ]
+  },
+  "repository": "github:Dave-R5/R5Streamer",
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  }
+}
