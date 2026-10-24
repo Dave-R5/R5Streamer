@@ -238,6 +238,30 @@
   .carow .cav { grid-column: 2 / -1; font-size: 11px; color: var(--muted); margin-top: -4px; }
   .carow .camin { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); } .carow .camin input { width: 70px; }
   @media (max-width: 700px) { .carow { grid-template-columns: 1fr; } .carow .cav { grid-column: 1; } }
+  .sg-now { margin: 0 0 6px; padding: 8px 10px; border-radius: 8px; background: linear-gradient(135deg, #123d24, var(--panel2)); border: 1px solid #1f5c36; }
+  .sg-now.idle { background: var(--panel2); border-color: var(--line); color: var(--muted); font-size: 13px; }
+  .sg-now .lbl { font-size: 11px; font-weight: 700; letter-spacing: .04em; color: #7fe0a4; }
+  .sg-now b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sg-now small { color: var(--muted); font-size: 12px; }
+  .sg-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 6px; }
+  .sg-acts button { min-height: 34px; }
+  .sg-acts .danger, .sg-row .danger { border-color: var(--danger); }
+  .sg-tabs { display: flex; gap: 4px; padding: 0 0 6px; flex-wrap: wrap; }
+  .sg-tabs button { font-size: 12px; padding: 2px 9px; border-radius: 12px; color: var(--muted); }
+  .sg-tabs button.on { color: var(--text); border-color: var(--accent); }
+  .sg-list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+  .sg-list .hint { color: var(--muted); font-size: 13px; }
+  .sg-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; }
+  .sg-row.done { opacity: .6; }
+  .sg-row .nr { font: 12px ui-monospace, Consolas, monospace; color: var(--muted); min-width: 30px; }
+  .sg-row .i { flex: 1; min-width: 0; }
+  .sg-row .i b { display: block; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sg-row .i small { color: var(--muted); font-size: 12px; }
+  .sg-row .danger { padding: 2px 8px; font-size: 12px; min-height: 28px; }
+  .sg-st { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+  .sg-st.wachtrij { background: #2a2140; color: #c6a8ff; } .sg-st.speelt { background: #123d24; color: #7fe0a4; }
+  .sg-st.geweigerd { background: #3a1212; color: #ff7b7b; } .sg-st.gespeeld { background: var(--line); color: var(--muted); }
+  .sg-foot { padding: 6px 0 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 11.5px; margin-top: 6px; }
   .cmdbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 12px 0 8px; }
   .cmdbar input { width: 200px; }
   .cmdt { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -622,6 +646,7 @@
             <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
             <li><b>Kijkers in de chat</b> nu gesplitst zoals in R5 ModHub: streamer, moderators, VIP's en kijkers (log opnieuw in voor de mods- en VIP-lijst). Smallere scrollbalken.</li>
             <li><b>Windows-app</b>: R5 StreamerHub als programma, met automatische updates (⚙ Instellingen → Windows-app). Nieuw logo: rode S.</li>
+            <li>Live: nieuw blok <b>🎵 Verzoekjes</b>, zoals in R5 ModHub: wat er nu speelt, de wachtrij, en wat gespeeld of geweigerd is. Met ⏭ Volgende en ✕ Afwijzen (met reden).</li>
             <li>Tabblad heet nu <b>🧩 Modules</b>, met inklapbare modules: <b>💬 Chat commands</b> en nieuw <b>🔔 Chat alerts</b> (automatisch bedankje in de chat bij follow, sub, cadeau-subs, bits, raid en donatie, met eigen tekst en minimum).</li>
             <li>Nieuw tabblad <b>💬 Commands</b>: een eigen chatbot zoals bij StreamElements. Maak commands zoals !discord met een antwoord, andere namen, wie het mag gebruiken, wachttijden en variabelen (${user}, ${uptime}, ${game} …). Met standaard commands zoals !uptime, !game, !so en !lurk.</li>
             <li>Raid-clip speelt nu als gewone video af en start daardoor ook in OBS vanzelf.</li>
@@ -869,6 +894,7 @@
       let text = m.params[1] || '';
       if (text.startsWith('\u0001ACTION ')) text = text.slice(8, -1);
       chatMsg(m.prefix.split('!')[0], t['display-name'], text, t.emotes || '', +t.bits || 0, t.color, t.badges || '');
+      if (/broadcaster/.test(t.badges || '')) songMsg(text, +t['tmi-sent-ts'] || Date.now());
     } else if (m.command === 'USERNOTICE') {
       const who = t['display-name'] || t.login || '';
       const id = t['msg-id'];
@@ -1416,10 +1442,12 @@
     lfeed:     { page: 'live', title: '⚡ Activiteit', span: 3, h: 640, html: () => '<div class="filters"></div><div class="feed"></div>' },
     lviewers:  { page: 'live', title: '👥 Kijkers in de chat', span: 5, h: 300, extra: '<span class="hint" data-r="vcount"></span>', html: () => '<input class="vsearch" placeholder="Zoek kijker…" autocomplete="off"><div class="list" data-r="viewers"></div>' },
     ldon:      { page: 'live', title: '💰 Donaties + Bits', span: 4, h: 300, extra: '<span class="hint" data-r="dsum"></span>', html: () => '<div class="list" data-r="donations"></div>' },
+    lsongs:    { page: 'live', title: '🎵 Verzoekjes', span: 4, h: 460, html: () => '<div class="sg-now"></div><div class="sg-acts"><button class="primary" data-sg="next">⏭ Volgende</button><button class="danger" data-sg="cur">✕ Huidige afwijzen</button></div>' +
+      '<div class="sg-tabs"></div><div class="sg-list"></div><div class="sg-foot">De knoppen zetten <code>!volgende</code> of <code>!weiger &lt;nr&gt;</code> namens jou in de chat, voor je verzoekjes-app.</div>' },
   };
   const DEFAULT_LAYOUT = {
     overview: ['stream', 'tiles', 'graph', 'feed', 'topChat', 'topEmo', 'followers', 'donations', 'history', 'vods'],
-    live: ['ltiles', 'lplayer', 'lchat', 'lfeed', 'lviewers', 'ldon'],
+    live: ['ltiles', 'lplayer', 'lchat', 'lfeed', 'lviewers', 'ldon', 'lsongs'],
   };
   const DEFAULT_OFF = { overview: [], live: [] };
   // tegels met cijfers; op Live staan er standaard een paar uit
@@ -1547,7 +1575,7 @@
   }
   // standaardindeling van Live (zoals Dave hem wil): cijfers bovenaan, daaronder chat | activiteit | donaties + minispeler | kijkers
   // [kolom-start, kolom-breedte (deel van de breedte), hoogte, onder blok]
-  const DEFAULT_FREE = { live: { lchat: [0, .29, 830], lfeed: [.29, .24, 830], ldon: [.53, .24, 464], lplayer: [.53, .24, 358, 'ldon'], lviewers: [.77, .23, 830] } };
+  const DEFAULT_FREE = { live: { lchat: [0, .29, 830], lfeed: [.29, .24, 830], ldon: [.53, .24, 464], lplayer: [.53, .24, 358, 'ldon'], lviewers: [.77, .23, 380], lsongs: [.77, .23, 442, 'lviewers'] } };
   function defaultFree(page, gw) {
     const l = layout[page];
     if (l.custom) { customToPos(page, gw); return; }
@@ -1722,7 +1750,85 @@
       }
       if (W.lviewers) $('.vsearch', W.lviewers).oninput = () => renderViewers();
       if (W.lplayer) renderPlayer(true);
+      if (W.lsongs) wireSongs();
     }
+  }
+
+  // ---------- verzoekjes (zelfde als in R5 ModHub) ----------
+  // Nummerverzoeken via kanaalpunten. Je verzoekjes-app zet elk verzoek met een nummer in de chat
+  // ("🎵 #12 ..."); dit blok maakt daar een lijst van. Volgende en Afwijzen sturen !volgende en
+  // !weiger <nr> in de chat. Alleen berichten van jou (de streamer) tellen.
+  const songs = store.get('songs', {});   // nr -> {nr, title, artists, user, status, reason, t}
+  Object.values(songs).forEach((x) => { if (Date.now() - x.t > 12 * 3600e3) delete songs[x.nr]; });
+  const saveSongs = () => store.set('songs', songs);
+  let sgFilter = 'alles', sgHist = false;
+  function songMsg(text, t) {
+    const put = (nr, patch) => {
+      const old = songs[nr];
+      if (old && old.t > t) return;   // oudere berichten (chatgeschiedenis) overschrijven niets
+      songs[nr] = Object.assign({ nr: +nr, title: '', artists: '', user: '' }, old, patch, { t });
+    };
+    const user = (text.match(/^@(\S+)/) || [])[1] || '';
+    let m;
+    if ((m = text.match(/🎵 #(\d+) "(.*)" van (.*) staat in de wachtrij/))) put(m[1], { title: m[2], artists: m[3], user, status: 'wachtrij', reason: '' });
+    else if ((m = text.match(/🎵 #(\d+) Je verzoek "(.*)" is geweigerd: (.*?)\. Je punten/))) put(m[1], { title: m[2], user, status: 'geweigerd', reason: m[3] });
+    else if ((m = text.match(/🎵 #(\d+) "(.*)" is afgewezen door (.*?)\. (Je punten|Het nummer)/))) put(m[1], { title: m[2], user, status: 'geweigerd', reason: 'afgewezen door ' + m[3] });
+    else if ((m = text.match(/Nu: 🎵 #(\d+) "(.*)" van (.*) \(aangevraagd door (\S+)\)/))) {
+      Object.values(songs).forEach((x) => { if (x.status === 'speelt' && x.t <= t) x.status = 'gespeeld'; });
+      put(m[1], { title: m[2], artists: m[3], user: m[4], status: 'speelt' });
+    } else if (/^⏭ \S+ slaat het nummer over/.test(text)) {
+      Object.values(songs).forEach((x) => { if (x.status === 'speelt' && x.t <= t) { x.status = 'gespeeld'; x.t = t; } });
+    } else return;
+    saveSongs(); renderSongs();
+  }
+  // bij openen: de lijst aanvullen uit de chatgeschiedenis
+  async function songsHistory() {
+    if (sgHist || !state.me || state.demo) return;
+    sgHist = true;
+    try {
+      const j = await (await fetch('https://recent-messages.robotty.de/api/v2/recent-messages/' + encodeURIComponent(state.me.login) + '?limit=800')).json();
+      (j.messages || []).forEach((l) => {
+        if (!/ PRIVMSG #/.test(l)) return;
+        const m = parseLine(l);
+        if (/broadcaster/.test(m.tags.badges || '')) songMsg(m.params[1] || '', +m.tags['tmi-sent-ts'] || 0);
+      });
+    } catch {}
+  }
+  const sgPlaying = () => Object.values(songs).find((x) => x.status === 'speelt');
+  async function sgReject(x) {
+    if (!x) return;
+    const why = prompt('#' + x.nr + ' "' + x.title + '" van ' + x.user + ' afwijzen?\nReden (mag leeg blijven):', '');
+    if (why === null) return;
+    sendChat(('!weiger ' + x.nr + ' ' + why.trim()).trim());
+  }
+  function wireSongs() {
+    const el = W.lsongs;
+    $('[data-sg=next]', el).onclick = () => sendChat('!volgende');
+    $('[data-sg=cur]', el).onclick = () => { const x = sgPlaying(); if (x) sgReject(x); else toast('Er speelt nu geen verzoekje.', 'err'); };
+    $('.sg-tabs', el).onclick = (e) => { const b = e.target.closest('[data-f]'); if (b) { sgFilter = b.dataset.f; renderSongs(); } };
+    $('.sg-list', el).onclick = (e) => { const b = e.target.closest('[data-nr]'); if (b) sgReject(songs[b.dataset.nr]); };
+    renderSongs(); songsHistory();
+  }
+  function renderSongs() {
+    const el = W.lsongs;
+    if (!el) return;
+    const all = Object.values(songs), cur2 = sgPlaying(), now = $('.sg-now', el);
+    now.className = 'sg-now' + (cur2 ? '' : ' idle');
+    now.innerHTML = cur2 ? '<div class="lbl">NU SPEELT</div><b>#' + cur2.nr + ' ' + esc(cur2.title) + '</b><small>' + esc(cur2.artists) + ' · door ' + esc(cur2.user) + '</small>' : 'Er speelt nu geen verzoekje.';
+    const count = (st) => all.filter((x) => x.status === st).length;
+    $('.sg-tabs', el).innerHTML = [['alles', 'Alles'], ['wachtrij', 'Wachtrij'], ['geweigerd', 'Geweigerd'], ['gespeeld', 'Gespeeld']]
+      .map(([f, l]) => '<button data-f="' + f + '" class="' + (f === sgFilter ? 'on' : '') + '">' + l + (f === 'alles' ? '' : ' ' + count(f)) + '</button>').join('');
+    const rank = { speelt: 0, wachtrij: 1 };
+    const rows = all.filter((x) => sgFilter === 'alles' || x.status === sgFilter)
+      .sort((a, b) => (rank[a.status] ?? 2) - (rank[b.status] ?? 2) || (a.status === 'wachtrij' ? a.nr - b.nr : b.t - a.t));
+    let pos = 0;
+    $('.sg-list', el).innerHTML = rows.length ? rows.map((x) => {
+      const label = x.status === 'wachtrij' ? 'wachtrij ' + (++pos) : x.status;
+      const sub = [x.artists, x.user && 'door ' + x.user, x.reason].filter(Boolean).join(' · ');
+      return '<div class="sg-row' + (x.status === 'gespeeld' || x.status === 'geweigerd' ? ' done' : '') + '"><span class="nr">#' + x.nr + '</span>' +
+        '<div class="i"><b>' + esc(x.title || '?') + '</b><small>' + esc(sub) + '</small></div><span class="sg-st ' + x.status + '">' + esc(label) + '</span>' +
+        (x.status === 'wachtrij' || x.status === 'speelt' ? '<button class="danger" data-nr="' + x.nr + '">✕</button>' : '') + '</div>';
+    }).join('') : '<p class="hint">' + (all.length ? 'Niets in deze lijst.' : 'Nog geen verzoekjes. Ze verschijnen zodra je verzoekjes-app ze in de chat zet ("🎵 #12 ...").') + '</p>';
   }
 
   // ---------- titel en categorie ----------
