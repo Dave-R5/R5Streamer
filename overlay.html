@@ -103,6 +103,7 @@
       const q = new URLSearchParams(P.get(k));
       q.set('type', k.slice(2)); q.set('ch', P.get('ch') || '');
       ['test', 'hold'].forEach((x) => (P.get(x) ? q.set(x, P.get(x)) : q.delete(x)));
+      if (P.get('preview') || P.get('ed')) q.set('ed', '1'); else q.delete('ed');   // voorbeeld in de editor: geen opdrachten uit OBS
       if (P.get('preview') && i === 0) q.set('preview', '1'); else q.delete('preview');   // ruitjes en hint één keer, op de onderste laag
       const f = document.createElement('iframe');
       f.allow = 'autoplay';
@@ -541,6 +542,29 @@
   }
   if (cfg.ch) connect();
   if (cfg.ch && cfg.type === 'donation' && !cfg.test) pollDonations();
+  // 📡 Test live en ▶ opnieuw afspelen: opdrachten van de Windows-app op deze pc (niet in het voorbeeld van de editor)
+  if (cfg.ch && !cfg.preview && P.get('ed') !== '1') {
+    let after = null;
+    const go = async () => {
+      try {
+        const r = await fetch('http://127.0.0.1:17565/cmd/' + cfg.ch, { cache: 'no-store' });
+        const list = r.ok ? await r.json() : [];
+        if (after != null) list.filter((c) => c.n > after).forEach((c) => {
+          if (c.kind === 'test' && (c.type === cfg.type || c.type === 'all')) {
+            if (ALERT) testRaid(); else for (let i = 0; i < (cfg.type === 'combo' ? cfg.min + 2 : 8); i++) setTimeout(fakeChat, i * 350);
+          }
+          if (c.kind === 'replay' && c.type === cfg.type) {
+            const d = c.data || {};
+            if (cfg.type === 'raid') onRaid(d.name || '', +d.viewers || 0, d.avatar || '', d.login || '');
+            if (cfg.type === 'bits') onBits(d.name || '', d.login || '', +d.bits || 0, d.msg || '');
+            if (cfg.type === 'donation') onDonation({ name: d.name || 'iemand', amount: +d.amount || 0, cur: d.cur || 'EUR', msg: d.msg || '' });
+          }
+        });
+        after = list.reduce((m, c) => Math.max(m, c.n), after || Date.now() - 1);
+      } catch { if (after == null) after = Date.now() - 1; }
+    };
+    go(); setInterval(go, 1500);
+  }
   hint.textContent = cfg.ch ? 'Voorbeeld: luistert naar de chat van ' + cfg.ch : 'Voorbeeld (nog geen kanaal ingevuld)';
 })();
 </script>

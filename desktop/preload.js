@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('r5app', {
   overlay: (user, kind, query) => ipcRenderer.invoke('r5:overlay', user, kind, query),
   // nieuwe donaties doorgeven aan de donatie-melding in OBS
   donations: (user, list) => ipcRenderer.invoke('r5:donations', user, list),
+  // opdracht naar de overlays in OBS: { kind: 'test' | 'replay', type, data }
+  cmd: (user, cmd) => ipcRenderer.invoke('r5:cmd', user, cmd),
   prompt: (message, value) => ipcRenderer.sendSync('r5:prompt', String(message ?? ''), value == null ? '' : String(value)),
 });
 

@@ -346,6 +346,19 @@ ipcMain.handle('r5:donations', async (e, user, list) => {
   if (have.length > 50) have.splice(0, have.length - 50);
   return true;
 });
+// Opdrachten voor de overlays in OBS (📡 Test live, ▶ opnieuw afspelen); de overlays halen ze op via /cmd/<naam>.
+const cmds = {}; // naam -> [{n, t, kind, type, data}]
+let cmdN = Date.now();
+ipcMain.handle('r5:cmd', async (e, user, cmd) => {
+  if (!fromSite(e)) return false;
+  user = String(user || '').toLowerCase();
+  if (!/^\w{2,25}$/.test(user) || !cmd || !['test', 'replay'].includes(cmd.kind) || !/^\w{2,20}$/.test(cmd.type || '')) return false;
+  const data = JSON.stringify(cmd.data || {});
+  if (data.length > 4000) return false;
+  const list = (cmds[user] = (cmds[user] || []).filter((c) => Date.now() - c.t < 60000));
+  list.push({ n: cmdN = Math.max(Date.now(), cmdN + 1), t: Date.now(), kind: cmd.kind, type: cmd.type, data: JSON.parse(data) });
+  return true;
+});
 function startEmoteServer() {
   const srv = http.createServer((req, res) => {
     // https-pagina (OBS) die deze pc vraagt: Chrome wil daar een extra toestemming voor (Private Network Access)
@@ -357,6 +370,8 @@ function startEmoteServer() {
       res.writeHead(q == null ? 404 : 200, { ...head, 'Content-Type': 'text/plain; charset=utf-8' });
       return res.end(q == null ? '' : q);
     }
+    const cm = /^\/cmd\/(\w{2,25})$/.exec((req.url || '').split('?')[0].toLowerCase());
+    if (cm) { res.writeHead(200, { ...head, 'Content-Type': 'application/json' }); return res.end(JSON.stringify((cmds[cm[1]] || []).filter((c) => Date.now() - c.t < 60000))); }
     const em = /^\/ev\/(\w{2,25})$/.exec((req.url || '').split('?')[0].toLowerCase());
     if (em) { res.writeHead(200, { ...head, 'Content-Type': 'application/json' }); return res.end(JSON.stringify(donations[em[1]] || [])); }
     const m = /^\/emotes\/([^/?]+)/.exec(req.url || '');
