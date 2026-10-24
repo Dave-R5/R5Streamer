@@ -330,6 +330,22 @@ ipcMain.handle('r5:overlay', async (e, user, kind, query) => {
   fs.writeFileSync(overlayFile(), JSON.stringify(o));
   return true;
 });
+// Donaties voor de donatie-melding: de site geeft nieuwe donaties door, de overlay haalt ze op via /ev/<naam>.
+// Elke donatie krijgt een oplopend nummer (n), zodat de overlay alleen nieuwe laat zien.
+const donations = {}; // naam -> [{id, n, name, amount, cur, msg}]
+let donN = Date.now();
+ipcMain.handle('r5:donations', async (e, user, list) => {
+  if (!fromSite(e)) return false;
+  user = String(user || '').toLowerCase();
+  if (!/^\w{2,25}$/.test(user) || !Array.isArray(list)) return false;
+  const have = donations[user] || (donations[user] = []);
+  list.slice(0, 50).forEach((d) => {
+    if (!d || !d.id || have.some((x) => x.id === String(d.id))) return;
+    have.push({ id: String(d.id), n: donN = Math.max(Date.now(), donN + 1), name: String(d.name || 'iemand').slice(0, 40), amount: +d.amount || 0, cur: String(d.cur || 'EUR').slice(0, 3), msg: String(d.msg || '').slice(0, 300) });
+  });
+  if (have.length > 50) have.splice(0, have.length - 50);
+  return true;
+});
 function startEmoteServer() {
   const srv = http.createServer((req, res) => {
     // https-pagina (OBS) die deze pc vraagt: Chrome wil daar een extra toestemming voor (Private Network Access)
@@ -341,6 +357,8 @@ function startEmoteServer() {
       res.writeHead(q == null ? 404 : 200, { ...head, 'Content-Type': 'text/plain; charset=utf-8' });
       return res.end(q == null ? '' : q);
     }
+    const em = /^\/ev\/(\w{2,25})$/.exec((req.url || '').split('?')[0].toLowerCase());
+    if (em) { res.writeHead(200, { ...head, 'Content-Type': 'application/json' }); return res.end(JSON.stringify(donations[em[1]] || [])); }
     const m = /^\/emotes\/([^/?]+)/.exec(req.url || '');
     const f = m && decodeURIComponent(m[1]), ext = f && (/\.(\w+)$/.exec(f) || [])[1];
     if (!f || !/^\w{2,25}\.(png|jpe?g|gif|webp)$/i.test(f)) { res.writeHead(404); return res.end(); }

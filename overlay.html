@@ -49,6 +49,7 @@
   #raid .top { font-size: calc(var(--u) * 12); letter-spacing: .14em; text-transform: uppercase; opacity: .85; font-weight: 700; }
   #raid .name { font-size: calc(var(--u) * 26); font-weight: 800; line-height: 1.05; overflow-wrap: anywhere; }
   #raid .sub { font-size: calc(var(--u) * 13); margin-top: calc(var(--u) * 2); }
+  #raid .msg { font-size: calc(var(--u) * 15); font-style: italic; opacity: .92; margin-top: calc(var(--u) * 3); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
   #raid .rocket { position: absolute; right: calc(var(--u) * -10); top: calc(var(--u) * -18); font-size: calc(var(--u) * 34); animation: fly 1.4s ease-in-out infinite alternate; }
   @keyframes fly { from { transform: translate(0, 0) rotate(-8deg); } to { transform: translate(8px, -10px) rotate(6deg); } }
   /* clip van de raider */
@@ -134,7 +135,7 @@
     cbx: box(P.get('cbx'), [1380, 820, 480, 200]),
     sound: ['1', 'chime', 'fanfare'].includes(P.get('sound')) ? (P.get('sound') === 'fanfare' ? 'fanfare' : 'chime') : '',
     vol: num('vol', 50, 0, 100),
-    text: P.get('text') || '{viewers} kijkers komen binnen!',
+    text: P.get('text') || ({ bits: 'gaf {bits} bits!', donation: 'doneerde {amount}!' }[P.get('type')] || '{viewers} kijkers komen binnen!'),
     color: /^[0-9a-f]{6}$/i.test(P.get('color') || '') ? '#' + P.get('color') : '#9147ff',
     test: P.get('test') === '1',
     preview: P.get('preview') === '1',
@@ -143,9 +144,14 @@
     cem: Object.fromEntries((P.get('cem') || '').split(' ').map((x) => x.split('|')).filter(([n, u]) => /^\w{2,25}$/.test(n || '') && /^(https:\/\/|http:\/\/127\.0\.0\.1:17565\/)/.test(u || ''))),   // emotes die de streamer heeft uitgezet
     imgmode: P.get('imgmode') || 'avatar',              // raid: avatar | custom | none
     style: P.get('style') || 'card',                    // raid: card | banner | glass | text
-    title: P.get('title') ?? 'Raid!',
+    title: P.get('title') ?? ({ bits: 'Bits!', donation: 'Donatie!' }[P.get('type')] || 'Raid!'),
     ranim: P.get('ranim') || 'pop',                     // raid: pop | top | bottom | left | right | fade | zoom
     rocket: P.get('rocket') !== '0',
+    minamt: num('minamt', 1, 0, 1000000),               // bits/donatie: vanaf dit aantal bits / bedrag
+    showmsg: P.get('showmsg') !== '0',                  // bits/donatie: bericht in de melding tonen
+    tts: P.get('tts') === '1',                          // bits/donatie: bericht laten voorlezen
+    ttslang: /^[a-z]{2}(-[A-Z]{2})?$/.test(P.get('ttslang') || '') ? P.get('ttslang') : 'nl',
+    ttsvol: num('ttsvol', 80, 0, 100),
     tcolor: /^[0-9a-f]{6}$/i.test(P.get('tcolor') || '') ? '#' + P.get('tcolor') : '#ffffff',
     box: box(P.get('box'), [560, 90, 800, 200]),        // raid: plek en grootte van de melding (x,y,b,h op 1920x1080)
     clip: P.get('clip') === '1',
@@ -327,7 +333,21 @@
     combo.n = 0; combo.name = '';
   }
 
-  // ---------- raid melding ----------
+  // ---------- meldingen (raid, bits, donatie): zelfde opmaak, elk met eigen teksten ----------
+  const ALERT = ['raid', 'bits', 'donation'].includes(cfg.type);
+  const DECO = { raid: '🚀', bits: '💎', donation: '💰' }[cfg.type];
+  // voorlezen via de Google-voorleesstem (gewoon een mp3, werkt ook in OBS); geeft een Promise die klaar is na het voorlezen
+  function speak(text) {
+    text = String(text || '').replace(/\b(cheer|bitboss|kappa|pogchamp|biblethump|kreygasm|swiftrage|4head|muxy|party|seemsgood|doodlecheer|uni|showlove|pride|heyguys|frankerz|notlikethis|failfish|vohiyo|trihard|corgo)\d+\b/gi, '').replace(/\s+/g, ' ').trim().slice(0, 200);
+    if (!cfg.tts || !text) return Promise.resolve();
+    return new Promise((done) => {
+      const a = new Audio('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=' + encodeURIComponent(cfg.ttslang) + '&q=' + encodeURIComponent(text));
+      a.volume = cfg.ttsvol / 100;
+      const end = () => done(); a.onended = end; a.onerror = end;
+      setTimeout(() => a.play().catch(end), 900);   // even na het geluidje
+      setTimeout(end, 30000);
+    });
+  }
   const raidQ = [];
   const holdMode = cfg.hold;
   let raidBusy = false;
@@ -337,7 +357,7 @@
     if (!r) {
       raidBusy = false;
       // editor: na een test de voorbeeldmelding weer laten staan
-      if (holdMode && !cfg.hold) { cfg.hold = true; onRaid('PixelPiet', 42, TEST_AV, 'pixelpiet', true); }
+      if (holdMode && !cfg.hold) { cfg.hold = true; sampleAlert(true); }
       return;
     }
     raidBusy = true;
@@ -348,18 +368,21 @@
     el.className = 's-' + cfg.style + ' a-' + cfg.ranim;
     Object.assign(el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
     el.style.setProperty('--u', h / 100 + 'px');
-    const sub = cfg.text.replace(/\{name\}/g, r.name).replace(/\{viewers\}/g, r.viewers.toLocaleString('nl-NL'));
+    const vars = Object.assign({ name: r.name }, r.vars || { viewers: (r.viewers || 0).toLocaleString('nl-NL') });
+    const sub = cfg.text.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+    const msg = cfg.showmsg && r.msg ? r.msg : '';
     const pic = cfg.imgmode === 'none' ? '' : cfg.imgmode === 'custom' && cfg.img ? cfg.img : r.avatar;
-    el.innerHTML = (cfg.rocket ? '<span class="rocket">🚀</span>' : '') + (pic ? '<img src="' + esc(pic) + '" alt=""' + (cfg.imgmode === 'custom' ? ' class="custom"' : '') + '>' : '') +
-      '<div class="txt">' + (cfg.title ? '<div class="top">' + esc(cfg.title) + '</div>' : '') + '<div class="name">' + esc(r.name) + '</div>' + (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') + '</div>';
+    el.innerHTML = (cfg.rocket ? '<span class="rocket">' + DECO + '</span>' : '') + (pic ? '<img src="' + esc(pic) + '" alt=""' + (cfg.imgmode === 'custom' ? ' class="custom"' : '') + '>' : '') +
+      '<div class="txt">' + (cfg.title ? '<div class="top">' + esc(cfg.title) + '</div>' : '') + '<div class="name">' + esc(r.name) + '</div>' + (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') + (msg ? '<div class="msg">' + esc(msg) + '</div>' : '') + '</div>';
     document.body.appendChild(el);
     el.getBoundingClientRect();
     requestAnimationFrame(() => el.classList.add('on'));
     if (!cfg.hold) chime();
-    const clipMs = cfg.clip ? showClip(r) : 0;
+    const clipMs = cfg.clip && cfg.type === 'raid' ? showClip(r) : 0;
     if (cfg.hold) return;
     const ms = Math.max(cfg.dur * 1000, clipMs);
-    setTimeout(() => { el.classList.remove('on'); hideClip(); setTimeout(nextRaid, 800); }, ms);
+    // pas weg als de tijd om is én het voorlezen klaar is
+    Promise.all([new Promise((ok) => setTimeout(ok, ms)), speak(r.msg)]).then(() => { el.classList.remove('on'); hideClip(); setTimeout(nextRaid, 800); });
   }
   // clip van de raider: zoeken via de Twitch-site, afspelen in de Twitch-clipspeler
   function clipBox() {
@@ -407,6 +430,33 @@
     else if (cfg.type === 'combo') comboMsg(list, user);
   }
   function onRaid(name, viewers, avatar, login, test) { if (cfg.type === 'raid') raid({ name, viewers, avatar: (avatar || '').replace('%s', '300x300'), login: login || '', test }); }
+  // profielfoto van een Twitch-naam (openbaar via api.ivr.fi), voor bits en donaties
+  async function avatarOf(login) {
+    if (!/^\w{2,25}$/.test(login || '')) return '';
+    try { const r = await fetch('https://api.ivr.fi/v2/twitch/user?login=' + encodeURIComponent(login)); const j = await r.json(); return ((Array.isArray(j) ? j[0] : j) || {}).logo || ''; } catch { return ''; }
+  }
+  async function onBits(name, login, bits, msg, test) {
+    if (cfg.type !== 'bits' || bits < cfg.minamt) return;
+    raid({ name, login, msg, test, avatar: test ? TEST_AV : cfg.imgmode === 'avatar' ? await avatarOf(login) : '', vars: { bits: bits.toLocaleString('nl-NL') } });
+  }
+  async function onDonation(d, test) {
+    if (cfg.type !== 'donation' || d.amount < cfg.minamt) return;
+    const amount = (() => { try { return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: d.cur || 'EUR' }).format(d.amount); } catch { return d.amount + ' ' + (d.cur || ''); } })();
+    raid({ name: d.name, login: d.name, msg: d.msg, test, avatar: test ? TEST_AV : cfg.imgmode === 'avatar' ? await avatarOf(String(d.name).toLowerCase()) : '', vars: { amount } });
+  }
+  // donaties komen van StreamElements/TipeeeStream via de Windows-app op deze pc (de sleutels blijven in de app)
+  function pollDonations() {
+    let after = null;
+    const go = async () => {
+      try {
+        const r = await fetch('http://127.0.0.1:17565/ev/' + cfg.ch, { cache: 'no-store' });
+        const list = r.ok ? await r.json() : [];
+        if (after != null) list.filter((d) => d.n > after).forEach((d) => onDonation(d));
+        after = list.reduce((m, d) => Math.max(m, d.n), after || 0);
+      } catch {}
+    };
+    go(); setInterval(go, 3000);
+  }
 
   // ---------- chat lezen (anoniem, geen login nodig) ----------
   function parseLine(line) {
@@ -445,6 +495,7 @@
         let text = m.params[1] || '';
         if (text.startsWith('\u0001ACTION ')) text = text.slice(8, -1);
         onChat(text, m.tags.emotes || '', m.prefix.split('!')[0]);
+        if (+m.tags.bits > 0) onBits(m.tags['display-name'] || m.prefix.split('!')[0], m.prefix.split('!')[0], +m.tags.bits, text);
       } else if (m.command === 'USERNOTICE' && m.tags['msg-id'] === 'raid') {
         onRaid(m.tags['msg-param-displayName'] || m.tags['display-name'] || '', +m.tags['msg-param-viewerCount'] || 0, m.tags['msg-param-profileImageURL'] || '', m.tags['msg-param-login'] || m.tags.login || '');
       }
@@ -463,21 +514,33 @@
   }
   // testplaatje: het R5-schild, zodat je ziet waar de profielfoto komt
   const TEST_AV = new URL('icons/icon-192.png', location.href).href;
-  function testRaid() { const r = DEMO_RAIDERS[Math.floor(Math.random() * DEMO_RAIDERS.length)]; onRaid(r[0], r[1], TEST_AV, r[0].toLowerCase(), true); }
+  function testRaid() {
+    const r = DEMO_RAIDERS[Math.floor(Math.random() * DEMO_RAIDERS.length)];
+    if (cfg.type === 'raid') onRaid(r[0], r[1], TEST_AV, r[0].toLowerCase(), true);
+    if (cfg.type === 'bits') onBits(r[0], r[0].toLowerCase(), Math.max(cfg.minamt, [100, 500, 1000][Math.floor(Math.random() * 3)]), 'Dit is een test van de bits-melding!', true);
+    if (cfg.type === 'donation') onDonation({ name: r[0], amount: Math.max(cfg.minamt, [2.5, 5, 10][Math.floor(Math.random() * 3)]), cur: 'EUR', msg: 'Dit is een test van de donatie-melding!' }, true);
+  }
+  // vaste voorbeeldmelding in de editor
+  function sampleAlert() {
+    if (cfg.type === 'raid') onRaid('PixelPiet', 42, TEST_AV, 'pixelpiet', true);
+    if (cfg.type === 'bits') raid({ name: 'PixelPiet', login: 'pixelpiet', msg: 'Dit is een test van de bits-melding!', test: true, avatar: TEST_AV, vars: { bits: '500' } });
+    if (cfg.type === 'donation') raid({ name: 'PixelPiet', login: 'pixelpiet', msg: 'Dit is een test van de donatie-melding!', test: true, avatar: TEST_AV, vars: { amount: '€ 5,00' } });
+  }
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data || e.data.r5 !== 'test') return;
-    if (cfg.type === 'raid') { if (cfg.hold) { cfg.hold = false; raidQ.length = 0; raidBusy = false; } testRaid(); }
+    if (ALERT) { if (cfg.hold) { cfg.hold = false; raidQ.length = 0; raidBusy = false; } testRaid(); }
     else for (let i = 0; i < (cfg.type === 'combo' ? cfg.min + 2 : 8); i++) setTimeout(fakeChat, i * 350);
   });
 
   const hint = document.getElementById('hint');
   loadGlobal();
-  if (cfg.hold && cfg.type === 'raid') { onRaid('PixelPiet', 42, TEST_AV, 'pixelpiet', true); }
+  if (cfg.hold && ALERT) sampleAlert();
   else if (cfg.test) {
-    setInterval(() => { if (cfg.type === 'raid') testRaid(); else fakeChat(); }, cfg.type === 'raid' ? (cfg.dur + 3) * 1000 : 900);
-    if (cfg.type === 'raid') testRaid();
+    setInterval(() => { if (ALERT) { if (!raidBusy) testRaid(); } else fakeChat(); }, ALERT ? (cfg.dur + 3) * 1000 : 900);
+    if (ALERT) testRaid();
   }
   if (cfg.ch) connect();
+  if (cfg.ch && cfg.type === 'donation' && !cfg.test) pollDonations();
   hint.textContent = cfg.ch ? 'Voorbeeld: luistert naar de chat van ' + cfg.ch : 'Voorbeeld (nog geen kanaal ingevuld)';
 })();
 </script>
