@@ -65,7 +65,14 @@
   /* blokken: slepen om te verplaatsen, hoek om de grootte te veranderen */
   .w { position: relative; display: flex; flex-direction: column; }
   .w > .wb { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-  .w.fixed > .wb { overflow: auto; }
+  .w.fixed > .wb { overflow: auto; scrollbar-gutter: stable; padding-right: 4px; margin-right: -8px; }
+  /* smalle, donkere scrollbalken die niet over de tekst vallen */
+  * { scrollbar-width: thin; scrollbar-color: #3a3a44 transparent; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #3a3a44; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #55555f; }
+  ::-webkit-scrollbar-button { display: none; }
   .w .grip { cursor: grab; color: var(--muted); font-size: 15px; line-height: 1; touch-action: none; user-select: none; margin-left: -4px; }
   .w .rz { position: absolute; right: 2px; bottom: 2px; width: 16px; height: 16px; cursor: nwse-resize; touch-action: none;
     background: linear-gradient(135deg, transparent 50%, var(--line) 50%, var(--line) 60%, transparent 60%, transparent 70%, var(--line) 70%, var(--line) 80%, transparent 80%); opacity: .8; }
