@@ -228,6 +228,16 @@
 
   /* instellingen */
   .optrow { display: flex; align-items: center; gap: 8px; margin: 8px 0; cursor: pointer; font-size: 13px; }
+  .mod > summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; list-style: none; font-size: 15px; }
+  .mod > summary::-webkit-details-marker { display: none; }
+  .mod > summary::before { content: '▸'; color: var(--muted); } .mod[open] > summary::before { content: '▾'; }
+  .mod > summary .hint { margin-left: auto; }
+  .modhead { display: flex; flex-direction: column; gap: 4px; }
+  .carow { display: grid; grid-template-columns: 170px 1fr 160px; gap: 8px 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .carow input[type=text] { width: 100%; box-sizing: border-box; }
+  .carow .cav { grid-column: 2 / -1; font-size: 11px; color: var(--muted); margin-top: -4px; }
+  .carow .camin { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); } .carow .camin input { width: 70px; }
+  @media (max-width: 700px) { .carow { grid-template-columns: 1fr; } .carow .cav { grid-column: 1; } }
   .cmdbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 12px 0 8px; }
   .cmdbar input { width: 200px; }
   .cmdt { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -319,7 +329,7 @@
     <button data-page="overview" class="on">📊 Overzicht</button>
     <button data-page="live">🔴 Live<span class="ldot" id="navLive" hidden></span></button>
     <button data-page="overlays">🎨 Overlays</button>
-    <button data-page="commands">💬 Commands</button>
+    <button data-page="commands">🧩 Modules</button>
     <button data-page="settings">⚙ Instellingen</button>
   </nav>
   <span id="layBtns" data-need-dash><button id="hdrTidy" title="Alle blokken netjes naast en onder elkaar zetten, zonder gaten">▦ Netjes schikken</button><button id="hdrLay" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button><button id="hdrCustom" title="Je eigen vaste indeling ontwerpen; ▦ Netjes schikken gaat daarna altijd terug naar deze indeling">▣ Eigen indeling</button></span>
@@ -378,13 +388,14 @@
   <!-- ======== Commands ======== -->
   <section class="page" id="page-commands" hidden>
     <div class="grid">
-      <div class="card s12">
-        <div class="ovhead">
-          <h2 style="margin:0">💬 Commands</h2>
-          <label class="chk" style="margin:0"><input type="checkbox" id="cmdOn"> <b>Chatbot aan</b></label>
+      <div class="card s12 modhead"><h2 style="margin:0">🧩 Modules</h2><span class="hint">Je eigen chatbot: klik op een module om hem open of dicht te klappen. Alles werkt zolang de site of de Windows-app bij jou open staat en antwoordt als jij (met je eigen account).</span></div>
+      <details class="card s12 mod" data-mod="cmds">
+        <summary><b>💬 Chat commands</b><span class="hint" data-modsum="cmds"></span></summary>
+        <div class="ovhead" style="margin-top:10px">
+          <label class="chk" style="margin:0"><input type="checkbox" id="cmdOn"> <b>Chat commands aan</b></label>
           <span class="hint" id="cmdState"></span>
         </div>
-        <p class="hint" style="margin:6px 0 0">Kijkers typen bijvoorbeeld <b>!discord</b> in je chat en R5 StreamerHub antwoordt meteen, als jij (met je eigen account). Dat werkt zolang de site of de Windows-app bij jou open staat. Gebruik je ook StreamElements of Nightbot? Zet dezelfde commands daar dan uit, anders krijg je dubbele antwoorden.</p>
+        <p class="hint" style="margin:6px 0 0">Kijkers typen bijvoorbeeld <b>!discord</b> in je chat en R5 StreamerHub antwoordt meteen. Gebruik je ook StreamElements of Nightbot? Zet dezelfde commands daar dan uit, anders krijg je dubbele antwoorden.</p>
         <div class="cmdbar">
           <input id="cmdQ" placeholder="Zoek command…" autocomplete="off">
           <div class="filters" id="cmdF" style="margin:0"></div>
@@ -407,7 +418,15 @@
             <li>Over een ander kanaal (zoals bij StreamElements): <code>${channel ${1}}</code> naam · <code>${game ${1}}</code> laatst gespeelde categorie · <code>${title ${1}}</code> titel · <code>${url ${1}}</code> link naar het kanaal</li>
           </ul>
         </details>
-      </div>
+      </details>
+      <details class="card s12 mod" data-mod="alerts">
+        <summary><b>🔔 Chat alerts</b><span class="hint" data-modsum="alerts"></span></summary>
+        <div class="ovhead" style="margin-top:10px">
+          <label class="chk" style="margin:0"><input type="checkbox" id="caOn"> <b>Chat alerts aan</b></label>
+        </div>
+        <p class="hint" style="margin:6px 0 0">Een automatisch bericht in je chat bij een follow, abonnement, bits, raid of donatie, bijvoorbeeld "Bedankt voor de follow, ${user}!". Heb je dit ook bij StreamElements aan staan? Zet het daar dan uit.</p>
+        <div id="caList"></div>
+      </details>
     </div>
   </section>
 
@@ -603,6 +622,7 @@
             <li><b>Overlays</b>: de uitleg voor OBS is nu inklapbaar, zodat er meer ruimte is.</li>
             <li><b>Kijkers in de chat</b> nu gesplitst zoals in R5 ModHub: streamer, moderators, VIP's en kijkers (log opnieuw in voor de mods- en VIP-lijst). Smallere scrollbalken.</li>
             <li><b>Windows-app</b>: R5 StreamerHub als programma, met automatische updates (⚙ Instellingen → Windows-app). Nieuw logo: rode S.</li>
+            <li>Tabblad heet nu <b>🧩 Modules</b>, met inklapbare modules: <b>💬 Chat commands</b> en nieuw <b>🔔 Chat alerts</b> (automatisch bedankje in de chat bij follow, sub, cadeau-subs, bits, raid en donatie, met eigen tekst en minimum).</li>
             <li>Nieuw tabblad <b>💬 Commands</b>: een eigen chatbot zoals bij StreamElements. Maak commands zoals !discord met een antwoord, andere namen, wie het mag gebruiken, wachttijden en variabelen (${user}, ${uptime}, ${game} …). Met standaard commands zoals !uptime, !game, !so en !lurk.</li>
             <li>Raid-clip speelt nu als gewone video af en start daardoor ook in OBS vanzelf.</li>
             <li><b>📡 Test live</b> naast Test: speelt de test af in OBS zelf. En bij Activiteit een <b>▶</b> om een raid, bits of donatie opnieuw af te spelen in OBS (beide via de Windows-app 1.2.5).</li>
@@ -855,13 +875,15 @@
       if (id === 'sub' || id === 'resub') {
         const mo = +t['msg-param-cumulative-months'] || 0;
         event('sub', '⭐', who + (id === 'resub' ? ' is opnieuw geabonneerd' + (mo > 1 ? ' (' + mo + ' maanden)' : '') : ' is geabonneerd'), m.params[1] || '', { subs: 1 });
+        chatAlert(id === 'resub' ? 'resub' : 'sub', { user: who, months: mo, message: m.params[1] || '' });
       } else if (id === 'subgift') {
-        if (!t['msg-param-origin-id'] || !giftBatch[t['msg-param-origin-id']]) event('sub', '🎁', who + ' geeft een abonnement aan ' + (t['msg-param-recipient-display-name'] || ''), '', { gifts: 1, subs: 1 });
+        if (!t['msg-param-origin-id'] || !giftBatch[t['msg-param-origin-id']]) { event('sub', '🎁', who + ' geeft een abonnement aan ' + (t['msg-param-recipient-display-name'] || ''), '', { gifts: 1, subs: 1 }); chatAlert('gift', { user: who, count: 1, recipient: t['msg-param-recipient-display-name'] || '' }); }
         else if (cur) { cur.subs++; cur.gifts++; }
       } else if (id === 'submysterygift') {
         const n = +t['msg-param-mass-gift-count'] || 0;
         if (t['msg-param-origin-id']) giftBatch[t['msg-param-origin-id']] = 1;
         event('sub', '🎁', who + ' geeft ' + n + ' abonnementen weg', '', {});
+        chatAlert('gift', { user: who, count: n, recipient: '' });
       } else if (id === 'raid') raidIn(t['msg-param-displayName'] || who, +t['msg-param-viewerCount'] || 0, t['msg-param-login'] || t.login || '', t['msg-param-profileImageURL'] || '');
     } else if (m.command === 'CLEARCHAT' && !m.tags['target-user-id']) chatLine({ ev: true, text: 'Chat is gewist' });
   }
@@ -900,6 +922,7 @@
       (cur.cheers = cur.cheers || []).push({ t: Date.now(), name: name || login, bits, msg });
       if (cur.cheers.length > 300) cur.cheers.shift();
       event('bits', '💎', (name || login) + ' gaf ' + bits + ' bits', msg, { bits }, 0, { name: name || login, login, bits, msg: text });
+      chatAlert('bits', { user: name || login, bits, message: msg }, bits);
     }
     dirty();
   }
@@ -917,6 +940,7 @@
     if (!cur) return;
     cur.raidsIn.push([Date.now(), n, name]);
     event('raid', '🚀', name + ' raidt met ' + n + ' kijkers', '', {}, 0, { name, viewers: n, login: login || '', avatar: avatar || '' });
+    chatAlert('raid', { user: name, viewers: n }, n);
   }
   let dirtyT = null;
   function dirty() { saveSessions(); if (!dirtyT) dirtyT = setTimeout(() => { dirtyT = null; renderDash(); }, 700); }
@@ -1013,6 +1037,8 @@
   let cmdFilter = 'all', cmdEdit = null;
   function renderCmds() {
     $('#cmdOn').checked = cmdOn;
+    $('[data-modsum=cmds]').textContent = cmdOn ? cmds.filter((c) => c.on).length + ' commands aan' : 'uit';
+    renderCa();
     $('#cmdState').textContent = !cmdOn ? 'staat uit' : state.demo ? 'aan (demo: antwoorden komen in de demo-chat)' : !state.me ? 'log in om te antwoorden' : !hasScope('user:write:chat') ? 'log opnieuw in (chat sturen)' : '✓ antwoordt in je chat';
     $('#cmdF').innerHTML = [['all', 'Alle'], ['own', 'Eigen'], ['def', 'Standaard']].map(([k, l]) => '<button data-cf="' + k + '" class="' + (cmdFilter === k ? 'on' : '') + '">' + l + '</button>').join('');
     const q = $('#cmdQ').value.trim().toLowerCase().replace(/^!/, '');
@@ -1071,6 +1097,48 @@
     clearTimeout(out.t);
     out.t = setTimeout(async () => { out.textContent = '→ ' + await cmdOut(c, (state.me && state.me.login) || 'jij', (state.user && state.user.display_name) || 'jij', parts); }, 300);
   };
+
+  // ---------- chat alerts: automatisch bericht in de chat bij gebeurtenissen ----------
+  const CA_KINDS = [
+    ['follow', '💜 Nieuwe volger', 'Bedankt voor de follow, ${user}! 💜', '${user}', null],
+    ['sub', '⭐ Abonnement', 'Welkom bij de club, ${user}! Bedankt voor je abonnement ⭐', '${user} ${message}', null],
+    ['resub', '⭐ Opnieuw abonnee', '${user} is al ${months} maanden abonnee, bedankt! ⭐', '${user} ${months} ${message}', null],
+    ['gift', '🎁 Cadeau-abonnementen', 'Wauw ${user}, bedankt voor ${count} cadeau-abonnement(en)! 🎁', '${user} ${count} ${recipient}', null],
+    ['bits', '💎 Bits', 'Bedankt voor de ${bits} bits, ${user}! 💎', '${user} ${bits} ${message}', ['vanaf', 'bits', 1]],
+    ['raid', '🚀 Raid', 'Welkom raiders van ${user}! Bedankt voor de raid met ${viewers} kijkers 🚀', '${user} ${viewers}', ['vanaf', 'kijkers', 1]],
+    ['donation', '💰 Donatie', 'Bedankt voor je donatie van ${amount}, ${user}! 💰', '${user} ${amount} ${message}', ['vanaf', '€', 1]],
+  ];
+  const ca = Object.assign({ on: false }, store.get('calerts', {}));
+  CA_KINDS.forEach(([k, , text, , min]) => { ca[k] = Object.assign({ on: k !== 'follow', text, min: min ? min[2] : 0 }, ca[k] || {}); });
+  const saveCa = () => store.set('calerts', ca);
+  const caLast = {};
+  function chatAlert(kind, vars, num) {
+    const c = ca[kind];
+    if (!ca.on || !c || !c.on || !c.text || (num != null && num < (c.min || 0))) return;
+    if (kind === 'follow' && Date.now() - (caLast.follow || 0) < 3000) return;   // geen spam bij een golf (bot)volgers
+    caLast[kind] = Date.now();
+    const out = c.text.replace(/\$\{(\w+)\}/g, (m, k) => (vars[k] != null ? String(vars[k]) : k === 'channel' ? ((state.user && state.user.display_name) || '') : '')).replace(/\s+/g, ' ').trim().slice(0, 480);
+    if (out) { cmdSent.push({ text: out, t: Date.now() }); sendChat(out); }
+  }
+  function renderCa() {
+    $('#caOn').checked = ca.on;
+    $('#caList').innerHTML = CA_KINDS.map(([k, l, , v, min]) => '<div class="carow"><label class="chk" style="margin:0"><input type="checkbox" data-cak="' + k + '"' + (ca[k].on ? ' checked' : '') + '> ' + l + '</label>' +
+      '<input type="text" data-cat="' + k + '" value="' + esc(ca[k].text) + '" maxlength="480">' +
+      (min ? '<span class="camin">' + min[0] + ' <input type="number" min="0" step="1" data-cam="' + k + '" value="' + ca[k].min + '"> ' + min[1] + '</span>' : '<span></span>') +
+      '<div class="cav">Variabelen: ' + v + ' ${channel}</div></div>').join('');
+    $('[data-modsum=alerts]').textContent = ca.on ? CA_KINDS.filter(([k]) => ca[k].on).length + ' aan' : 'uit';
+  }
+  $('#caOn').onchange = (e) => { ca.on = e.target.checked; saveCa(); renderCa(); };
+  $('#caList').addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.dataset.cak) ca[t.dataset.cak].on = t.checked;
+    if (t.dataset.cam) ca[t.dataset.cam].min = Math.max(0, +t.value || 0);
+    saveCa(); renderCa();
+  });
+  $('#caList').addEventListener('input', (e) => { const k = e.target.dataset.cat; if (k) { ca[k].text = e.target.value; saveCa(); } });
+  // modules open/dicht onthouden
+  const modOpen = store.get('modOpen', { cmds: true });
+  document.querySelectorAll('.mod').forEach((d) => { d.open = !!modOpen[d.dataset.mod]; d.addEventListener('toggle', () => { modOpen[d.dataset.mod] = d.open; store.set('modOpen', modOpen); }); });
 
   async function sendChat(text) {
     if (state.demo) { chatMsg('demo', 'jij (demo)', text, '', 0, '#bf94ff', 'broadcaster/1'); return true; }
@@ -1135,6 +1203,7 @@
       donList().filter((d) => d.t >= cur.start && !have.has(d.id)).reverse().forEach((d) => {
         cur.donations.push(d);
         event('donation', '💰', d.name + ' doneerde ' + money(d.amount, d.cur), d.msg, {}, d.t, { name: d.name, amount: d.amount, cur: d.cur, msg: d.msg });
+        chatAlert('donation', { user: d.name, amount: money(d.amount, d.cur), message: d.msg }, d.amount);
       });
     }
     // Windows-app: recente donaties doorgeven voor de donatie-melding in OBS (oude van vóór het openen niet)
@@ -1218,6 +1287,7 @@
   }
   function onEsub(type, ev) {
     if (type === 'channel.follow') {
+      chatAlert('follow', { user: ev.user_name });
       if (state.followers != null) state.followers++;
       recentFollows.unshift({ user_name: ev.user_name, followed_at: ev.followed_at || new Date().toISOString() });
       event('follow', '💜', ev.user_name + ' volgt je nu', '', { follows: 1 });
