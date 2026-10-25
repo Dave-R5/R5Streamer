@@ -8,7 +8,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 
 const START_URL = 'https://streamerhub.r5mod.nl/';
-// Oud adres: stuurt door naar START_URL en geeft daarbij de instellingen mee (zie oud-adres/ in de repo).
+// Oud adres: blijft de bron achter START_URL (Cloudflare) en stuurt de app door naar START_URL, met de instellingen erbij (zie <head> van index.html).
 const OLD_URL = 'https://r5streamer.daver5.nl/';
 const inApp = (url) => url.startsWith(START_URL) || url.startsWith(OLD_URL);
 // Na de verhuizing eerst het oude adres openen, zodat de instellingen van de app meeverhuizen.
