@@ -2,6 +2,52 @@
 <html lang="nl">
 <head>
 <meta charset="utf-8">
+<script>
+// Verhuizing: r5streamer.daver5.nl blijft bestaan als bron achter streamerhub.r5mod.nl (Cloudflare, zie Dave-R5/r5mod-site),
+// maar wie het oude adres zelf opent, gaat door naar het nieuwe. De instellingen gaan mee in de link
+// (#r5verhuis=...), omdat de browser ze per adres bewaart; tokens en sleutels niet, daarvoor log je opnieuw in.
+// Windows-apps ouder dan 1.3.0 mogen niet naar een ander adres en blijven hier tot ze zijn bijgewerkt.
+(() => {
+  'use strict';
+  if (location.hostname !== 'r5streamer.daver5.nl' || /access_token=/.test(location.hash)) return;
+  const PREFIX = 'r5s.', SKIP = ['r5s.token'];
+  const clean = (k, v) => {
+    // koppelingen: wel aan/uit en Account ID, niet de JWT of API-sleutel
+    if (k === PREFIX + 'integ') { try { const j = JSON.parse(v); if (j.se) j.se.jwt = ''; if (j.tp) j.tp.key = ''; return JSON.stringify(j); } catch { return null; } }
+    return v;
+  };
+  const pack = () => {
+    const data = {};
+    try {
+      Object.keys(localStorage).forEach((k) => { if (k.startsWith(PREFIX) && !SKIP.includes(k)) { const v = clean(k, localStorage.getItem(k)); if (v != null) data[k] = v; } });
+    } catch { return ''; }
+    const enc = () => {
+      const b = new TextEncoder().encode(JSON.stringify(data));
+      let s = '';
+      for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+      return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    };
+    let out = enc();
+    // te lang voor een link: de grootste onderdelen (meestal geschiedenis) blijven achter
+    while (out.length > 1500000) {
+      const big = Object.keys(data).sort((a, b) => data[b].length - data[a].length)[0];
+      if (!big) return '';
+      delete data[big];
+      out = enc();
+    }
+    return Object.keys(data).length ? out : '';
+  };
+  const go = () => {
+    const p = pack();
+    location.replace('https://streamerhub.r5mod.nl' + location.pathname + location.search + (p ? '#r5verhuis=' + p : location.hash));
+  };
+  const app = window.r5app;
+  if (!app) return go();
+  if (typeof app.update !== 'function') return;
+  const newer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
+  app.update('state').then((u) => { if (u && u.currentVersion && !newer('1.3.0', u.currentVersion)) go(); }, () => {});
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#18181b">
@@ -559,7 +605,7 @@
       </div>
       <div class="card s12">
         <h2>ℹ Over</h2>
-        <p class="hint" style="margin:0">R5 StreamerHub <b id="ver"></b> · gemaakt door DaveR5 · zusje van <a href="https://r5mod.daver5.nl/" target="_blank" rel="noopener">R5 ModHub</a> (voor mods). Vragen of ideeën? Klik op ❓.</p>
+        <p class="hint" style="margin:0">R5 StreamerHub <b id="ver"></b> · gemaakt door DaveR5 · zusje van <a href="https://modhub.r5mod.nl/" target="_blank" rel="noopener">R5 ModHub</a> (voor mods). Vragen of ideeën? Klik op ❓.</p>
       </div>
     </div>
   </section>
@@ -657,6 +703,7 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>24 okt 2026</small></summary>
           <ul>
+            <li><b>Nieuw adres: streamerhub.r5mod.nl</b>. Het oude adres r5streamer.daver5.nl stuurt je door en neemt je instellingen mee; log daarna opnieuw in en vul je StreamElements- of TipeeeStream-sleutel opnieuw in. Overlay-links in OBS met het oude adres blijven werken. De Windows-app werkt zichzelf bij naar 1.3.0 en gaat dan vanzelf naar het nieuwe adres.</li>
             <li><b>Nieuw tabblad Live</b>: chat (ook zelf sturen), minispeler die op pauze start, kijkerslijst, activiteit en donaties.</li>
             <li><b>Zelf indelen zoals in R5 ModHub</b>: blokken op Overzicht en Live vrij neerzetten waar je wilt (ze lijnen vanzelf uit en schuiven opzij), vrij groter of kleiner maken, en blokken en tegels aan of uit zetten met ✎ Indeling. ▦ Netjes schikken zet alles weer strak.</li>
             <li><b>Donaties via StreamElements en TipeeeStream</b>: zet bij ⚙ Instellingen → Overzicht en Live een vinkje per dienst. Donaties komen in een tegel, in de activiteit en in het blok <b>Donaties + Bits</b>, samen met wie hoeveel bits gaf.</li>
@@ -734,6 +781,23 @@
   const dateNl = (t) => new Date(t).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
   const money = (a, c) => { try { return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: c || 'EUR' }).format(a); } catch { return a + ' ' + (c || ''); } };
 
+  // ---------- verhuizing van het oude adres ----------
+  // r5streamer.daver5.nl stuurt door naar dit adres (zie het script in <head>) en geeft de instellingen mee in de link (#r5verhuis=...),
+  // omdat de browser ze per adres bewaart. Alleen overnemen als dat oude adres de afzender is en hier nog niets staat.
+  const verhuisd = (() => {
+    const m = /^#r5verhuis=([\w-]+)$/.exec(location.hash);
+    if (!m) return false;
+    history.replaceState(null, '', location.pathname + location.search);
+    try {
+      if (!/^https:\/\/r5streamer\.daver5\.nl\//.test(document.referrer)) return false;
+      if (Object.keys(localStorage).some((k) => k.startsWith('r5s.'))) return false;
+      const b = atob(m[1].replace(/-/g, '+').replace(/_/g, '/'));
+      const data = JSON.parse(new TextDecoder().decode(Uint8Array.from(b, (c) => c.charCodeAt(0))));
+      Object.entries(data).forEach(([k, v]) => { if (k.startsWith('r5s.') && typeof v === 'string') localStorage.setItem(k, v); });
+      return true;
+    } catch { return false; }
+  })();
+
   // ---------- opslag ----------
   const store = {
     get(k, d) { try { const v = localStorage.getItem('r5s.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -799,7 +863,7 @@
     } catch (e) { state.me = null; state.token = ''; store.del('token'); toast('Inloggen mislukt: ' + e.message, 'err'); }
   }
   function login() {
-    if (location.protocol === 'file:') return toast('Inloggen werkt alleen online. Open r5streamer.daver5.nl.', 'err');
+    if (location.protocol === 'file:') return toast('Inloggen werkt alleen online. Open streamerhub.r5mod.nl.', 'err');
     const u = new URL('https://id.twitch.tv/oauth2/authorize');
     u.search = new URLSearchParams({ client_id: CLIENT_ID, redirect_uri: redirectUri, response_type: 'token', scope: SCOPES.join(' '), force_verify: 'true' });
     try { sessionStorage.setItem('r5s.loginAt', Date.now()); } catch {}
@@ -2979,6 +3043,7 @@
   setInterval(() => { if (!state.demo) poll(); }, 60000);
   setInterval(() => { if (cur && (state.page === 'overview' || state.page === 'live')) renderDash(); }, 30000);
   readTokenFromHash();
+  if (verhuisd) toast('Welkom op het nieuwe adres ' + location.host + '. Je instellingen zijn meegekomen; log opnieuw in met Twitch en vul je StreamElements- of TipeeeStream-sleutel opnieuw in.');
   buildGrid('overview'); buildGrid('live');
   showPage(['overview', 'live', 'overlays', 'commands', 'settings'].includes(state.page) ? state.page : 'overview');
   render();
