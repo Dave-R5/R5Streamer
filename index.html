@@ -559,7 +559,7 @@
       </div>
       <div class="card s12">
         <h2>ℹ Over</h2>
-        <p class="hint" style="margin:0">R5 StreamerHub <b id="ver"></b> · gemaakt door DaveR5 · zusje van <a href="https://r5mod.daver5.nl/" target="_blank" rel="noopener">R5 ModHub</a> (voor mods). Vragen of ideeën? Klik op ❓.</p>
+        <p class="hint" style="margin:0">R5 StreamerHub <b id="ver"></b> · gemaakt door DaveR5 · zusje van <a href="https://modhub.r5mod.nl/" target="_blank" rel="noopener">R5 ModHub</a> (voor mods). Vragen of ideeën? Klik op ❓.</p>
       </div>
     </div>
   </section>
@@ -657,6 +657,7 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>24 okt 2026</small></summary>
           <ul>
+            <li><b>Nieuw adres: streamerhub.r5mod.nl</b>. Het oude adres r5streamer.daver5.nl stuurt je door en neemt je instellingen mee; log daarna opnieuw in en vul je StreamElements- of TipeeeStream-sleutel opnieuw in. Overlay-links in OBS met het oude adres blijven werken. De Windows-app werkt zichzelf bij naar 1.3.0 en gaat dan vanzelf naar het nieuwe adres.</li>
             <li><b>Nieuw tabblad Live</b>: chat (ook zelf sturen), minispeler die op pauze start, kijkerslijst, activiteit en donaties.</li>
             <li><b>Zelf indelen zoals in R5 ModHub</b>: blokken op Overzicht en Live vrij neerzetten waar je wilt (ze lijnen vanzelf uit en schuiven opzij), vrij groter of kleiner maken, en blokken en tegels aan of uit zetten met ✎ Indeling. ▦ Netjes schikken zet alles weer strak.</li>
             <li><b>Donaties via StreamElements en TipeeeStream</b>: zet bij ⚙ Instellingen → Overzicht en Live een vinkje per dienst. Donaties komen in een tegel, in de activiteit en in het blok <b>Donaties + Bits</b>, samen met wie hoeveel bits gaf.</li>
@@ -734,6 +735,23 @@
   const dateNl = (t) => new Date(t).toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
   const money = (a, c) => { try { return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: c || 'EUR' }).format(a); } catch { return a + ' ' + (c || ''); } };
 
+  // ---------- verhuizing van het oude adres ----------
+  // r5streamer.daver5.nl stuurt door naar dit adres en geeft de instellingen mee in de link (#r5verhuis=...),
+  // omdat de browser ze per adres bewaart. Alleen overnemen als dat oude adres de afzender is en hier nog niets staat.
+  const verhuisd = (() => {
+    const m = /^#r5verhuis=([\w-]+)$/.exec(location.hash);
+    if (!m) return false;
+    history.replaceState(null, '', location.pathname + location.search);
+    try {
+      if (!/^https:\/\/r5streamer\.daver5\.nl\//.test(document.referrer)) return false;
+      if (Object.keys(localStorage).some((k) => k.startsWith('r5s.'))) return false;
+      const b = atob(m[1].replace(/-/g, '+').replace(/_/g, '/'));
+      const data = JSON.parse(new TextDecoder().decode(Uint8Array.from(b, (c) => c.charCodeAt(0))));
+      Object.entries(data).forEach(([k, v]) => { if (k.startsWith('r5s.') && typeof v === 'string') localStorage.setItem(k, v); });
+      return true;
+    } catch { return false; }
+  })();
+
   // ---------- opslag ----------
   const store = {
     get(k, d) { try { const v = localStorage.getItem('r5s.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -799,7 +817,7 @@
     } catch (e) { state.me = null; state.token = ''; store.del('token'); toast('Inloggen mislukt: ' + e.message, 'err'); }
   }
   function login() {
-    if (location.protocol === 'file:') return toast('Inloggen werkt alleen online. Open r5streamer.daver5.nl.', 'err');
+    if (location.protocol === 'file:') return toast('Inloggen werkt alleen online. Open streamerhub.r5mod.nl.', 'err');
     const u = new URL('https://id.twitch.tv/oauth2/authorize');
     u.search = new URLSearchParams({ client_id: CLIENT_ID, redirect_uri: redirectUri, response_type: 'token', scope: SCOPES.join(' '), force_verify: 'true' });
     try { sessionStorage.setItem('r5s.loginAt', Date.now()); } catch {}
@@ -2979,6 +2997,7 @@
   setInterval(() => { if (!state.demo) poll(); }, 60000);
   setInterval(() => { if (cur && (state.page === 'overview' || state.page === 'live')) renderDash(); }, 30000);
   readTokenFromHash();
+  if (verhuisd) toast('Welkom op het nieuwe adres ' + location.host + '. Je instellingen zijn meegekomen; log opnieuw in met Twitch en vul je StreamElements- of TipeeeStream-sleutel opnieuw in.');
   buildGrid('overview'); buildGrid('live');
   showPage(['overview', 'live', 'overlays', 'commands', 'settings'].includes(state.page) ? state.page : 'overview');
   render();
