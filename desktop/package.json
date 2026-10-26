@@ -1,7 +1,7 @@
 {
   "name": "r5-streamerhub",
   "productName": "R5 StreamerHub",
-  "version": "1.3.5",
+  "version": "1.4.0",
   "description": "R5 StreamerHub, streamtool voor Twitch, als Windows-app (laadt streamerhub.r5mod.nl)",
   "main": "main.js",
   "author": "Dave",
@@ -30,6 +30,7 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
+      "menuCategory": "R5Mod",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "R5 StreamerHub"
