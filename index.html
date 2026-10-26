@@ -385,6 +385,8 @@
   /* modals, hulp, meldingen */
   .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 10; padding: 16px; }
   .modal-bg.open { display: flex; }
+  #mustUpd { z-index: 1000; background: rgba(0,0,0,.85); }
+  #mustUpd .modal { max-width: 420px; text-align: center; }
   .modal { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
   .modal h2 { margin: 0 0 12px; font-size: 16px; }
   .modal.wide { max-width: 1100px; }
@@ -638,7 +640,14 @@
       </div>
       <div class="card s12">
         <h2>💾 Gegevens</h2>
-        <p class="hint" style="margin-top:0">Alles staat alleen op dit apparaat (in je browser). Met exporteren maak je een back-up of zet je het over naar een ander apparaat.</p>
+        <label class="optrow"><input type="checkbox" id="syncOn"> ☁ Synchroniseren via je Twitch-account</label>
+        <p class="hint">Indeling, instellingen, overlays, commands, kijkersnotities en streamgeschiedenis zijn dan op elke pc en in elke browser hetzelfde zodra je inlogt met Twitch. Je inlog en de sleutels van StreamElements en TipeeeStream gaan nooit mee (die vul je per apparaat in). Streams ouder dan 90 dagen worden opgeschoond.</p>
+        <div class="row">
+          <button id="syncNow">Nu synchroniseren</button>
+          <button id="syncWipe">Cloud-gegevens wissen</button>
+        </div>
+        <p class="hint" id="syncState"></p>
+        <p class="hint">Met exporteren maak je daarnaast een eigen back-up in een bestand.</p>
         <div class="row">
           <button id="exportBtn">Exporteren</button>
           <button id="importBtn">Importeren</button>
@@ -667,6 +676,17 @@
 </main>
 
 <!-- Indeling -->
+<div class="modal-bg must" id="mustUpd">
+  <div class="modal">
+    <h2>Update verplicht</h2>
+    <p class="hint" id="mustUpdText"></p>
+    <div class="exe-bar" id="mustUpdBar" hidden><div></div></div>
+    <div class="row" style="justify-content:center;margin-top:10px">
+      <button class="primary" id="mustUpdBtn" hidden>Opnieuw proberen</button>
+      <a href="https://r5mod.nl/download/streamerhub" target="_blank" rel="noopener" id="mustUpdLink" hidden>Handmatig downloaden</a>
+    </div>
+  </div>
+</div>
 <div class="modal-bg" id="layModal">
   <div class="modal">
     <h2 id="layTitle">Indeling</h2>
@@ -766,6 +786,8 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
+            <li><b>☁ Cloud-sync via je Twitch-account</b>: indeling, instellingen, overlays, commands, kijkersnotities en streamgeschiedenis zijn op elke pc en in elke browser hetzelfde zodra je inlogt. Staat standaard aan, uitzetten kan bij ⚙ Instellingen → Gegevens. Je inlog en de sleutels van StreamElements en TipeeeStream gaan nooit mee; streams ouder dan 90 dagen worden opgeschoond.</li>
+            <li><b>Verplichte update</b> in de Windows-app: staat er bij het opstarten een nieuwe versie klaar, dan wordt die eerst gedownload en geïnstalleerd voordat je verder kunt.</li>
             <li>Kijkerspunten: nieuw <b>!bank</b> (ook !pot) laat zien hoeveel er in de bank zit.</li>
             <li>Kijkerspunten: nieuw <b>!robbank</b> (ook !steelbank en !rob). Een poging kost standaard 5000 punten en heeft elke keer een willekeurige kans tussen 2% en 5% (in te stellen) om de hele bank te winnen. Mislukt het, dan gaan de kosten naar de bank. De Gamble-overlay laat het ook zien.</li>
             <li>Kijkerspunten: bij ⚙ Instellingen → Gamble kies je nu welk <b>percentage</b> van een verloren inzet naar de bank gaat (standaard 100%). Met een minimum en maximum (bijv. 60% tot 100%) kiest hij bij elk verlies willekeurig een percentage daartussen. In de verliestekst kun je <code>${tobank}</code> gebruiken voor dat bedrag.</li>
@@ -874,9 +896,12 @@
   })();
 
   // ---------- opslag ----------
+  // Cloud-sync via r5mod.nl (zie syncPull/syncPush). Nooit token of de StreamElements-/TipeeeStream-sleutels.
+  const SYNC_KEYS = ['layout', 'opts', 'ov', 'ovSel', 'ovChan', 'cmds', 'cmdOn', 'calerts', 'notes', 'sessions', 'ptscfg', 'robAlias', 'integ', 'twChat', 'ucardPos', 'modOpen'];
+  const twSync = { dirty: new Set(), t: null, busy: false, at: {}, st: '' };
   const store = {
     get(k, d) { try { const v = localStorage.getItem('r5s.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
-    set(k, v) { try { localStorage.setItem('r5s.' + k, JSON.stringify(v)); } catch {} },
+    set(k, v) { try { localStorage.setItem('r5s.' + k, JSON.stringify(v)); } catch {} if (SYNC_KEYS.includes(k)) syncTouch(k); },
     del(k) { try { localStorage.removeItem('r5s.' + k); } catch {} },
   };
   const opts = Object.assign({ bots: true, botList: '', tabTitle: false }, store.get('opts', {}));
@@ -3468,6 +3493,214 @@
   $('#optBotList').oninput = (e) => { opts.botList = e.target.value; saveOpts(); renderDash(); };
   $('#optTitle').onchange = (e) => { opts.tabTitle = e.target.checked; saveOpts(); renderDash(); };
   $('#logoutBtn').onclick = logout;
+
+  // ---------- cloud-sync via je Twitch-account (r5mod.nl/api/sync) ----------
+  // Elk onderdeel (layout, ov, cmds, …) is los opgeslagen met een versienummer. Bij het openen halen we op wat een
+  // ander apparaat veranderde; bij een wijziging gaat na 30 seconden alleen dat onderdeel terug. Had een ander apparaat
+  // het intussen ook gewijzigd, dan voegen we samen (notities, streams) of wint deze wijziging.
+  const SYNC_API = 'https://r5mod.nl/api/sync';
+  const SYNC_SLOW = { sessions: 10 * 60e3 };   // streamcijfers veranderen tijdens live steeds: hooguit elke 10 minuten
+  const SYNC_MERGE = ['notes', 'sessions'];
+  const syncOff = () => { try { return localStorage.getItem('r5sync.off') === '1'; } catch { return false; } };
+  const syncActive = () => !syncOff() && !!state.me && !!state.token;
+  const syncVers = () => { try { return JSON.parse(localStorage.getItem('r5sync.vers') || 'null'); } catch { return null; } };
+  const setSyncVers = (v) => { try { localStorage.setItem('r5sync.vers', JSON.stringify({ ...v, user: state.me.user_id })); } catch {} };
+  const rawGet = (k) => { try { return localStorage.getItem('r5s.' + k); } catch { return null; } };
+  const jparse = (t, d) => { try { const v = JSON.parse(t); return v == null ? d : v; } catch { return d; } };
+  // integ uit de cloud: de sleutels van dit apparaat blijven staan
+  function rawSet(k, v) {
+    try {
+      if (v === 'null' || v == null) return localStorage.removeItem('r5s.' + k);
+      if (k === 'integ') {
+        const mine = jparse(rawGet('integ'), {}), j = jparse(v, {});
+        if (j.se) j.se.jwt = (mine.se && mine.se.jwt) || '';
+        if (j.tp) j.tp.key = (mine.tp && mine.tp.key) || '';
+        v = JSON.stringify(j);
+      }
+      localStorage.setItem('r5s.' + k, v);
+    } catch {}
+  }
+  // wat er naar de cloud gaat: zonder sleutels, streams ouder dan 90 dagen eraf
+  function syncOut(k) {
+    const raw = rawGet(k);
+    if (raw == null) return 'null';
+    if (k === 'integ') { const j = jparse(raw, {}); if (j.se) j.se.jwt = ''; if (j.tp) j.tp.key = ''; return JSON.stringify(j); }
+    if (k === 'sessions') { const cut = Date.now() - 90 * 86400e3; return JSON.stringify(jparse(raw, []).filter((x) => x && (x.start || 0) > cut)); }
+    return raw;
+  }
+  // twee versies van hetzelfde onderdeel samenvoegen; mine = dit apparaat
+  function syncMerge(k, mine, theirs) {
+    if (theirs == null || theirs === 'null') return mine;
+    if (mine == null || mine === 'null') return theirs;
+    if (k === 'notes') return JSON.stringify({ ...jparse(theirs, {}), ...jparse(mine, {}) });
+    if (k === 'sessions') {
+      const m = new Map();
+      [...jparse(theirs, []), ...jparse(mine, [])].forEach((x) => { if (x && x.id != null) m.set(x.id, x); });
+      return JSON.stringify([...m.values()].sort((a, b) => (b.start || 0) - (a.start || 0)).slice(0, 30));
+    }
+    return mine;
+  }
+  async function syncFetch(method, path, body, keepalive) {
+    const r = await fetch(SYNC_API + path, {
+      method, keepalive: !!keepalive,
+      headers: { Authorization: 'Bearer ' + state.token, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(r.status === 401 ? 'log opnieuw in met Twitch' : r.status === 413 ? 'te veel gegevens voor de cloud' : j.error || 'fout ' + r.status);
+    return j;
+  }
+  function renderSync(st) {
+    if (st != null) twSync.st = st;
+    const at = +(localStorage.getItem('r5sync.at') || 0);
+    $('#syncOn').checked = !syncOff();
+    $('#syncNow').disabled = $('#syncWipe').disabled = !syncActive();
+    $('#syncState').textContent = syncOff() ? 'Uit op dit apparaat.'
+      : !state.me ? 'Log in met Twitch om te synchroniseren.'
+      : twSync.st === 'err' ? 'Synchroniseren is niet gelukt: ' + (twSync.err || '')
+      : twSync.st === 'wait' ? 'Wijziging wacht om gesynchroniseerd te worden…'
+      : at ? 'Laatst gesynchroniseerd: ' + new Date(at).toLocaleString('nl-NL') : 'Nog niet gesynchroniseerd.';
+  }
+  function syncTouch(k) {
+    if (twSync.applying || !twSync.ready) return;   // opslaan tijdens het opstarten is geen wijziging van jou
+    twSync.dirty.add(k);
+    if (!syncActive()) return;
+    clearTimeout(twSync.t);
+    twSync.t = setTimeout(() => syncPush().catch(() => {}), 30000);
+    renderSync('wait');
+  }
+  // alles wat gewijzigd is naar de cloud; bij een botsing samenvoegen en nog eens
+  async function syncPush(all, keepalive) {
+    if (!syncActive() || twSync.busy) return;
+    const vers = syncVers();
+    if (!vers || vers.user !== state.me.user_id) return;   // eerst ophalen (syncPull)
+    const now = Date.now(), keys = [...twSync.dirty].filter((k) => all || !SYNC_SLOW[k] || now - (twSync.at[k] || 0) > SYNC_SLOW[k]);
+    if (!keys.length) { if (twSync.dirty.size) { clearTimeout(twSync.t); twSync.t = setTimeout(() => syncPush().catch(() => {}), 60000); } return renderSync(''); }
+    twSync.busy = true; renderSync('busy');
+    try {
+      // iets dat hier en in de cloud nooit bestond, hoeft niet mee
+      let parts = Object.fromEntries(keys.map((k) => [k, { data: syncOut(k), base: vers[k] || 0 }]).filter(([, p]) => p.base || p.data !== 'null'));
+      keys.forEach((k) => twSync.dirty.delete(k));
+      for (let round = 0; round < 3 && Object.keys(parts).length; round++) {
+        const r = await syncFetch('POST', '', { app: 'streamerhub', parts }, keepalive);
+        Object.assign(vers, r.vers || {});
+        Object.keys(r.vers || {}).forEach((k) => (twSync.at[k] = now));
+        const again = {};
+        Object.entries(r.conflicts || {}).forEach(([k, c]) => {
+          const merged = syncMerge(k, parts[k].data, c.data);
+          if (merged !== c.data) again[k] = { data: merged, base: c.ver }; else vers[k] = c.ver;
+          if (merged !== parts[k].data && SYNC_MERGE.includes(k)) { twSync.applying = true; rawSet(k, merged); twSync.applying = false; }
+        });
+        parts = again;
+      }
+      setSyncVers(vers);
+      localStorage.setItem('r5sync.at', String(Date.now()));
+      twSync.busy = false; renderSync(twSync.dirty.size ? 'wait' : '');
+    } catch (e) {
+      keys.forEach((k) => twSync.dirty.add(k));
+      twSync.busy = false; twSync.err = e.message; renderSync('err');
+      throw e;
+    }
+  }
+  // bij het openen (na inloggen): ophalen wat een ander apparaat veranderde. Veranderde er iets, dan één keer herladen.
+  async function syncPull() {
+    if (!syncActive()) return renderSync(), false;
+    try {
+      const r = await syncFetch('GET', '?app=streamerhub');
+      const remote = r.parts || {};
+      let vers = syncVers();
+      const first = !vers || vers.user !== state.me.user_id;
+      const hasLocal = SYNC_KEYS.some((k) => k !== 'integ' && rawGet(k) != null);
+      let useCloud = true;
+      if (first && hasLocal && Object.keys(remote).length) {
+        useCloud = confirm('Je hebt al instellingen van R5 StreamerHub in de cloud (van een andere pc of browser).\n\nOK = die uit de cloud gebruiken\nAnnuleren = die van dit apparaat houden\n\nNotities en streamgeschiedenis worden altijd samengevoegd.');
+      }
+      if (first) vers = {};
+      let changed = false;
+      twSync.applying = true;
+      Object.entries(remote).forEach(([k, p]) => {
+        if (!SYNC_KEYS.includes(k) || p.ver <= (vers[k] || 0)) return;
+        const mine = rawGet(k);
+        let next;
+        if (SYNC_MERGE.includes(k)) next = syncMerge(k, mine, p.data);
+        else if (first) next = useCloud || mine == null ? p.data : mine;
+        else next = twSync.dirty.has(k) ? mine : p.data;
+        if (next !== p.data && !(k === 'integ' && next === mine)) twSync.dirty.add(k);
+        const before = mine;
+        if ((next ?? 'null') !== (mine ?? 'null')) rawSet(k, next);
+        if ((rawGet(k) ?? 'null') !== (before ?? 'null')) changed = true;
+        vers[k] = p.ver;
+      });
+      twSync.applying = false;
+      if (first) SYNC_KEYS.forEach((k) => { if (rawGet(k) != null && !remote[k]) twSync.dirty.add(k); });
+      setSyncVers(vers);
+      localStorage.setItem('r5sync.at', String(Date.now()));
+      if (twSync.dirty.size) await syncPush(true).catch(() => {});
+      renderSync('');
+      if (changed) {
+        // eerst de kijkerspunten veilig wegschrijven, dan herladen met de instellingen van het andere apparaat
+        toast('Instellingen van je andere apparaat opgehaald.', 'ok');
+        await Promise.race([window.r5pointsFlush ? window.r5pointsFlush() : 0, new Promise((ok) => setTimeout(ok, 5000))]);
+        setTimeout(() => location.reload(), 300);
+        return true;
+      }
+    } catch (e) {
+      twSync.applying = false;
+      twSync.err = e.message; renderSync('err');
+    }
+    return false;
+  }
+  $('#syncOn').onchange = (e) => {
+    try { localStorage.setItem('r5sync.off', e.target.checked ? '0' : '1'); } catch {}
+    if (e.target.checked) syncPull(); else renderSync('');
+  };
+  $('#syncNow').onclick = async (e) => {
+    e.target.disabled = true;
+    try { SYNC_KEYS.forEach((k) => twSync.dirty.add(k)); await syncPush(true); toast('Gesynchroniseerd.', 'ok'); } catch (err) { toast('Cloud-sync: ' + err.message, 'err'); }
+    renderSync();
+  };
+  $('#syncWipe').onclick = async () => {
+    if (!confirm('Alle R5 StreamerHub-gegevens van jouw Twitch-account uit de cloud wissen? Op dit apparaat blijft alles staan, en synchroniseren gaat uit.')) return;
+    try {
+      await syncFetch('POST', '/delete', { app: 'streamerhub' });
+      localStorage.setItem('r5sync.off', '1'); localStorage.removeItem('r5sync.vers'); localStorage.removeItem('r5sync.at');
+      toast('Cloud-gegevens gewist.', 'ok');
+    } catch (err) { toast('Wissen mislukt: ' + err.message, 'err'); }
+    renderSync('');
+  };
+  // venster sluiten of app afsluiten: wat nog wacht meteen versturen
+  addEventListener('pagehide', () => { if (twSync.dirty.size) syncPush(true, true).catch(() => {}); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && twSync.dirty.size) syncPush(true).catch(() => {}); });
+  renderSync();
+
+  // Verplichte update: staat er bij het opstarten een nieuwere Windows-app klaar, dan kun je de app pas gebruiken als die erop staat.
+  // Downloaden en installeren gaan vanzelf; daarna start de app opnieuw. Zonder nieuwere versie (of in de browser) niets.
+  function mustUpdate(u) {
+    if (!u) return;
+    const m = $('#mustUpd'), open = m.classList.contains('open');
+    // alleen bij het opstarten; komt er tijdens een stream een update uit, dan pas bij de volgende start
+    if (!open && performance.now() > 90000) return;
+    const go = ['available', 'downloading', 'ready'].includes(u.status) || (open && u.status === 'error');
+    if (!go) { m.classList.remove('open'); return; }
+    m.classList.add('open');
+    const v = u.version ? ' ' + u.version : '';
+    $('#mustUpdText').textContent = {
+      available: 'Er is een nieuwe versie' + v + ' van R5 StreamerHub. Die wordt nu eerst gedownload en geïnstalleerd; daarna start de app vanzelf opnieuw.',
+      downloading: 'Nieuwe versie' + v + ' downloaden… ' + (u.percent || 0) + '%',
+      ready: 'Versie' + v + ' installeren. De app start zo opnieuw…',
+      error: (u.message || 'Updaten is niet gelukt.') + ' Probeer het opnieuw of download de nieuwe versie zelf.',
+    }[u.status];
+    $('#mustUpdBar').hidden = u.status !== 'downloading';
+    $('#mustUpdBar div').style.width = (u.percent || 0) + '%';
+    $('#mustUpdBtn').hidden = $('#mustUpdLink').hidden = u.status !== 'error';
+    if (u.status === 'available') window.r5app.update('download');
+    if (u.status === 'ready' && !mustUpdate.inst) {
+      mustUpdate.inst = true;
+      // nog wachtende cloud-wijzigingen eerst weg (de kijkerspunten gaan bij het afsluiten vanzelf), dan installeren
+      Promise.race([syncPush(true).catch(() => {}), new Promise((ok) => setTimeout(ok, 5000))]).then(() => window.r5app.update('install'));
+    }
+  }
+  $('#mustUpdBtn').onclick = () => window.r5app.update('check').then(mustUpdate);
   // Windows-app: in de app zelf zoeken naar updates; in de browser de .exe van de nieuwste release downloaden
   if (window.r5app && window.r5app.update) {
     $('#exeWeb').hidden = true; $('#exeApp').hidden = false;
@@ -3489,9 +3722,10 @@
       if ((u.status === 'available' || u.status === 'ready') && told !== key) { told = key; toast('Nieuwe versie ' + u.version + ' van de Windows-app, zie ⚙ Instellingen.', 'ok'); }
     };
     window.r5app.onUpdate(renderExe);
+    window.r5app.onUpdate(mustUpdate);
     $('#exeCheck').onclick = async () => renderExe(await window.r5app.update('check'));
     $('#exeDownload').onclick = async (e) => renderExe(await window.r5app.update(e.currentTarget.dataset.action));
-    window.r5app.update('state').then(renderExe);
+    window.r5app.update('state').then((u) => { renderExe(u); mustUpdate(u); return window.r5app.update('check'); }).then(mustUpdate, () => {});
   } else {
     $('#exeCard').hidden = /Android|iPhone|iPad|Mobile/.test(navigator.userAgent);
     $('#exeGet').onclick = async () => {
@@ -3558,7 +3792,7 @@
     if (a && a.dataset.act === 'demo') { startDemo(); showPage('overview'); }
     if (e.target.matches('[data-close]') || e.target.classList.contains('modal-bg')) e.target.closest('.modal-bg').classList.remove('open');
   });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal-bg.open').forEach((m) => m.classList.remove('open')); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal-bg.open:not(.must)').forEach((m) => m.classList.remove('open')); });
   $('#helpBtn').onclick = () => { if (state.me && !$('#hfName').value) $('#hfName').value = state.me.login; $('#helpModal').classList.add('open'); };
   // Contactformulier via Web3Forms (zelfde ontvanger als R5 ModHub); de access key is openbaar bedoeld.
   const WEB3FORMS_KEY = 'a7b33e40-de12-4617-9b49-4505b8f349bd';
@@ -3584,6 +3818,8 @@
   // ---------- starten ----------
   async function boot() {
     await validate();
+    twSync.ready = true;
+    if (await syncPull()) return;   // herlaadt met de instellingen van een ander apparaat
     premCheck();
     if (state.me) {
       try { state.user = (await helix('GET', 'users', { id: state.me.user_id })).data[0] || null; } catch {}
