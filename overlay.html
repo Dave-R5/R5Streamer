@@ -58,6 +58,13 @@
   #clip iframe, #clip video { width: 100%; height: 100%; border: 0; display: block; object-fit: cover; background: #000; }
   #clip .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #ddd; font-size: 28px; font-weight: 700; background: repeating-linear-gradient(45deg, #26262c 0 18px, #1d1d22 18px 36px); }
 
+  /* lettertype (Premium) en R5Mod-label (gratis) */
+  #raid, #combo { font-family: var(--font, inherit); }
+  .r5tag { position: absolute; right: calc(var(--u, 1px) * 6); bottom: calc(var(--u, 1px) * 4); font: 700 calc(var(--u, 1px) * 8)/1 "Segoe UI", system-ui, sans-serif; letter-spacing: .06em; color: #fff; opacity: .7; text-shadow: 0 1px 3px rgba(0,0,0,.8); pointer-events: none; }
+  #r5wall { position: absolute; right: 12px; bottom: 10px; font: 700 14px/1 "Segoe UI", system-ui, sans-serif; letter-spacing: .06em; color: #fff; opacity: 0; text-shadow: 0 1px 3px rgba(0,0,0,.8); background: rgba(14,14,16,.45); padding: 4px 8px; border-radius: 6px; transition: opacity .4s; }
+  #r5wall.on { opacity: .75; }
+  #lock { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); font: 600 30px/1.4 "Segoe UI", system-ui, sans-serif; color: #fff; background: rgba(14,14,16,.85); border: 2px solid #f5c542; border-radius: 16px; padding: 22px 34px; text-align: center; max-width: 70%; }
+  #lock b { color: #f5c542; }
   #hint { position: fixed; left: 10px; bottom: 8px; font: 12px system-ui, sans-serif; color: #a0a0ab; background: rgba(14,14,16,.8); padding: 4px 8px; border-radius: 6px; display: none; }
   body.preview #hint { display: block; }
 </style>
@@ -118,6 +125,7 @@
     });
     return;
   }
+  const FONTS = ['Bangers', 'Luckiest Guy', 'Bebas Neue', 'Montserrat', 'Poppins', 'Fredoka', 'Orbitron', 'Press Start 2P', 'Permanent Marker'];
   const box = (v, d) => { const a = String(v || '').split(',').map(Number); return a.length === 4 && a.every(isFinite) ? a : d; };
   const num = (k, d, lo, hi) => { const v = parseFloat(P.get(k)); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
   const cfg = {
@@ -161,12 +169,79 @@
     clipsnd: P.get('clipsnd') !== '0',
     hold: P.get('hold') === '1',                        // editor: melding blijft staan
     img: /^https:\/\//.test(P.get('img') || '') ? P.get('img') : '',
+    font: FONTS.includes(P.get('font')) ? P.get('font') : '',   // lettertype (Premium)
   };
-  document.documentElement.style.setProperty('--accent', cfg.color);
-  document.documentElement.style.setProperty('--tc', cfg.tcolor);
   if (cfg.preview) document.body.classList.add('preview');
   const stage = document.getElementById('stage');
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // ---------- Premium ----------
+  // Gratis: emote-wall en meldingen in standaardstijl, met een klein R5Mod-label. Premium (van het kanaal, via r5mod.nl):
+  // emote-combo, donatie-melding, eigen kleuren, lettertypes en animaties, en geen label.
+  // Het antwoord van r5mod.nl is ondertekend en wordt hier gecontroleerd met de vaste publieke sleutel.
+  const PREM_KEY = 'Tikhiac/A6udCP2MSP/4ohtdUs9aURBVnEV+eoZG6+Q=';
+  const b64 = (x) => Uint8Array.from(atob(x), (c) => c.charCodeAt(0));
+  let naclP = null;
+  async function edVerify(sig, msg) {
+    try {
+      const k = await crypto.subtle.importKey('raw', b64(PREM_KEY), { name: 'Ed25519' }, false, ['verify']);
+      return await crypto.subtle.verify('Ed25519', k, sig, msg);
+    } catch {
+      // oudere browsers (zoals de browserbron in OBS) kennen Ed25519 nog niet: dan met tweetnacl
+      naclP = naclP || new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/tweetnacl/1.0.3/nacl-fast.min.js'; sc.onload = () => ok(window.nacl); sc.onerror = no; document.head.appendChild(sc); });
+      try { return (await naclP).sign.detached.verify(msg, sig, b64(PREM_KEY)); } catch { naclP = null; return false; }
+    }
+  }
+  async function premValid(r, id) {
+    if (!r || r.product !== 'streamerhub' || String(r.twitch_id) !== String(id) || typeof r.signature !== 'string') return false;
+    const now = Date.now() / 1000;
+    if (!(r.issued_at > now - 7 * 86400 && r.issued_at < now + 600)) return false;
+    const msg = ['r5mod-premium', 'v1', r.product, r.twitch_id, r.premium ? '1' : '0', r.expires_at ?? '', r.issued_at].join('|');
+    try { return await edVerify(b64(r.signature), new TextEncoder().encode(msg)); } catch { return false; }
+  }
+  // laatste geldige antwoord (max. 3 uur oud) uit de cache, anders vers ophalen; zonder internet geldt de cache tot 7 dagen
+  async function premFetch(id) {
+    const key = 'r5s.prem.' + id;
+    let c = null; try { c = JSON.parse(localStorage.getItem(key) || 'null'); } catch {}
+    if (c && c.issued_at > Date.now() / 1000 - 3 * 3600 && await premValid(c, id)) return c;
+    try {
+      const r = await fetch('https://r5mod.nl/api/streamerhub/premium?twitch_id=' + encodeURIComponent(id), { cache: 'no-store' }).then((x) => x.json());
+      if (await premValid(r, id)) { try { localStorage.setItem(key, JSON.stringify(r)); } catch {} return r; }
+    } catch {}
+    return (await premValid(c, id)) ? c : null;
+  }
+  const ORIG = { color: cfg.color, tcolor: cfg.tcolor, style: cfg.style, ranim: cfg.ranim, anim: cfg.anim, font: cfg.font };
+  const STD = { color: { bits: '#1f9cff', donation: '#00b87a' }[cfg.type] || '#9147ff', tcolor: '#ffffff', style: 'card', ranim: 'pop', anim: 'rise', font: '' };
+  const PREM_ONLY = { combo: 'De emote-combo', donation: 'De donatie-melding' }[cfg.type];
+  let prem = false, premId = '';
+  function applyTier() {
+    Object.assign(cfg, prem ? ORIG : STD);
+    document.documentElement.style.setProperty('--accent', cfg.color);
+    document.documentElement.style.setProperty('--tc', cfg.tcolor);
+    if (cfg.font && !document.getElementById('gfont')) {
+      const l = document.createElement('link'); l.id = 'gfont'; l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=' + cfg.font.replace(/ /g, '+') + '&display=swap';
+      document.head.appendChild(l);
+    }
+    document.documentElement.style.setProperty('--font', cfg.font ? '"' + cfg.font + '", "Segoe UI", system-ui, sans-serif' : 'inherit');
+    // voorbeeld in de editor: laten zien dat deze overlay Premium nodig heeft
+    let lk = document.getElementById('lock');
+    if (PREM_ONLY && !prem && cfg.preview) {
+      if (!lk) { lk = document.createElement('div'); lk.id = 'lock'; document.body.appendChild(lk); }
+      lk.innerHTML = '⭐ <b>Premium</b><br>' + PREM_ONLY + ' verschijnt in OBS met R5 StreamerHub Premium.';
+    } else if (lk) lk.remove();
+  }
+  async function checkPrem(id) {
+    if (!/^\d+$/.test(String(id || ''))) return;
+    premId = String(id);
+    try { localStorage.setItem('r5s.premid.' + cfg.ch, premId); } catch {}
+    const r = await premFetch(premId);
+    const on = !!(r && r.premium && r.expires_at && r.expires_at > Date.now() / 1000);
+    if (on !== prem) { prem = on; applyTier(); if (cfg.hold && ALERT) { raidQ.length = 0; raidBusy = false; sampleAlert(); } }
+  }
+  applyTier();
+  if (cfg.ch) { let id = ''; try { id = localStorage.getItem('r5s.premid.' + cfg.ch) || ''; } catch {} checkPrem(id); }
+  setInterval(() => checkPrem(premId), 3 * 3600 * 1000);
 
   // ---------- emotes van 7TV, BTTV en FFZ (Twitch-emotes komen met de chat mee) ----------
   // een paar vaste Twitch-emotes, zodat testen ook werkt voordat de rest geladen is
@@ -243,7 +318,12 @@
     stage.appendChild(wallBox);
   }
   const wallW = () => (wallBox === stage ? innerWidth : cfg.area[2]), wallH = () => (wallBox === stage ? innerHeight : cfg.area[3]);
+  let wallTag = null, wallTagT = null;
   function wall(list) {
+    if (!prem && list.length) {
+      if (!wallTag) { wallTag = document.createElement('div'); wallTag.id = 'r5wall'; wallTag.textContent = 'R5Mod'; wallBox.appendChild(wallTag); }
+      wallTag.classList.add('on'); clearTimeout(wallTagT); wallTagT = setTimeout(() => wallTag.classList.remove('on'), cfg.dur * 1300 + 1000);
+    } else if (wallTag && prem) wallTag.classList.remove('on');
     list.slice(0, cfg.per).forEach((e, i) => {
       if (wallBox.querySelectorAll('.em').length >= cfg.max) return;
       const img = new Image();
@@ -303,7 +383,7 @@
     return (combo.el = el);
   }
   function comboMsg(list, user) {
-    if (!list.length) return;
+    if (!list.length || !prem) return;
     const now = Date.now();
     // telt per bericht één keer; een andere emote breekt de combo als de huidige niet meer in het bericht zit
     const same = list.find((e) => e.name === combo.name);
@@ -374,7 +454,7 @@
     const msg = cfg.showmsg && r.msg ? r.msg : '';
     const pic = cfg.imgmode === 'none' ? '' : cfg.imgmode === 'custom' && cfg.img ? cfg.img : r.avatar;
     el.innerHTML = (cfg.rocket ? '<span class="rocket">' + DECO + '</span>' : '') + (pic ? '<img src="' + esc(pic) + '" alt=""' + (cfg.imgmode === 'custom' ? ' class="custom"' : '') + '>' : '') +
-      '<div class="txt">' + (cfg.title ? '<div class="top">' + esc(cfg.title) + '</div>' : '') + '<div class="name">' + esc(r.name) + '</div>' + (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') + (msg ? '<div class="msg">' + esc(msg) + '</div>' : '') + '</div>';
+      '<div class="txt">' + (cfg.title ? '<div class="top">' + esc(cfg.title) + '</div>' : '') + '<div class="name">' + esc(r.name) + '</div>' + (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') + (msg ? '<div class="msg">' + esc(msg) + '</div>' : '') + '</div>' + (prem ? '' : '<span class="r5tag">R5Mod</span>');
     document.body.appendChild(el);
     el.getBoundingClientRect();
     requestAnimationFrame(() => el.classList.add('on'));
@@ -462,7 +542,7 @@
     raid({ name, login, msg, test, avatar: test ? TEST_AV : cfg.imgmode === 'avatar' ? await avatarOf(login) : '', vars: { bits: bits.toLocaleString('nl-NL') } });
   }
   async function onDonation(d, test) {
-    if (cfg.type !== 'donation' || d.amount < cfg.minamt) return;
+    if (cfg.type !== 'donation' || d.amount < cfg.minamt || !prem) return;
     const amount = (() => { try { return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: d.cur || 'EUR' }).format(d.amount); } catch { return d.amount + ' ' + (d.cur || ''); } })();
     raid({ name: d.name, login: d.name, msg: d.msg, test, avatar: test ? TEST_AV : cfg.imgmode === 'avatar' ? await avatarOf(String(d.name).toLowerCase()) : '', vars: { amount } });
   }
@@ -512,7 +592,7 @@
       if (!l) return;
       const m = parseLine(l);
       if (m.command === 'PING') ws.send('PONG :' + (m.params[0] || 'tmi.twitch.tv'));
-      else if (m.command === 'ROOMSTATE' && m.tags['room-id']) loadChannel(m.tags['room-id']);
+      else if (m.command === 'ROOMSTATE' && m.tags['room-id']) { loadChannel(m.tags['room-id']); if (m.tags['room-id'] !== premId) checkPrem(m.tags['room-id']); }
       else if (m.command === 'PRIVMSG') {
         let text = m.params[1] || '';
         if (text.startsWith('\u0001ACTION ')) text = text.slice(8, -1);
@@ -546,7 +626,7 @@
   function sampleAlert() {
     if (cfg.type === 'raid') onRaid('PixelPiet', 42, TEST_AV, 'pixelpiet', true);
     if (cfg.type === 'bits') raid({ name: 'PixelPiet', login: 'pixelpiet', msg: 'Dit is een test van de bits-melding!', test: true, avatar: TEST_AV, vars: { bits: '500' } });
-    if (cfg.type === 'donation') raid({ name: 'PixelPiet', login: 'pixelpiet', msg: 'Dit is een test van de donatie-melding!', test: true, avatar: TEST_AV, vars: { amount: '€ 5,00' } });
+    if (cfg.type === 'donation' && prem) raid({ name: 'PixelPiet', login: 'pixelpiet', msg: 'Dit is een test van de donatie-melding!', test: true, avatar: TEST_AV, vars: { amount: '€ 5,00' } });
   }
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data || e.data.r5 !== 'test') return;
