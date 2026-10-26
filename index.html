@@ -2954,10 +2954,10 @@
         '<div class="emtools"><input data-e="q" placeholder="Zoek emote…" autocomplete="off"><div class="filters" data-e="scope" style="margin:0"></div><div class="filters" data-e="src" style="margin:0"></div>' +
         '<span style="margin-left:auto" class="hint" data-e="count"></span><button data-e="allon">Alles aan</button><button data-e="alloff">Getoonde uit</button></div><div class="emgrid" data-e="grid"></div>' +
         '<div class="drop" data-e="drop"><b>⬆ Eigen emotes</b><br>' + (appEmotes
-          ? 'Sleep plaatjes hierheen of kies bestanden (png, jpg, gif of webp, max. 3 MB). De bestandsnaam wordt de naam die je in de chat typt, bijvoorbeeld <b>daveHype</b>. OBS ziet je eigen emotes zolang de Windows-app open staat.' +
+          ? 'Sleep plaatjes hierheen of kies bestanden (png, jpg, gif of webp, max. 3 MB). De bestandsnaam wordt de naam die je in de chat typt, bijvoorbeeld <b>mijnHype</b>. OBS ziet je eigen emotes zolang de Windows-app open staat.' +
             '<div class="acts" style="justify-content:center"><button data-e="upload">Kies bestanden…</button><button data-e="folder">📁 Map openen</button><input type="file" data-e="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden></div>'
           : 'Plaatjes uploaden kan in de Windows-app (⚙ Instellingen → Windows-app). Hier voeg je een emote toe met een link naar een plaatje dat online staat.' +
-            '<div class="acts" style="justify-content:center"><input data-e="cname" placeholder="Naam, bijv. daveHype" maxlength="25" autocomplete="off" style="width:170px"><input data-e="curl" placeholder="https://…/plaatje.png" autocomplete="off" style="flex:1;min-width:200px;max-width:380px"><button data-e="cadd">Toevoegen</button></div>') +
+            '<div class="acts" style="justify-content:center"><input data-e="cname" placeholder="Naam, bijv. mijnHype" maxlength="25" autocomplete="off" style="width:170px"><input data-e="curl" placeholder="https://…/plaatje.png" autocomplete="off" style="flex:1;min-width:200px;max-width:380px"><button data-e="cadd">Toevoegen</button></div>') +
         '<div class="cemlist" data-e="cem"></div></div></div>';
       card = box.querySelector('.emcard');
       $('[data-e=q]', card).oninput = (e) => { emState.q = e.target.value.trim().toLowerCase(); drawEmotes(card); };
