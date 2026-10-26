@@ -766,7 +766,7 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
-            <li>Kijkerspunten: bij ⚙ Instellingen → Gamble kies je nu welk <b>percentage</b> van een verloren inzet naar de bank gaat (standaard 100%). In de verliestekst kun je <code>${tobank}</code> gebruiken voor dat bedrag.</li>
+            <li>Kijkerspunten: bij ⚙ Instellingen → Gamble kies je nu welk <b>percentage</b> van een verloren inzet naar de bank gaat (standaard 100%). Met een minimum en maximum (bijv. 60% tot 100%) kiest hij bij elk verlies willekeurig een percentage daartussen. In de verliestekst kun je <code>${tobank}</code> gebruiken voor dat bedrag.</li>
             <li>Kijkerspunten: nieuwe commands <b>!raffle 1000</b> (kijkers doen mee met <b>!join</b>, na 60 s wint één van hen), <b>!setpoints @naam 500</b> en <b>!addpoints @naam 100</b> (mods voegen punten toe). <b>!geefpunten</b> is nu voor kijkers: daarmee geven ze hun eigen punten aan een ander. Bij "Wie mag het gebruiken" kun je nu ook <b>Lead mods</b> kiezen, bij alle commands. Het uitklapvak ⚙ Instellingen is duidelijker, met kopjes per onderdeel.</li>
             <li><b>Windows-app 1.4.0</b>: installeren voor alle gebruikers zet de app nu standaard in <code>C:\Program Files\R5Mod\R5 StreamerHub</code>, en in het Startmenu staat hij in de map <b>R5Mod</b>. Een bestaande installatie blijft gewoon waar hij staat.</li>
             <li>Kijkerspunten: nieuwe pagina per streamer op <b>r5mod.nl/s/jouwnaam</b> met de ranglijst, de bank en je chat commands. Met <b>!leaderboard</b> (ook !ranglijst en !top) slaat de app eerst de actuele stand op en zet daarna de link in de chat. De knop 🏆 Je pagina staat bij de kijkerspunten.</li>
@@ -1413,7 +1413,7 @@
     ['follow', 'Bonus bij een follow', 'num', 50, 0, 1000000], ['sub', 'Bonus bij een sub', 'num', 250, 0, 1000000], ['raid', 'Bonus voor de raider', 'num', 100, 0, 1000000],
     ['', '🎰 Gamble', 'head'],
     ['gMin', 'Minimale inzet', 'num', 10, 1, 1e9], ['gMax', 'Maximale inzet (0 = geen)', 'num', 0, 0, 1e9],
-    ['gWin', 'Winkans (%)', 'num', 45, 0, 95], ['gJack', 'Kans om de bank te kraken (%)', 'num', 1, 0, 50], ['gBank', 'Verloren inzet gaat naar de bank', 'check', true], ['gBankPct', 'Deel van de verloren inzet voor de bank (%)', 'num', 100, 0, 100],
+    ['gWin', 'Winkans (%)', 'num', 45, 0, 95], ['gJack', 'Kans om de bank te kraken (%)', 'num', 1, 0, 50], ['gBank', 'Verloren inzet gaat naar de bank', 'check', true], ['gBankPct', 'Deel van de verloren inzet voor de bank: minimaal (%)', 'num', 100, 0, 100], ['gBankMax', '… maximaal (%) (elke keer willekeurig daartussen)', 'num', 100, 0, 100],
     ['', '💬 Gamble-teksten', 'head', 'het antwoord bij winst staat bij het command !gamble'],
     ['tLose', 'Chatbericht bij verlies (${user} ${bet} inzet ${tobank} naar de bank ${points} saldo ${bank} bank ${pname})', 'long', '😬 ${user} verliest ${bet} ${pname}. De bank staat nu op ${bank}. Saldo: ${points}.'],
     ['tBroke', 'Chatbericht bij bankroet (all-in ingezet en verloren)', 'long', '💥 ${user} ging all-in en is BANKROET. Alle ${bet} ${pname} zijn weg.'],
@@ -1424,6 +1424,7 @@
     ['tRaffleNone', 'Tekst als niemand meedeed', 'long', '🎟 Niemand deed mee aan de raffle van ${amount} ${pname}.'],
   ];
   const pc = Object.assign(Object.fromEntries(PTS_FIELDS.filter((f) => f[0]).map((f) => [f[0], f[3]])), { on: false }, store.get('ptscfg', {}));
+  if (store.get('ptscfg', {}).gBankMax == null) pc.gBankMax = pc.gBankPct;   // eerder alleen één percentage
   const savePc = () => store.set('ptscfg', pc);
   // base: saldo's van r5mod.nl {id: [login, punten]}; delta: verschillen sinds de laatste upload; batch: id van de volgende upload
   const pts = { ch: '', base: null, bank: 0, delta: {}, bankD: 0, batch: '', status: '', busy: false, lastEarn: 0, cd: {}, saidAt: {}, log: [], syncedAt: 0 };
@@ -1495,7 +1496,7 @@
   const pageLink = () => 'https://r5mod.nl/s/' + ((state.me && state.me.login) || '');
   const PTS_DESC = {
     bal: (c) => 'Laat zien hoeveel ' + pc.name + ' je hebt; met !' + c.name + ' @naam zie je die van een ander.',
-    gamble: (c) => 'Speel om ' + pc.name + ': !' + c.name + ' 100, !' + c.name + ' 50% of !' + c.name + ' all. ' + (pc.gBank ? (pc.gBankPct >= 100 ? 'Verloren inzet gaat naar de bank' : pc.gBankPct + '% van verloren inzet gaat naar de bank') + '; wie de bank kraakt, wint alles.' : ''),
+    gamble: (c) => 'Speel om ' + pc.name + ': !' + c.name + ' 100, !' + c.name + ' 50% of !' + c.name + ' all. ' + (pc.gBank ? (pc.gBankPct >= 100 ? 'Verloren inzet gaat naar de bank' : pc.gBankPct + (pc.gBankMax > pc.gBankPct ? '-' + pc.gBankMax : '') + '% van verloren inzet gaat naar de bank') + '; wie de bank kraakt, wint alles.' : ''),
     give: (c) => 'Voeg ' + pc.name + ' toe bij iemand (of pak af met -100): !' + c.name + ' @naam 100.',
     transfer: (c) => 'Geef je eigen ' + pc.name + ' aan een ander: !' + c.name + ' @naam 100.',
     set: (c) => 'Zet iemands ' + pc.name + ' op een vast aantal: !' + c.name + ' @naam 500.',
@@ -1637,7 +1638,7 @@
     if (bet > bal) return say(who + ' je hebt maar ' + pn(bal) + '.');
     if (bet < pc.gMin) return say(who + ' je moet minimaal ' + pn(pc.gMin) + ' inzetten' + (bal < pc.gMin ? '; je hebt er ' + nl(bal) + '.' : '.'));
     pts.cd[id] = now;
-    const allIn = bet === bal, bank = bankNow(), r = Math.random() * 100, toBank = pc.gBank ? Math.floor(bet * Math.max(0, Math.min(100, pc.gBankPct ?? 100)) / 100) : 0;
+    const allIn = bet === bal, bank = bankNow(), r = Math.random() * 100, lo = Math.max(0, Math.min(100, pc.gBankPct ?? 100)), hi = Math.max(lo, Math.min(100, pc.gBankMax ?? lo)), toBank = pc.gBank ? Math.floor(bet * (lo + Math.random() * (hi - lo)) / 100) : 0;
     let res;
     if (pc.gBank && bank > 0 && r < pc.gJack) res = { kind: 'bank', win: bank, mult: 0 };
     else if (r < pc.gJack + pc.gWin) { const m = Math.random(); const mult = m < 0.02 ? 5 : m < 0.10 ? 3 : 2; res = { kind: 'win', win: bet * (mult - 1), mult }; }
@@ -1691,6 +1692,8 @@
     if (f[2] === 'check') pc[k] = i.checked;
     else if (f[2] === 'num') pc[k] = Math.max(f[4], Math.min(f[5], Math.trunc(+i.value) || 0));
     else pc[k] = i.value.trim() || f[3];
+    if (k === 'gBankPct' && pc.gBankMax < pc.gBankPct) pc.gBankMax = pc.gBankPct;
+    if (k === 'gBankMax' && pc.gBankMax < pc.gBankPct) pc.gBankPct = pc.gBankMax;
     savePc(); renderPts();
   });
 
