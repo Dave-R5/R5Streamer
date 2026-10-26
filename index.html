@@ -766,6 +766,7 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
+            <li>Kijkerspunten: bij ⚙ Instellingen → Gamble kies je nu welk <b>percentage</b> van een verloren inzet naar de bank gaat (standaard 100%). In de verliestekst kun je <code>${tobank}</code> gebruiken voor dat bedrag.</li>
             <li>Kijkerspunten: nieuwe commands <b>!raffle 1000</b> (kijkers doen mee met <b>!join</b>, na 60 s wint één van hen), <b>!setpoints @naam 500</b> en <b>!addpoints</b> (naast !geefpunten). Bij "Wie mag het gebruiken" kun je nu ook <b>Lead mods</b> kiezen, bij alle commands. Het uitklapvak ⚙ Instellingen is duidelijker, met kopjes per onderdeel.</li>
             <li><b>Windows-app 1.4.0</b>: installeren voor alle gebruikers zet de app nu standaard in <code>C:\Program Files\R5Mod\R5 StreamerHub</code>, en in het Startmenu staat hij in de map <b>R5Mod</b>. Een bestaande installatie blijft gewoon waar hij staat.</li>
             <li>Kijkerspunten: nieuwe pagina per streamer op <b>r5mod.nl/s/jouwnaam</b> met de ranglijst, de bank en je chat commands. Met <b>!leaderboard</b> (ook !ranglijst en !top) slaat de app eerst de actuele stand op en zet daarna de link in de chat. De knop 🏆 Je pagina staat bij de kijkerspunten.</li>
@@ -1409,9 +1410,9 @@
     ['follow', 'Bonus bij een follow', 'num', 50, 0, 1000000], ['sub', 'Bonus bij een sub', 'num', 250, 0, 1000000], ['raid', 'Bonus voor de raider', 'num', 100, 0, 1000000],
     ['', '🎰 Gamble', 'head'],
     ['gMin', 'Minimale inzet', 'num', 10, 1, 1e9], ['gMax', 'Maximale inzet (0 = geen)', 'num', 0, 0, 1e9],
-    ['gWin', 'Winkans (%)', 'num', 45, 0, 95], ['gJack', 'Kans om de bank te kraken (%)', 'num', 1, 0, 50], ['gBank', 'Verloren inzet gaat naar de bank', 'check', true],
+    ['gWin', 'Winkans (%)', 'num', 45, 0, 95], ['gJack', 'Kans om de bank te kraken (%)', 'num', 1, 0, 50], ['gBank', 'Verloren inzet gaat naar de bank', 'check', true], ['gBankPct', 'Deel van de verloren inzet voor de bank (%)', 'num', 100, 0, 100],
     ['', '💬 Gamble-teksten', 'head', 'het antwoord bij winst staat bij het command !gamble'],
-    ['tLose', 'Chatbericht bij verlies (${user} ${bet} inzet ${points} saldo ${bank} bank ${pname})', 'long', '😬 ${user} verliest ${bet} ${pname}. De bank staat nu op ${bank}. Saldo: ${points}.'],
+    ['tLose', 'Chatbericht bij verlies (${user} ${bet} inzet ${tobank} naar de bank ${points} saldo ${bank} bank ${pname})', 'long', '😬 ${user} verliest ${bet} ${pname}. De bank staat nu op ${bank}. Saldo: ${points}.'],
     ['tBroke', 'Chatbericht bij bankroet (all-in ingezet en verloren)', 'long', '💥 ${user} ging all-in en is BANKROET. Alle ${bet} ${pname} zijn weg.'],
     ['tBank', 'Chatbericht als iemand de bank kraakt en alles wint wat erin zat (${win} = het bedrag uit de bank)', 'long', '🏦 ${user} KRAAKT DE BANK en wint ${win} ${pname}! Saldo: ${points}.'],
     ['', '🎟 Raffle', 'head', 'start met !raffle 1000 (of !raffle 1000 30 voor 30 seconden)'],
@@ -1491,7 +1492,7 @@
   const pageLink = () => 'https://r5mod.nl/s/' + ((state.me && state.me.login) || '');
   const PTS_DESC = {
     bal: (c) => 'Laat zien hoeveel ' + pc.name + ' je hebt; met !' + c.name + ' @naam zie je die van een ander.',
-    gamble: (c) => 'Speel om ' + pc.name + ': !' + c.name + ' 100, !' + c.name + ' 50% of !' + c.name + ' all. Verloren inzet gaat naar de bank; wie de bank kraakt, wint alles.',
+    gamble: (c) => 'Speel om ' + pc.name + ': !' + c.name + ' 100, !' + c.name + ' 50% of !' + c.name + ' all. ' + (pc.gBank ? (pc.gBankPct >= 100 ? 'Verloren inzet gaat naar de bank' : pc.gBankPct + '% van verloren inzet gaat naar de bank') + '; wie de bank kraakt, wint alles.' : ''),
     give: (c) => 'Geef of pak ' + pc.name + ': !' + c.name + ' @naam 100.',
     set: (c) => 'Zet iemands ' + pc.name + ' op een vast aantal: !' + c.name + ' @naam 500.',
     raffle: (c) => 'Start een raffle: !' + c.name + ' 1000. Wie meedoet, maakt kans op de prijs.',
@@ -1621,19 +1622,19 @@
     if (bet > bal) return say(who + ' je hebt maar ' + pn(bal) + '.');
     if (bet < pc.gMin) return say(who + ' je moet minimaal ' + pn(pc.gMin) + ' inzetten' + (bal < pc.gMin ? '; je hebt er ' + nl(bal) + '.' : '.'));
     pts.cd[id] = now;
-    const allIn = bet === bal, bank = bankNow(), r = Math.random() * 100;
+    const allIn = bet === bal, bank = bankNow(), r = Math.random() * 100, toBank = pc.gBank ? Math.floor(bet * Math.max(0, Math.min(100, pc.gBankPct ?? 100)) / 100) : 0;
     let res;
     if (pc.gBank && bank > 0 && r < pc.gJack) res = { kind: 'bank', win: bank, mult: 0 };
     else if (r < pc.gJack + pc.gWin) { const m = Math.random(); const mult = m < 0.02 ? 5 : m < 0.10 ? 3 : 2; res = { kind: 'win', win: bet * (mult - 1), mult }; }
     else res = { kind: allIn ? 'bankrupt' : 'lose', win: -bet, mult: 0 };
     ptsAdd(id, login, res.win);
     if (res.kind === 'bank') pts.bankD -= bank;
-    else if (res.win < 0 && pc.gBank) pts.bankD += bet;
+    else if (res.win < 0 && pc.gBank) pts.bankD += toBank;
     ptsSaveLocal();
     const bal2 = ptsOf(id);
-    const v = { user: who, win: nl(res.win), mult: res.mult > 2 ? ' (x' + res.mult + ')' : '', bet: nl(bet), points: nl(bal2), bank: nl(bankNow()), pname: pc.name };
+    const v = { user: who, win: nl(res.win), mult: res.mult > 2 ? ' (x' + res.mult + ')' : '', bet: nl(bet), tobank: nl(toBank), points: nl(bal2), bank: nl(bankNow()), pname: pc.name };
     say(ptsFill(res.kind === 'bank' ? pc.tBank : res.kind === 'win' ? c.resp : res.kind === 'bankrupt' ? pc.tBroke : pc.tLose, v));
-    const data = { kind: res.kind, name, login, bet, win: res.win, mult: res.mult, bal: bal2, bank: bankNow(), pname: pc.name };
+    const data = { kind: res.kind, name, login, bet, win: res.win, mult: res.mult, bal: bal2, bank: bankNow(), toBank: res.win < 0 ? toBank : 0, pname: pc.name };
     pts.log.unshift(Object.assign({ t: now }, data)); pts.log.length = Math.min(pts.log.length, 30);
     if (window.r5app && window.r5app.cmd) window.r5app.cmd(state.me.login, { kind: 'live', type: 'gamble', data }).catch(() => {});
     ptsDirty();

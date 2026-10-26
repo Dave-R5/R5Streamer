@@ -654,7 +654,7 @@
       el.classList.add('k-' + r.kind);
       el.querySelector('.big').textContent = { win: r.mult > 2 ? 'WINST! x' + r.mult : 'WINST!', lose: 'VERLOREN', bankrupt: 'BANKROET', bank: 'BANK GEKRAAKT!' }[r.kind] || '';
       el.querySelector('.amt').textContent = r.kind === 'win' || r.kind === 'bank' ? '+' + gfmt(r.win) + ' ' + pname : r.kind === 'bankrupt' ? 'alle ' + gfmt(r.bet) + ' ' + pname + ' kwijt' : '−' + gfmt(r.bet) + ' ' + pname;
-      el.querySelector('.bal').textContent = 'saldo: ' + gfmt(r.bal) + (r.kind === 'lose' && r.bank != null ? ' · inzet gaat naar de bank' : r.kind === 'bank' ? ' · de bank staat weer op 0' : r.kind === 'bankrupt' ? ' · opnieuw sparen!' : '');
+      el.querySelector('.bal').textContent = 'saldo: ' + gfmt(r.bal) + (r.kind === 'lose' && r.bank != null ? (r.toBank == null ? ' · inzet gaat naar de bank' : r.toBank > 0 ? ' · ' + gfmt(r.toBank) + ' gaat naar de bank' : '') : r.kind === 'bank' ? ' · de bank staat weer op 0' : r.kind === 'bankrupt' ? ' · opnieuw sparen!' : '');
       el.classList.add('done');
       if (!prem) el.insertAdjacentHTML('beforeend', '<span class="r5tag">R5Mod</span>');
       if (hold) { if (r.bank != null) gBank(r.bank); return; }
