@@ -58,6 +58,45 @@
   #clip iframe, #clip video { width: 100%; height: 100%; border: 0; display: block; object-fit: cover; background: #000; }
   #clip .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #ddd; font-size: 28px; font-weight: 700; background: repeating-linear-gradient(45deg, #26262c 0 18px, #1d1d22 18px 36px); }
 
+  /* gamble (Premium): kaart in een eigen vak (box), maten schalen mee met de hoogte (--u = 1% van de hoogte) */
+  #gcard { position: absolute; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    padding: calc(var(--u) * 5) calc(var(--u) * 7); border-radius: calc(var(--u) * 6); background: rgba(24,24,27,.94); color: #fff; border: calc(var(--u) * .9) solid var(--accent);
+    box-shadow: 0 12px 40px rgba(0,0,0,.6); font-family: var(--font, inherit); opacity: 0; transform: scale(.7); transition: transform .45s cubic-bezier(.2,1.3,.4,1), opacity .35s, border-color .3s, box-shadow .3s, background .3s; }
+  #gcard.on { opacity: 1; transform: none; }
+  #gcard .who { display: flex; align-items: center; gap: calc(var(--u) * 3); font-size: calc(var(--u) * 7.5); font-weight: 700; max-width: 100%; }
+  #gcard .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #gcard .who img { width: calc(var(--u) * 11); height: calc(var(--u) * 11); border-radius: 50%; background: #333; object-fit: cover; flex-shrink: 0; }
+  #gcard .bet { font-size: calc(var(--u) * 5); color: #b8b8c2; margin-top: calc(var(--u) * 1); }
+  #gcard .reels { display: flex; gap: calc(var(--u) * 3); margin: calc(var(--u) * 4) 0 calc(var(--u) * 3); }
+  #gcard .reel { width: calc(var(--u) * 21); height: calc(var(--u) * 21); border-radius: calc(var(--u) * 4); background: #0e0e10; border: calc(var(--u) * .7) solid #2f2f35; display: flex; align-items: center; justify-content: center; font-size: calc(var(--u) * 13); overflow: hidden; }
+  #gcard .reel.spin span { animation: gspin .12s linear infinite; }
+  @keyframes gspin { from { transform: translateY(-60%); filter: blur(2px); } to { transform: translateY(60%); filter: blur(2px); } }
+  #gcard .reel.stop span { animation: gstop .35s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes gstop { from { transform: translateY(-40%); } to { transform: none; } }
+  #gcard .big { font-size: calc(var(--u) * 13); font-weight: 900; letter-spacing: .02em; line-height: 1.05; min-height: 1.05em; opacity: 0; transform: scale(.4); transition: transform .4s cubic-bezier(.2,1.6,.4,1), opacity .25s; }
+  #gcard .amt { font-size: calc(var(--u) * 7); font-weight: 800; margin-top: calc(var(--u) * 1.5); opacity: 0; transition: opacity .3s .15s; }
+  #gcard .bal { font-size: calc(var(--u) * 4.5); color: #b8b8c2; margin-top: calc(var(--u) * 2); opacity: 0; transition: opacity .3s .3s; }
+  #gcard.done .big, #gcard.done .amt, #gcard.done .bal { opacity: 1; transform: none; }
+  #gcard.k-win { border-color: #ffd54a; box-shadow: 0 0 calc(var(--u) * 14) rgba(255,213,74,.55), 0 12px 40px rgba(0,0,0,.6); } #gcard.k-win .big, #gcard.k-win .amt { color: #ffd54a; } #gcard.k-win .big { text-shadow: 0 0 calc(var(--u) * 5) #ffb300; } #gcard.k-win .reel { border-color: #ffd54a; }
+  #gcard.k-lose { border-color: #ff4d5e; } #gcard.k-lose .big, #gcard.k-lose .amt { color: #ff4d5e; }
+  #gcard.k-lose.done { animation: gshake .45s; }
+  #gcard.k-bankrupt { border-color: #ff2d2d; background: rgba(42,11,14,.95); } #gcard.k-bankrupt .amt { color: #ff6b6b; }
+  #gcard.k-bankrupt.done { animation: gshake .6s; transform: rotate(-3deg); }
+  #gcard.k-bankrupt .big { background: #ff2d2d; color: #fff; padding: 0 calc(var(--u) * 4); border-radius: calc(var(--u) * 2); }
+  #gcard.k-bankrupt.done .big { transform: rotate(3deg); }
+  #gcard.k-bank { border-color: #39d98a; box-shadow: 0 0 calc(var(--u) * 14) rgba(57,217,138,.5), 0 12px 40px rgba(0,0,0,.6); } #gcard.k-bank .big, #gcard.k-bank .amt { color: #39d98a; } #gcard.k-bank .big { font-size: calc(var(--u) * 10.5); }
+  @keyframes gshake { 0%, 100% { translate: 0 0; } 15% { translate: calc(var(--u) * -3) 0; } 30% { translate: calc(var(--u) * 3) 0; } 45% { translate: calc(var(--u) * -2) 0; } 60% { translate: calc(var(--u) * 2) 0; } 80% { translate: calc(var(--u) * -1) 0; } }
+  #gcard .crack { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; background: repeating-linear-gradient(115deg, transparent 0 calc(var(--u) * 11), rgba(255,45,45,.18) calc(var(--u) * 11) calc(var(--u) * 11.6)); transition: opacity .3s; }
+  #gcard.k-bankrupt.done .crack { opacity: 1; }
+  #gcard .r5tag { right: calc(var(--u) * 3); bottom: calc(var(--u) * 2); }
+  .gcoin { position: absolute; top: -60px; width: 36px; height: 36px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff6b0, #ffc107 55%, #b57f00); box-shadow: 0 0 8px rgba(255,179,0,.6); animation: gcoin linear forwards; }
+  @keyframes gcoin { to { transform: translateY(120vh) rotate(540deg); } }
+  #gbank { position: absolute; padding: 10px 18px; border-radius: 14px; background: rgba(24,24,27,.92); border: 3px solid #39d98a; color: #fff; font: 600 20px/1.2 var(--font, "Segoe UI", system-ui, sans-serif); opacity: 0; transition: opacity .4s, transform .3s; }
+  #gbank.on { opacity: 1; } #gbank b { display: block; font-size: 32px; color: #39d98a; } #gbank.bump { transform: scale(1.12); }
+  #gfeed { position: absolute; width: 330px; font: 600 18px/1.3 var(--font, "Segoe UI", system-ui, sans-serif); color: #fff; }
+  #gfeed div { background: rgba(0,0,0,.72); border-radius: 10px; padding: 6px 12px; margin-top: 6px; transition: opacity .6s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #gfeed .w { color: #ffd54a; } #gfeed .l { color: #ff6b6b; } #gfeed .b { color: #39d98a; }
+
   /* lettertype (Premium) en R5Mod-label (gratis) */
   #raid, #combo { font-family: var(--font, inherit); }
   .r5tag { position: absolute; right: calc(var(--u, 1px) * 6); bottom: calc(var(--u, 1px) * 4); font: 700 calc(var(--u, 1px) * 8)/1 "Segoe UI", system-ui, sans-serif; letter-spacing: .06em; color: #fff; opacity: .7; text-shadow: 0 1px 3px rgba(0,0,0,.8); pointer-events: none; }
@@ -162,7 +201,7 @@
     ttslang: /^[a-z]{2}(-[A-Z]{2})?$/.test(P.get('ttslang') || '') ? P.get('ttslang') : 'nl',
     ttsvol: num('ttsvol', 80, 0, 100),
     tcolor: /^[0-9a-f]{6}$/i.test(P.get('tcolor') || '') ? '#' + P.get('tcolor') : '#ffffff',
-    box: box(P.get('box'), [560, 90, 800, 200]),        // raid: plek en grootte van de melding (x,y,b,h op 1920x1080)
+    box: box(P.get('box'), P.get('type') === 'gamble' ? [660, 250, 600, 440] : [560, 90, 800, 200]),        // raid: plek en grootte van de melding (x,y,b,h op 1920x1080)
     clip: P.get('clip') === '1',
     cbox: box(P.get('cbox'), [1360, 600, 520, 292]),
     clipdur: num('clipdur', 20, 5, 60),
@@ -170,6 +209,8 @@
     hold: P.get('hold') === '1',                        // editor: melding blijft staan
     img: /^https:\/\//.test(P.get('img') || '') ? P.get('img') : '',
     font: FONTS.includes(P.get('font')) ? P.get('font') : '',   // lettertype (Premium)
+    bankpos: ['bl', 'br', 'tl', 'tr', 'off'].includes(P.get('bankpos')) ? P.get('bankpos') : 'bl',   // gamble: plek van de bank-teller
+    feed: P.get('feed') !== '0',                       // gamble: laatste uitslagen tonen
   };
   if (cfg.preview) document.body.classList.add('preview');
   const stage = document.getElementById('stage');
@@ -212,7 +253,7 @@
   }
   const ORIG = { color: cfg.color, tcolor: cfg.tcolor, style: cfg.style, ranim: cfg.ranim, anim: cfg.anim, font: cfg.font };
   const STD = { color: { bits: '#1f9cff', donation: '#00b87a' }[cfg.type] || '#9147ff', tcolor: '#ffffff', style: 'card', ranim: 'pop', anim: 'rise', font: '' };
-  const PREM_ONLY = { combo: 'De emote-combo', donation: 'De donatie-melding' }[cfg.type];
+  const PREM_ONLY = { combo: 'De emote-combo', donation: 'De donatie-melding', gamble: 'De gamble-overlay' }[cfg.type];
   let prem = false, premId = '';
   function applyTier() {
     Object.assign(cfg, prem ? ORIG : STD);
@@ -237,7 +278,7 @@
     try { localStorage.setItem('r5s.premid.' + cfg.ch, premId); } catch {}
     const r = await premFetch(premId);
     const on = !!(r && r.premium && r.expires_at && r.expires_at > Date.now() / 1000);
-    if (on !== prem) { prem = on; applyTier(); if (cfg.hold && ALERT) { raidQ.length = 0; raidBusy = false; sampleAlert(); } }
+    if (on !== prem) { prem = on; applyTier(); if (cfg.hold && ALERT) { raidQ.length = 0; raidBusy = false; sampleAlert(); } if (cfg.hold && GAMBLE && prem) { gQ.length = 0; gBusy = false; gTest(); } }
   }
   applyTier();
   if (cfg.ch) { let id = ''; try { id = localStorage.getItem('r5s.premid.' + cfg.ch) || ''; } catch {} checkPrem(id); }
@@ -525,6 +566,115 @@
     } catch { return ''; }
   }
 
+  // ---------- gamble (Premium): uitslag van !gamble, doorgegeven door de R5 StreamerHub-app op deze pc ----------
+  // kind: win | lose | bankrupt | bank; win = verschil in punten; bal = nieuw saldo; bank = stand van de bank
+  const GAMBLE = cfg.type === 'gamble';
+  const G_FRUIT = ['🍋', '🍇', '🍉', '🍊'], G_ALL = ['🍒', '🍋', '🍇', '🍉', '🍊', '7️⃣', '💎', '🔔', '💀'];
+  const gQ = [];
+  let gBusy = false, gBankVal = null;
+  const gfmt = (n) => Math.round(n).toLocaleString('nl-NL');
+  function gReels(r) {
+    if (r.kind === 'bank') return ['🏦', '🏦', '🏦'];
+    if (r.kind === 'bankrupt') return ['💣', '💣', '💣'];
+    if (r.kind === 'win') { const e = r.mult >= 5 ? '7️⃣' : r.mult >= 3 ? '🍒' : G_FRUIT[Math.floor(Math.random() * G_FRUIT.length)]; return [e, e, e]; }
+    const a = G_ALL.slice().sort(() => Math.random() - 0.5);   // verlies: nooit drie dezelfde
+    return [a[0], a[1], a[2]];
+  }
+  function gSound(kind) {
+    if (!cfg.sound) return;
+    if (kind === 'win' || kind === 'bank') return chime();
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const t = actx.currentTime, g = actx.createGain(), o = actx.createOscillator();
+      g.connect(actx.destination); o.connect(g); o.type = 'sawtooth';
+      g.gain.setValueAtTime(cfg.vol / 100 * .3, t); g.gain.exponentialRampToValueAtTime(.001, t + 1.1);
+      o.frequency.setValueAtTime(kind === 'bankrupt' ? 220 : 330, t); o.frequency.exponentialRampToValueAtTime(kind === 'bankrupt' ? 55 : 160, t + 1);
+      o.start(t); o.stop(t + 1.1);
+    } catch {}
+  }
+  function gCoins() {
+    for (let i = 0; i < 34; i++) {
+      const c = document.createElement('div');
+      c.className = 'gcoin';
+      c.style.left = Math.random() * 100 + 'vw';
+      c.style.animationDuration = 1.8 + Math.random() * 1.6 + 's';
+      c.style.animationDelay = Math.random() * .8 + 's';
+      c.onanimationend = () => c.remove();
+      stage.appendChild(c);
+    }
+  }
+  function gBank(v, bump) {
+    if (v == null || !isFinite(v)) return;
+    gBankVal = v;
+    if (cfg.bankpos === 'off') return;
+    let el = document.getElementById('gbank');
+    if (!el) { el = document.createElement('div'); el.id = 'gbank'; el.className = 'pos-' + cfg.bankpos; document.body.appendChild(el); }
+    el.innerHTML = '🏦 Bank<b>' + gfmt(v) + '</b>';
+    el.classList.add('on');
+    if (bump) { el.classList.add('bump'); setTimeout(() => el.classList.remove('bump'), 300); }
+  }
+  function gFeed(r) {
+    if (!cfg.feed) return;
+    let el = document.getElementById('gfeed');
+    if (!el) { el = document.createElement('div'); el.id = 'gfeed'; el.className = 'pos-' + (cfg.bankpos === 'tr' ? 'br' : 'tr'); document.body.appendChild(el); }
+    const d = document.createElement('div');
+    d.innerHTML = r.kind === 'bank' ? '<span class="b">' + esc(r.name) + '</span> kraakt de bank!' : r.kind === 'win' ? '<span class="w">' + esc(r.name) + '</span> +' + gfmt(r.win)
+      : '<span class="l">' + esc(r.name) + '</span> −' + gfmt(r.bet) + (r.kind === 'bankrupt' ? ' 💥' : '');
+    el.prepend(d);
+    while (el.childElementCount > 3) el.lastElementChild.remove();
+    setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 700); }, 30000);
+  }
+  function gamble(r) { if (!prem) return; gQ.push(r); if (!gBusy) gNext(); }
+  async function gNext() {
+    const r = gQ.shift();
+    if (!r) { gBusy = false; return; }
+    gBusy = true;
+    let el = document.getElementById('gcard');
+    if (el) el.remove();
+    el = document.createElement('div'); el.id = 'gcard';
+    const [x, y, w, h] = cfg.box;
+    Object.assign(el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
+    el.style.setProperty('--u', h / 100 + 'px');
+    const pname = r.pname || 'punten', reels = gReels(r);
+    const av = r.avatar || (r.login ? await avatarOf(r.login) : '');
+    el.innerHTML = '<div class="crack"></div><div class="who">' + (av ? '<img src="' + esc(av) + '" alt="">' : '') + '<span>' + esc(r.name) + '</span></div>' +
+      '<div class="bet">zet ' + gfmt(r.bet) + ' ' + esc(pname) + ' in</div><div class="reels">' + reels.map(() => '<div class="reel spin"><span>' + G_ALL[Math.floor(Math.random() * G_ALL.length)] + '</span></div>').join('') + '</div>' +
+      '<div class="big"></div><div class="amt"></div><div class="bal"></div>';
+    document.body.appendChild(el);
+    el.getBoundingClientRect();
+    requestAnimationFrame(() => el.classList.add('on'));
+    // rollen draaien en stoppen een voor een
+    const rs = [...el.querySelectorAll('.reel')];
+    const flick = setInterval(() => rs.forEach((x) => { if (x.classList.contains('spin')) x.firstChild.textContent = G_ALL[Math.floor(Math.random() * G_ALL.length)]; }), 90);
+    const hold = cfg.hold;
+    const stopAt = hold ? [0, 0, 0] : [900, 1300, 1700];
+    rs.forEach((x, i) => setTimeout(() => { x.classList.remove('spin'); x.classList.add('stop'); x.firstChild.textContent = reels[i]; }, stopAt[i]));
+    setTimeout(() => {
+      clearInterval(flick);
+      el.classList.add('k-' + r.kind);
+      el.querySelector('.big').textContent = { win: r.mult > 2 ? 'WINST! x' + r.mult : 'WINST!', lose: 'VERLOREN', bankrupt: 'BANKROET', bank: 'BANK GEKRAAKT!' }[r.kind] || '';
+      el.querySelector('.amt').textContent = r.kind === 'win' || r.kind === 'bank' ? '+' + gfmt(r.win) + ' ' + pname : r.kind === 'bankrupt' ? 'alle ' + gfmt(r.bet) + ' ' + pname + ' kwijt' : '−' + gfmt(r.bet) + ' ' + pname;
+      el.querySelector('.bal').textContent = 'saldo: ' + gfmt(r.bal) + (r.kind === 'lose' && r.bank != null ? ' · inzet gaat naar de bank' : r.kind === 'bank' ? ' · de bank staat weer op 0' : r.kind === 'bankrupt' ? ' · opnieuw sparen!' : '');
+      el.classList.add('done');
+      if (!prem) el.insertAdjacentHTML('beforeend', '<span class="r5tag">R5Mod</span>');
+      if (hold) { if (r.bank != null) gBank(r.bank); return; }
+      gSound(r.kind);
+      if (r.kind === 'win' || r.kind === 'bank') gCoins();
+      if (r.bank != null) gBank(r.bank, true);
+      gFeed(r);
+      setTimeout(() => { el.classList.remove('on'); setTimeout(gNext, 600); }, cfg.dur * 1000);
+    }, hold ? 50 : 1900);
+  }
+  const G_TEST = [
+    { kind: 'win', name: 'LuckyLars', login: '', bet: 500, win: 1000, mult: 3, bal: 4250, bank: 3200 },
+    { kind: 'lose', name: 'PechPetra', login: '', bet: 800, win: -800, mult: 0, bal: 1120, bank: 4000 },
+    { kind: 'bankrupt', name: 'AllInAnton', login: '', bet: 3400, win: -3400, mult: 0, bal: 0, bank: 7400 },
+    { kind: 'bank', name: 'JackpotJoyce', login: '', bet: 250, win: 7400, mult: 0, bal: 9650, bank: 0 },
+    { kind: 'win', name: 'PixelPiet', login: '', bet: 100, win: 100, mult: 2, bal: 600, bank: 0 },
+  ];
+  let gTestI = 0;
+  const gTest = () => gamble(Object.assign({ avatar: TEST_AV }, G_TEST[gTestI++ % G_TEST.length]));
+
   // ---------- binnenkomende gebeurtenissen ----------
   function onChat(text, emotesTag, user) {
     const list = emotesIn(text, emotesTag);
@@ -630,13 +780,16 @@
   }
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data || e.data.r5 !== 'test') return;
-    if (ALERT) { if (cfg.hold) { cfg.hold = false; raidQ.length = 0; raidBusy = false; } testRaid(); }
+    if (GAMBLE) { if (cfg.hold) { cfg.hold = false; gQ.length = 0; gBusy = false; } gTest(); }
+    else if (ALERT) { if (cfg.hold) { cfg.hold = false; raidQ.length = 0; raidBusy = false; } testRaid(); }
     else for (let i = 0; i < (cfg.type === 'combo' ? cfg.min + 2 : 8); i++) setTimeout(fakeChat, i * 350);
   });
 
   const hint = document.getElementById('hint');
   loadGlobal();
   if (cfg.hold && ALERT) sampleAlert();
+  else if (cfg.hold && GAMBLE) gTest();
+  else if (cfg.test && GAMBLE) { setInterval(() => { if (!gBusy) gTest(); }, (cfg.dur + 3) * 1000); gTest(); }
   else if (cfg.test) {
     setInterval(() => { if (ALERT) { if (!raidBusy) testRaid(); } else fakeChat(); }, ALERT ? (cfg.dur + 3) * 1000 : 900);
     if (ALERT) testRaid();
@@ -651,8 +804,9 @@
         const r = await fetch('http://127.0.0.1:17565/cmd/' + cfg.ch, { cache: 'no-store' });
         const list = r.ok ? await r.json() : [];
         if (after != null) list.filter((c) => c.n > after).forEach((c) => {
+          if (c.kind === 'live' && GAMBLE) { const d = c.data || {}; if (c.type === 'gamble') gamble({ kind: String(d.kind || ''), name: String(d.name || ''), login: String(d.login || ''), bet: +d.bet || 0, win: +d.win || 0, mult: +d.mult || 0, bal: +d.bal || 0, bank: d.bank == null ? null : +d.bank, pname: String(d.pname || 'punten') }); else if (c.type === 'bank' && prem && +d.bank !== gBankVal) gBank(+d.bank); }
           if (c.kind === 'test' && (c.type === cfg.type || c.type === 'all')) {
-            if (ALERT) testRaid(); else for (let i = 0; i < (cfg.type === 'combo' ? cfg.min + 2 : 8); i++) setTimeout(fakeChat, i * 350);
+            if (GAMBLE) gTest(); else if (ALERT) testRaid(); else for (let i = 0; i < (cfg.type === 'combo' ? cfg.min + 2 : 8); i++) setTimeout(fakeChat, i * 350);
           }
           if (c.kind === 'replay' && c.type === cfg.type) {
             const d = c.data || {};

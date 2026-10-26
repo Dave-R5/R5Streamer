@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('r5app', {
   donations: (user, list) => ipcRenderer.invoke('r5:donations', user, list),
   // opdracht naar de overlays in OBS: { kind: 'test' | 'replay', type, data }
   cmd: (user, cmd) => ipcRenderer.invoke('r5:cmd', user, cmd),
+  // kijkerspunten op deze pc: action = 'load' | 'save' (tekst) | 'clear', per kanaal-ID
+  points: (action, id, data) => ipcRenderer.invoke('r5:points', String(action || ''), String(id || ''), data == null ? '' : String(data)),
   prompt: (message, value) => ipcRenderer.sendSync('r5:prompt', String(message ?? ''), value == null ? '' : String(value)),
 });
 
