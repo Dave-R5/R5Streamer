@@ -297,6 +297,18 @@ function createWindow() {
     else if (url.startsWith(OLD_URL) && code >= 400) win.loadURL(START_URL);
   });
   win.loadURL(firstUrl());
+  // Afsluiten: eerst de kijkerspunten naar r5mod.nl laten sturen (maximaal 15 seconden), daarna pas echt sluiten.
+  let flushed = false;
+  win.on('close', (e) => {
+    if (flushed) return;
+    e.preventDefault();
+    flushed = true;
+    const w = win;
+    Promise.race([
+      w.webContents.executeJavaScript('window.r5pointsFlush ? window.r5pointsFlush() : true').catch(() => true),
+      new Promise((ok) => setTimeout(ok, 15000)),
+    ]).finally(() => { if (!w.isDestroyed()) w.close(); });
+  });
 }
 
 Menu.setApplicationMenu(Menu.buildFromTemplate([
@@ -362,12 +374,33 @@ let cmdN = Date.now();
 ipcMain.handle('r5:cmd', async (e, user, cmd) => {
   if (!fromSite(e)) return false;
   user = String(user || '').toLowerCase();
-  if (!/^\w{2,25}$/.test(user) || !cmd || !['test', 'replay'].includes(cmd.kind) || !/^\w{2,20}$/.test(cmd.type || '')) return false;
+  if (!/^\w{2,25}$/.test(user) || !cmd || !['test', 'replay', 'live'].includes(cmd.kind) || !/^\w{2,20}$/.test(cmd.type || '')) return false;
   const data = JSON.stringify(cmd.data || {});
   if (data.length > 4000) return false;
   const list = (cmds[user] = (cmds[user] || []).filter((c) => Date.now() - c.t < 60000));
   list.push({ n: cmdN = Math.max(Date.now(), cmdN + 1), t: Date.now(), kind: cmd.kind, type: cmd.type, data: JSON.parse(data) });
   return true;
+});
+// Kijkerspunten: tijdens de stream houdt de site alles bij in een bestand op deze pc (punten-<kanaal-id>.json).
+// Pas als r5mod.nl de upload heeft bevestigd, vraagt de site om het bestand te wissen. Na een crash staat het er dus nog
+// en uploadt de site het bij de volgende start eerst.
+const pointsFile = (id) => path.join(app.getPath('userData'), 'punten-' + id + '.json');
+ipcMain.handle('r5:points', async (e, action, id, data) => {
+  if (!fromSite(e)) return null;
+  id = String(id || '');
+  if (!/^\d{1,20}$/.test(id)) return null;
+  const f = pointsFile(id);
+  if (action === 'load') { try { return fs.readFileSync(f, 'utf8'); } catch { return null; } }
+  if (action === 'save') {
+    data = String(data || '');
+    if (data.length > 20 * 1024 * 1024) return false;
+    // eerst naar een tijdelijk bestand en dan hernoemen, zodat een crash halverwege nooit een half bestand achterlaat
+    fs.writeFileSync(f + '.tmp', data);
+    fs.renameSync(f + '.tmp', f);
+    return true;
+  }
+  if (action === 'clear') { fs.rmSync(f, { force: true }); return true; }
+  return null;
 });
 function startEmoteServer() {
   const srv = http.createServer((req, res) => {

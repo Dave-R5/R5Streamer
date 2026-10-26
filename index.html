@@ -343,6 +343,10 @@
   .cmdt td.a { white-space: nowrap; text-align: right; } .cmdt td.a button { padding: 2px 8px; min-height: 0; }
   .cmdt .lvl { font-size: 11px; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); white-space: nowrap; }
   .cmded { border: 1px solid var(--accent); border-radius: 10px; padding: 12px; margin: 8px 0 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 12px; }
+  .ptsset { border-color: var(--line); } .ptsset label:not(.chk) { display: block; font-size: 12px; color: var(--muted); margin-bottom: 3px; } .ptsset input:not([type=checkbox]) { width: 100%; box-sizing: border-box; }
+  .ptsset .chk { align-self: end; display: flex; gap: 6px; align-items: center; min-height: 34px; color: var(--text); font-size: 13px; }
+  .ptsh { margin: 14px 0 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .ptslog { font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--line); } .ptslog .w { color: #f5c542; } .ptslog .l { color: #ff6b6b; } .ptslog .b { color: #39d98a; }
   .cmded label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
   .cmded input, .cmded select, .cmded textarea { width: 100%; box-sizing: border-box; }
   .cmded .wide { grid-column: 1 / -1; }
@@ -522,6 +526,20 @@
         </div>
         <p class="hint" style="margin:6px 0 0">Een automatisch bericht in je chat bij een follow, abonnement, bits, raid of donatie, bijvoorbeeld "Bedankt voor de follow, ${user}!". Heb je dit ook bij StreamElements aan staan? Zet het daar dan uit.</p>
         <div id="caList"></div>
+      </details>
+      <details class="card s12 mod" data-mod="pts">
+        <summary><b>🪙 Kijkerspunten en gamble</b><span class="hint" data-modsum="pts"></span></summary>
+        <div class="ovhead" style="margin-top:10px">
+          <label class="chk" style="margin:0"><input type="checkbox" id="ptsOn"> <b>Kijkerspunten aan</b></label>
+          <span class="hint" id="ptsState"></span>
+        </div>
+        <p class="hint" style="margin:6px 0 0">Kijkers sparen punten door te kijken (en extra bij een follow, sub of raid). Met <b>!punten</b> zien ze hun saldo en met <b>!gamble 100</b>, <b>!gamble 50%</b> of <b>!gamble all</b> spelen ze om punten. Verloren inzet gaat naar de <b>bank</b>; wie de bank kraakt, wint alles wat erin zit. Jij en je mods geven of nemen punten met <b>!geefpunten @naam 100</b> (of -100). Werkt alleen als je live bent, in de Windows-app. De punten staan veilig op r5mod.nl: de app haalt ze op bij het openen en stuurt alles terug als je stream stopt of als je de app sluit. De gamble-uitslag zie je in OBS met de overlay <b>🎰 Gamble</b> (⭐ Premium).</p>
+        <div class="cmded ptsset" id="ptsSet"></div>
+        <div class="ovhead"><b id="ptsBank"></b><span class="hint" id="ptsSync"></span><button id="ptsFlush" style="margin-left:auto" title="Nu alle wijzigingen naar r5mod.nl sturen">⤒ Nu opslaan</button></div>
+        <div class="cmdbar"><input id="ptsQ" placeholder="Zoek kijker…" autocomplete="off"></div>
+        <div id="ptsTop"></div>
+        <div class="ptsh">Laatste gambles</div>
+        <div id="ptsLog"></div>
       </details>
     </div>
   </section>
@@ -730,6 +748,8 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
+            <li><b>🪙 Kijkerspunten en gamble</b> (🧩 Modules, Windows-app 1.3.5): kijkers sparen punten door te kijken en met een follow, sub of raid. Met <b>!punten</b> zien ze hun saldo en met <b>!gamble</b> spelen ze om punten (100, 50% of all). Verloren inzet gaat naar de bank, die je kunt kraken. Mods geven punten met <b>!geefpunten</b>. De punten staan veilig op r5mod.nl: ophalen bij het openen, opslaan als je stream stopt of de app sluit, en na een crash gaat niets verloren.</li>
+            <li>Nieuwe overlay <b>🎰 Gamble</b> (⭐ Premium): de uitslag van !gamble op je scherm met draaiende rollen, munten-regen bij winst, verlies, <b>bankroet</b> bij all-in en <b>bank gekraakt</b>, plus een bank-teller en de laatste uitslagen.</li>
             <li>Overal in de app (hulp, changelog en links) staat nu alleen nog het adres <b>streamerhub.r5mod.nl</b>; verwijzingen naar het oude adres zijn weggehaald.</li>
             <li>Vragen en suggesties via ❓ komen nu binnen op <b>support@r5mod.nl</b>.</li>
             <li><b>⭐ R5 StreamerHub Premium</b>: gratis blijven live-status, kijkers, volgers, subs, bits, raids, chat en de emote-wall en raid melding in standaardstijl. Met Premium (via r5mod.nl): live donaties in één overzicht, emote-combo, eigen kleuren, <b>lettertypes</b> (nieuw) en animaties voor overlays, overlays zonder R5Mod-label en voorrang bij support. Je status staat rechtsboven en bij ⚙ Instellingen.</li>
@@ -1008,6 +1028,7 @@
       let text = m.params[1] || '';
       if (text.startsWith('\u0001ACTION ')) text = text.slice(8, -1);
       chatMsg(m.prefix.split('!')[0], t['display-name'], text, t.emotes || '', +t.bits || 0, t.color, t.badges || '');
+      ptsMsg(t, m.prefix.split('!')[0], t['display-name'], text, t.badges || '');
       if (/broadcaster/.test(t.badges || '')) songMsg(text, +t['tmi-sent-ts'] || Date.now());
     } else if (m.command === 'USERNOTICE') {
       const who = t['display-name'] || t.login || '';
@@ -1016,6 +1037,7 @@
         const mo = +t['msg-param-cumulative-months'] || 0;
         event('sub', '⭐', who + (id === 'resub' ? ' is opnieuw geabonneerd' + (mo > 1 ? ' (' + mo + ' maanden)' : '') : ' is geabonneerd'), m.params[1] || '', { subs: 1 });
         chatAlert(id === 'resub' ? 'resub' : 'sub', { user: who, months: mo, message: m.params[1] || '' });
+        ptsBonus(t['user-id'], t.login, pc.sub);
       } else if (id === 'subgift') {
         if (!t['msg-param-origin-id'] || !giftBatch[t['msg-param-origin-id']]) { event('sub', '🎁', who + ' geeft een abonnement aan ' + (t['msg-param-recipient-display-name'] || ''), '', { gifts: 1, subs: 1 }); chatAlert('gift', { user: who, count: 1, recipient: t['msg-param-recipient-display-name'] || '' }); }
         else if (cur) { cur.subs++; cur.gifts++; }
@@ -1024,7 +1046,7 @@
         if (t['msg-param-origin-id']) giftBatch[t['msg-param-origin-id']] = 1;
         event('sub', '🎁', who + ' geeft ' + n + ' abonnementen weg', '', {});
         chatAlert('gift', { user: who, count: n, recipient: '' });
-      } else if (id === 'raid') raidIn(t['msg-param-displayName'] || who, +t['msg-param-viewerCount'] || 0, t['msg-param-login'] || t.login || '', t['msg-param-profileImageURL'] || '');
+      } else if (id === 'raid') raidIn(t['msg-param-displayName'] || who, +t['msg-param-viewerCount'] || 0, t['msg-param-login'] || t.login || '', t['msg-param-profileImageURL'] || '', t['user-id']);
     } else if (m.command === 'CLEARCHAT' && !m.tags['target-user-id']) chatLine({ ev: true, text: 'Chat is gewist' });
   }
 
@@ -1077,8 +1099,9 @@
     if (kind !== 'bits') chatLine({ ev: true, text: ic + ' ' + text });
     dirty();
   }
-  function raidIn(name, n, login, avatar) {
+  function raidIn(name, n, login, avatar, id) {
     if (!cur) return;
+    ptsBonus(id, login, pc.raid);
     cur.raidsIn.push([Date.now(), n, name]);
     event('raid', '🚀', name + ' raidt met ' + n + ' kijkers', '', {}, 0, { name, viewers: n, login: login || '', avatar: avatar || '' });
     chatAlert('raid', { user: name, viewers: n }, n);
@@ -1207,7 +1230,7 @@
   function renderCmds() {
     $('#cmdOn').checked = cmdOn;
     $('[data-modsum=cmds]').textContent = cmdOn ? cmds.filter((c) => c.on).length + ' commands aan' : 'uit';
-    renderCa();
+    renderCa(); renderPts();
     $('#cmdState').textContent = !cmdOn ? 'staat uit' : state.demo ? 'aan (demo: antwoorden komen in de demo-chat)' : !state.me ? 'log in om te antwoorden' : !hasScope('user:write:chat') ? 'log opnieuw in (chat sturen)' : '✓ antwoordt in je chat';
     $('#cmdF').innerHTML = [['all', 'Alle'], ['own', 'Eigen'], ['def', 'Standaard']].map(([k, l]) => '<button data-cf="' + k + '" class="' + (cmdFilter === k ? 'on' : '') + '">' + l + '</button>').join('');
     const q = $('#cmdQ').value.trim().toLowerCase().replace(/^!/, '');
@@ -1305,6 +1328,220 @@
     saveCa(); renderCa();
   });
   $('#caList').addEventListener('input', (e) => { const k = e.target.dataset.cat; if (k) { ca[k].text = e.target.value; saveCa(); } });
+  // ---------- kijkerspunten en gamble (alleen in de Windows-app) ----------
+  // De saldo's staan op r5mod.nl. Bij het openen haalt de app ze op; tijdens de stream gaat alles lokaal (een bestand op de pc,
+  // via de app) en als de stream stopt of de app sluit, gaan in één keer de verschillen naar r5mod.nl. Pas als r5mod.nl dat
+  // bevestigt, wordt het bestand gewist. Na een crash staat het er nog en wordt het bij de volgende start eerst geüpload.
+  const PTS_API = 'https://r5mod.nl/api/streamerhub/points';
+  const ptsApp = !!(window.r5app && window.r5app.points);
+  const PTS_FIELDS = [
+    ['name', 'Naam van de punten', 'text', 'punten'], ['cmd', 'Command voor je saldo', 'text', 'punten'],
+    ['earn', 'Punten per keer kijken', 'num', 10, 0, 100000], ['every', 'Elke … minuten', 'num', 5, 1, 120],
+    ['follow', 'Bonus bij een follow', 'num', 50, 0, 1000000], ['sub', 'Bonus bij een sub', 'num', 250, 0, 1000000], ['raid', 'Bonus voor de raider', 'num', 100, 0, 1000000],
+    ['gOn', 'Gamble aan', 'check', true], ['gCmd', 'Gamble-command', 'text', 'gamble'],
+    ['gMin', 'Minimale inzet', 'num', 10, 1, 1e9], ['gMax', 'Maximale inzet (0 = geen)', 'num', 0, 0, 1e9], ['gCd', 'Wachttijd per kijker (s)', 'num', 60, 0, 3600],
+    ['gWin', 'Winkans (%)', 'num', 45, 0, 95], ['gJack', 'Kans om de bank te kraken (%)', 'num', 1, 0, 50], ['gBank', 'Verloren inzet gaat naar de bank', 'check', true],
+  ];
+  const pc = Object.assign(Object.fromEntries(PTS_FIELDS.map((f) => [f[0], f[3]])), { on: false }, store.get('ptscfg', {}));
+  const savePc = () => store.set('ptscfg', pc);
+  // base: saldo's van r5mod.nl {id: [login, punten]}; delta: verschillen sinds de laatste upload; batch: id van de volgende upload
+  const pts = { ch: '', base: null, bank: 0, delta: {}, bankD: 0, batch: '', status: '', busy: false, lastEarn: 0, cd: {}, saidAt: {}, log: [], syncedAt: 0 };
+  const newBatch = () => Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+  const ptsOf = (id) => { const b = pts.base && pts.base[id], d = pts.delta[id]; return Math.max(0, (b ? b[1] : 0) + (d ? d[1] : 0)); };
+  const bankNow = () => Math.max(0, pts.bank + pts.bankD);
+  const hasDelta = () => pts.bankD !== 0 || Object.keys(pts.delta).length > 0;
+  const ptsActive = () => !!(pc.on && ptsApp && pts.base && cur && state.me && !state.demo);
+  const pn = (n) => nl(n) + ' ' + pc.name;
+  let ptsSaveT = null, ptsRenderT = null;
+  function ptsSaveLocal() {
+    clearTimeout(ptsSaveT);
+    ptsSaveT = setTimeout(() => {
+      if (!ptsApp || !pts.ch || !hasDelta()) return;
+      window.r5app.points('save', pts.ch, JSON.stringify({ v: 1, ch: pts.ch, batch: pts.batch, delta: pts.delta, bank: pts.bankD, t: Date.now() })).catch(() => {});
+    }, 800);
+  }
+  const ptsDirty = () => { if (!ptsRenderT) ptsRenderT = setTimeout(() => { ptsRenderT = null; if (state.page === 'commands') renderPts(); }, 700); };
+  function ptsAdd(id, login, n) {
+    id = String(id || ''); n = Math.trunc(n);
+    if (!/^\d+$/.test(id) || !n) return;
+    if (ptsOf(id) + n < 0) n = -ptsOf(id);
+    const d = pts.delta[id] || (pts.delta[id] = [login, 0]);
+    if (login) d[0] = String(login).toLowerCase();
+    d[1] += n;
+    if (!d[1]) delete pts.delta[id];
+    ptsSaveLocal(); ptsDirty();
+  }
+  async function ptsUpload(data) {
+    const viewers = Object.entries(data.delta || {}).filter(([, v]) => v && v[1]).map(([id, v]) => [id, v[0], v[1]]);
+    const r = await fetch(PTS_API, { method: 'POST', headers: { Authorization: 'Bearer ' + state.token, 'Content-Type': 'application/json' }, body: JSON.stringify({ batch: data.batch, viewers, bank: data.bank || 0 }) });
+    if (!r.ok) throw new Error('r5mod.nl gaf fout ' + r.status);
+  }
+  async function ptsDownload() {
+    const r = await fetch(PTS_API, { headers: { Authorization: 'Bearer ' + state.token }, cache: 'no-store' });
+    if (!r.ok) throw new Error('r5mod.nl gaf fout ' + r.status);
+    const j = await r.json(), base = {};
+    (j.viewers || []).forEach(([id, l, p]) => { base[id] = [l, +p || 0]; });
+    pts.base = base; pts.bank = +j.bank || 0; pts.syncedAt = Date.now();
+  }
+  // bij het openen: eerst een achtergebleven bestand (na een crash) uploaden, daarna de saldo's ophalen
+  async function ptsStart() {
+    if (!ptsApp || !pc.on || !state.me || state.demo || pts.busy) return;
+    if (pts.ch === state.me.user_id && pts.base) return;
+    const ch = state.me.user_id;
+    pts.busy = true;
+    if (pts.ch !== ch) Object.assign(pts, { ch, base: null, bank: 0, delta: {}, bankD: 0, batch: newBatch(), lastEarn: 0 });
+    pts.status = 'ophalen van r5mod.nl…'; ptsDirty();
+    try {
+      const raw = await window.r5app.points('load', ch);
+      let old = null; try { old = raw ? JSON.parse(raw) : null; } catch {}
+      if (old && old.batch && old.delta) {
+        pts.status = 'punten van de vorige keer uploaden…'; ptsDirty();
+        await ptsUpload(old);
+        await window.r5app.points('clear', ch);
+      }
+      await ptsDownload();
+      pts.status = '';
+    } catch (e) {
+      // geen verbinding: het bestand blijft staan en de punten staan op pauze tot het wel lukt
+      pts.base = null;
+      pts.status = 'r5mod.nl niet bereikbaar, punten staan op pauze (' + e.message + '). Ik probeer het elke minuut opnieuw.';
+    }
+    pts.busy = false; ptsDirty();
+  }
+  // alles wat nog niet op r5mod.nl staat in één keer uploaden; daarna het bestand op de pc wissen
+  let ptsFlushP = null;
+  function ptsFlush() {
+    if (ptsFlushP) return ptsFlushP;
+    if (!ptsApp || !pts.ch || !pts.base || !hasDelta() || !state.token) return Promise.resolve(true);
+    const snap = JSON.parse(JSON.stringify({ batch: pts.batch, delta: pts.delta, bank: pts.bankD }));
+    pts.status = 'opslaan op r5mod.nl…'; ptsDirty();
+    ptsFlushP = ptsUpload(snap).then(async () => {
+      // wat tijdens het uploaden nog bijkwam, blijft staan voor de volgende keer (met een nieuwe batch)
+      Object.entries(snap.delta).forEach(([id, [login, n]]) => {
+        const b = pts.base[id] || (pts.base[id] = [login, 0]);
+        b[0] = login; b[1] = Math.max(0, b[1] + n);
+        const d = pts.delta[id];
+        if (d) { d[1] -= n; if (!d[1]) delete pts.delta[id]; }
+      });
+      pts.bank = Math.max(0, pts.bank + snap.bank); pts.bankD -= snap.bank;
+      pts.batch = newBatch(); pts.syncedAt = Date.now(); pts.status = '';
+      clearTimeout(ptsSaveT);
+      if (hasDelta()) ptsSaveLocal(); else await window.r5app.points('clear', pts.ch);
+      return true;
+    }).catch((e) => { pts.status = 'opslaan mislukt (' + e.message + '); het staat veilig op deze pc en gaat de volgende keer mee.'; return false; })
+      .finally(() => { ptsFlushP = null; ptsDirty(); });
+    return ptsFlushP;
+  }
+  window.r5pointsFlush = () => ptsFlush().then(() => true, () => true);
+  // elke paar minuten kijken: punten voor iedereen in de kijkerslijst
+  function ptsEarn(list) {
+    if (!ptsActive() || !pc.earn || !Array.isArray(list)) return;
+    const now = Date.now();
+    if (!pts.lastEarn) { pts.lastEarn = now; return; }
+    if (now - pts.lastEarn < pc.every * 60000 - 5000) return;
+    pts.lastEarn = now;
+    list.forEach((u) => { if (u.id && u.login !== state.me.login && !isBot(u.login)) ptsAdd(u.id, u.login, pc.earn); });
+  }
+  const isBot = (l) => BOTS.includes(l) || String(opts.botList || '').toLowerCase().split(/[,\s]+/).includes(l);
+  function ptsBonus(id, login, n) { if (ptsActive() && n > 0 && id) ptsAdd(id, login, n); }
+  function ptsFindId(login) {
+    login = String(login || '').toLowerCase().replace(/^@/, '');
+    const hit = (o) => Object.keys(o).find((id) => o[id][0] === login);
+    return hit(pts.delta) || (pts.base && hit(pts.base)) || ((chatters || []).find((u) => u.login === login) || {}).id || '';
+  }
+  function ptsMsg(tags, login, name, text, badges) {
+    if (!pc.on || !ptsApp || !text || text[0] !== '!' || state.demo) return;
+    if (state.me && login === state.me.login && cmdSent.some((x) => x.text === text && Date.now() - x.t < 15000)) return;
+    const parts = text.slice(1).trim().split(/\s+/), word = (parts.shift() || '').toLowerCase(), id = tags['user-id'] || '', who = '@' + (name || login);
+    const say = (t) => { cmdSent.push({ text: t, t: Date.now() }); if (cmdSent.length > 20) cmdSent.shift(); sendChat(t); };
+    const isPts = word === String(pc.cmd).toLowerCase(), isGamble = pc.gOn && word === String(pc.gCmd).toLowerCase(), isGive = word === 'geefpunten' || word === 'givepoints';
+    if (!isPts && !isGamble && !isGive) return;
+    if (!cur) { if (Date.now() - (pts.saidAt.off || 0) > 60000) { pts.saidAt.off = Date.now(); say(who + ' ' + pc.name + ' werken alleen als de stream live is.'); } return; }
+    if (!pts.base) { if (Date.now() - (pts.saidAt.wait || 0) > 30000) { pts.saidAt.wait = Date.now(); say(who + ' de ' + pc.name + ' zijn nog niet geladen, probeer het zo nog eens.'); } return; }
+    if (isPts) {
+      const to = (parts[0] || '').replace(/^@/, '').toLowerCase(), tid = to ? ptsFindId(to) : id;
+      if (Date.now() - (pts.saidAt['p' + id] || 0) < 10000) return;
+      pts.saidAt['p' + id] = Date.now();
+      return say(to && to !== login ? '@' + to + ' heeft ' + pn(tid ? ptsOf(tid) : 0) + '.' : who + ' je hebt ' + pn(ptsOf(id)) + '.');
+    }
+    if (isGive) {
+      if (userLevel(login, badges) < 3) return;
+      const to = (parts[0] || '').replace(/^@/, '').toLowerCase(), n = Math.trunc(+String(parts[1] || '').replace(/[.,]/g, ''));
+      if (!/^\w{2,25}$/.test(to) || !n) return say(who + ' gebruik: !geefpunten @naam 100 (of -100 om af te pakken)');
+      const tid = ptsFindId(to);
+      if (!tid) return say(who + ' ik ken ' + to + ' nog niet; die moet eerst in de chat zijn geweest.');
+      ptsAdd(tid, to, n);
+      return say('@' + to + (n > 0 ? ' krijgt ' + pn(n) : ' raakt ' + pn(-n) + ' kwijt') + '. Saldo: ' + nl(ptsOf(tid)) + '.');
+    }
+    gamble(id, login, name || login, parts[0], say);
+  }
+  function gamble(id, login, name, arg, say) {
+    const who = '@' + name;
+    if (!/^\d+$/.test(id)) return;
+    const now = Date.now(), left = pc.gCd * 1000 - (now - (pts.cd[id] || 0));
+    if (left > 0) { if (now - (pts.saidAt['g' + id] || 0) > 15000) { pts.saidAt['g' + id] = now; say(who + ' je kunt over ' + Math.ceil(left / 1000) + ' s weer gamblen.'); } return; }
+    const bal = ptsOf(id), a = String(arg || '').toLowerCase().replace(/[.,]/g, '');
+    let bet = ['all', 'alles', 'allin'].includes(a) ? bal : /^\d+%$/.test(a) ? Math.floor(bal * Math.min(100, +a.slice(0, -1)) / 100) : /^\d+k$/.test(a) ? +a.slice(0, -1) * 1000 : parseInt(a, 10);
+    if (!bet || bet < 1) return say(who + ' gebruik: !' + pc.gCmd + ' 100, !' + pc.gCmd + ' 50% of !' + pc.gCmd + ' all. Je hebt ' + pn(bal) + '.');
+    if (pc.gMax && bet > pc.gMax) bet = pc.gMax;
+    if (bet > bal) return say(who + ' je hebt maar ' + pn(bal) + '.');
+    if (bet < pc.gMin) return say(who + ' je moet minimaal ' + pn(pc.gMin) + ' inzetten' + (bal < pc.gMin ? '; je hebt er ' + nl(bal) + '.' : '.'));
+    pts.cd[id] = now;
+    const allIn = bet === bal, bank = bankNow(), r = Math.random() * 100;
+    let res;
+    if (pc.gBank && bank > 0 && r < pc.gJack) res = { kind: 'bank', win: bank, mult: 0 };
+    else if (r < pc.gJack + pc.gWin) { const m = Math.random(); const mult = m < 0.02 ? 5 : m < 0.10 ? 3 : 2; res = { kind: 'win', win: bet * (mult - 1), mult }; }
+    else res = { kind: allIn ? 'bankrupt' : 'lose', win: -bet, mult: 0 };
+    ptsAdd(id, login, res.win);
+    if (res.kind === 'bank') pts.bankD -= bank;
+    else if (res.win < 0 && pc.gBank) pts.bankD += bet;
+    ptsSaveLocal();
+    const bal2 = ptsOf(id);
+    say(res.kind === 'bank' ? '🏦 ' + who + ' KRAAKT DE BANK en wint ' + pn(res.win) + '! Saldo: ' + nl(bal2) + '.'
+      : res.kind === 'win' ? '🎰 ' + who + ' wint ' + pn(res.win) + (res.mult > 2 ? ' (x' + res.mult + '!)' : '') + '. Saldo: ' + nl(bal2) + '.'
+      : res.kind === 'bankrupt' ? '💥 ' + who + ' ging all-in en is BANKROET. Alle ' + pn(bet) + ' zijn weg.'
+      : '😬 ' + who + ' verliest ' + pn(bet) + (pc.gBank ? ' (gaat naar de bank, die staat nu op ' + nl(bankNow()) + ')' : '') + '. Saldo: ' + nl(bal2) + '.');
+    const data = { kind: res.kind, name, login, bet, win: res.win, mult: res.mult, bal: bal2, bank: bankNow(), pname: pc.name };
+    pts.log.unshift(Object.assign({ t: now }, data)); pts.log.length = Math.min(pts.log.length, 30);
+    if (window.r5app && window.r5app.cmd) window.r5app.cmd(state.me.login, { kind: 'live', type: 'gamble', data }).catch(() => {});
+    ptsDirty();
+  }
+  // de bank-teller in de overlay up-to-date houden (ook na het opstarten van OBS)
+  setInterval(() => { if (ptsActive() && pc.gOn && window.r5app.cmd) window.r5app.cmd(state.me.login, { kind: 'live', type: 'bank', data: { bank: bankNow(), pname: pc.name } }).catch(() => {}); }, 20000);
+  function renderPts() {
+    $('#ptsOn').checked = pc.on;
+    $('[data-modsum=pts]').textContent = !ptsApp ? 'alleen in de Windows-app' : pc.on ? (pc.gOn ? 'aan, met gamble' : 'aan') : 'uit';
+    $('#ptsState').textContent = !ptsApp ? 'werkt alleen in de Windows-app' : !pc.on ? 'staat uit' : !state.me ? 'log in om te beginnen' : !hasScope('user:write:chat') ? 'log opnieuw in (chat sturen)' : pts.status ? pts.status : !pts.base ? '' : cur ? '✓ live: punten worden verdiend' : '✓ klaar; punten tellen zodra je live bent';
+    const set = $('#ptsSet');
+    if (!set.childElementCount) set.innerHTML = PTS_FIELDS.map(([k, l, t, , lo, hi]) => t === 'check'
+      ? '<label class="chk" style="margin:0"><input type="checkbox" data-pk="' + k + '"> ' + l + '</label>'
+      : '<div><label>' + l + '</label><input ' + (t === 'num' ? 'type="number" min="' + lo + '" max="' + hi + '"' : 'maxlength="25"') + ' data-pk="' + k + '"></div>').join('');
+    set.querySelectorAll('[data-pk]').forEach((i) => { if (document.activeElement === i) return; if (i.type === 'checkbox') i.checked = !!pc[i.dataset.pk]; else i.value = pc[i.dataset.pk]; });
+    $('#ptsBank').textContent = pts.base ? '🏦 Bank: ' + pn(bankNow()) : '';
+    const open = Object.keys(pts.delta).length;
+    $('#ptsSync').textContent = pts.base ? (pts.syncedAt ? 'opgehaald/opgeslagen om ' + hhmm(pts.syncedAt) : '') + (open ? ' · ' + open + ' kijker' + (open === 1 ? '' : 's') + ' nog niet op r5mod.nl' : ' · alles staat op r5mod.nl') : '';
+    $('#ptsFlush').disabled = !pts.base || !hasDelta();
+    const q = $('#ptsQ').value.trim().toLowerCase().replace(/^@/, '');
+    const ids = new Set([...Object.keys(pts.base || {}), ...Object.keys(pts.delta)]);
+    const rows = [...ids].map((id) => [((pts.delta[id] || pts.base[id] || [])[0]) || '?', ptsOf(id)]).filter(([l, p]) => p > 0 && (!q || l.includes(q))).sort((a, b) => b[1] - a[1]).slice(0, 25);
+    $('#ptsTop').innerHTML = !pts.base ? '<div class="empty">' + (ptsApp ? (pc.on ? 'Saldo\'s worden opgehaald zodra je ingelogd bent.' : 'Zet de kijkerspunten aan om te beginnen.') : 'Kijkerspunten werken in de Windows-app (⚙ Instellingen → Windows-app).') + '</div>'
+      : rows.length ? '<table class="cmdt"><thead><tr><th>#</th><th>Kijker</th><th>' + esc(pc.name) + '</th></tr></thead><tbody>' + rows.map(([l, p], i) => '<tr><td class="hint">' + (i + 1) + '</td><td class="n">' + esc(l) + '</td><td>' + nl(p) + '</td></tr>').join('') + '</tbody></table>'
+      : '<div class="empty">' + (q ? 'Geen kijker gevonden.' : 'Nog niemand heeft ' + esc(pc.name) + '.') + '</div>';
+    $('#ptsLog').innerHTML = pts.log.length ? pts.log.slice(0, 10).map((g) => '<div class="ptslog"><span class="hint">' + hhmm(g.t) + '</span> <b>' + esc(g.name) + '</b> ' +
+      (g.kind === 'bank' ? '<span class="b">kraakt de bank: +' + nl(g.win) + '</span>' : g.kind === 'win' ? '<span class="w">wint +' + nl(g.win) + (g.mult > 2 ? ' (x' + g.mult + ')' : '') + '</span>' : g.kind === 'bankrupt' ? '<span class="l">bankroet: −' + nl(g.bet) + '</span>' : '<span class="l">verliest −' + nl(g.bet) + '</span>') + '</div>').join('') : '<div class="empty">Nog geen gambles deze sessie.</div>';
+  }
+  $('#ptsOn').onchange = (e) => { pc.on = e.target.checked; savePc(); if (pc.on) ptsStart(); renderPts(); };
+  $('#ptsQ').oninput = renderPts;
+  $('#ptsFlush').onclick = async () => { if (await ptsFlush()) toast('Kijkerspunten opgeslagen op r5mod.nl.', 'ok'); else toast('Opslaan lukte niet; het staat veilig op deze pc.', 'err'); };
+  $('#ptsSet').addEventListener('change', (e) => {
+    const i = e.target, k = i.dataset.pk, f = PTS_FIELDS.find((x) => x[0] === k);
+    if (!f) return;
+    if (f[2] === 'check') pc[k] = i.checked;
+    else if (f[2] === 'num') pc[k] = Math.max(f[4], Math.min(f[5], Math.trunc(+i.value) || 0));
+    else { const v = i.value.trim().replace(/^!+/, ''); pc[k] = (k === 'name' ? v : v.toLowerCase().replace(/[^\wÀ-ɏ-]/g, '')) || f[3]; }
+    savePc(); renderPts();
+  });
+
   // modules open/dicht onthouden
   const modOpen = store.get('modOpen', { cmds: true });
   document.querySelectorAll('.mod').forEach((d) => { d.open = !!modOpen[d.dataset.mod]; d.addEventListener('toggle', () => { modOpen[d.dataset.mod] = d.open; store.set('modOpen', modOpen); }); });
@@ -1523,6 +1760,7 @@
   function onEsub(type, ev) {
     if (type === 'channel.follow') {
       chatAlert('follow', { user: ev.user_name });
+      if (!pts.cd['f' + ev.user_id]) { pts.cd['f' + ev.user_id] = 1; ptsBonus(ev.user_id, ev.user_login, pc.follow); }   // één keer per sessie (geen punten door steeds te ont- en hervolgen)
       if (state.followers != null) state.followers++;
       recentFollows.unshift({ user_name: ev.user_name, followed_at: ev.followed_at || new Date().toISOString() });
       event('follow', '💜', ev.user_name + ' volgt je nu', '', { follows: 1 });
@@ -1531,7 +1769,7 @@
       event('redeem', '🎁', ev.user_name + ' wisselde in: ' + ((ev.reward || {}).title || 'beloning') + ((ev.reward || {}).cost ? ' (' + nl(ev.reward.cost) + ' punten)' : ''), ev.user_input || '', { redeems: 1 });
     } else if (type === 'channel.raid') {
       const n = ev.viewers || 0, name = ev.from_broadcaster_user_name;
-      if (cur && !cur.raidsIn.some((r) => Date.now() - r[0] < 60000 && r[2] === name)) raidIn(name, n, ev.from_broadcaster_user_login || '');
+      if (cur && !cur.raidsIn.some((r) => Date.now() - r[0] < 60000 && r[2] === name)) raidIn(name, n, ev.from_broadcaster_user_login || '', '', ev.from_broadcaster_user_id);
     } else if (type === 'stream.online' || type === 'stream.offline') setTimeout(poll, 4000);
     else if (type === 'channel.update') { if (cur) { cur.title = ev.title; cur.game = ev.category_name; } if (chanInfo) { chanInfo.title = ev.title; chanInfo.game_name = ev.category_name; } editFilled = false; renderDash(); }
   }
@@ -1542,6 +1780,7 @@
     if (state.demo) return demoTick(true);
     if (!state.me) return;
     const id = state.me.user_id;
+    ptsStart();
     try {
       const [st, ch] = await Promise.all([helix('GET', 'streams', { user_id: id }), helix('GET', 'channels', { broadcaster_id: id })]);
       chanInfo = ch.data[0] || null;
@@ -1555,7 +1794,7 @@
         }
         cur.end = Date.now(); cur.title = s.title; cur.game = (chanInfo && chanInfo.game_name) || s.game_name;
         record(cur, s.viewer_count, cur.game);
-      } else if (cur) { cur.end = Date.now(); cur = null; saveSessions(true); }
+      } else if (cur) { cur.end = Date.now(); cur = null; saveSessions(true); ptsFlush(); }   // stream gestopt: punten naar r5mod.nl
     } catch (e) { if (/401|token|oauth/i.test(e.message)) toast('Je login is verlopen. Log opnieuw in.', 'err'); }
     if (hasScope('moderator:read:followers')) try {
       const f = await helix('GET', 'channels/followers', { broadcaster_id: id, first: 20 });
@@ -1579,11 +1818,12 @@
         const p = { broadcaster_id: state.me.user_id, moderator_id: state.me.user_id, first: 1000 };
         if (after) p.after = after;
         const j = await helix('GET', 'chat/chatters', p);
-        all.push(...j.data.map((u) => ({ name: u.user_name || u.user_login, login: u.user_login })));
+        all.push(...j.data.map((u) => ({ name: u.user_name || u.user_login, login: u.user_login, id: u.user_id })));
         after = j.pagination && j.pagination.cursor;
         if (!after) break;
       }
       chatters = all.sort((a, b) => a.name.localeCompare(b.name));
+      ptsEarn(chatters);
     } catch { chatters = null; }
     await loadRoles();
     renderViewers();
@@ -2618,7 +2858,7 @@
   const FONT_FIELD = ['font', 'Lettertype', 'select', '', [['', 'Standaard'], ...['Bangers', 'Luckiest Guy', 'Bebas Neue', 'Montserrat', 'Poppins', 'Fredoka', 'Orbitron', 'Press Start 2P', 'Permanent Marker'].map((f) => [f, f])]];
   // Premium: deze instellingen werken alleen met Premium; gratis gebruikt de overlay de standaardstijl
   const PREM_KEYS = ['color', 'tcolor', 'font', 'style', 'ranim', 'anim'];
-  const PREM_OV = ['combo', 'donation'];
+  const PREM_OV = ['combo', 'donation', 'gamble'];
   const PREM_PILL = '<span class="prempill">⭐ Premium</span>';
   const ALERT_FIELDS = (t) => [
     ['@', 'Uitstraling'],
@@ -2643,6 +2883,7 @@
     ['ttsvol', 'Volume voorlezen', 'range', 80, [5, 100, 5, '%']],
   ];
   const ALERTS = ['raid', 'bits', 'donation'];
+  const NO_EMOTES = ALERTS.concat(['gamble']);   // overlays zonder emotes uit de chat
   const OVERLAYS = [
     { type: 'wall', name: '🧱 Emote-wall', desc: 'Emotes uit je chat verschijnen op je scherm.', fields: [
       ['zone', 'Plek op het scherm', 'select', 'full', [['full', 'Hele scherm'], ['free', 'Vrije keuze (sleep het vak in het voorbeeld)']]],
@@ -2674,6 +2915,15 @@
       ['clipdur', 'Clip maximaal', 'range', 20, [5, 60, 1, 's']], ['clipsnd', 'Clip met geluid', 'check', true]] },
     { type: 'bits', name: '💎 Bits melding', desc: 'Een melding als iemand bits geeft, met het bericht erbij en als je wilt voorgelezen (TTS). Plek en grootte sleep je in het voorbeeld.', fields: ALERT_FIELDS('bits') },
     { type: 'donation', name: '💰 Donatie melding', desc: 'Een melding bij een donatie via StreamElements of TipeeeStream (Koppelingen in ⚙ Instellingen), met voorlezen (TTS). Werkt via de Windows-app: die moet open staan.', fields: ALERT_FIELDS('donation') },
+    { type: 'gamble', name: '🎰 Gamble', desc: 'De uitslag van !gamble op je scherm: winst met munten-regen, verlies, bankroet bij all-in en de bank kraken, met een bank-teller. Zet de kijkerspunten aan bij 🧩 Modules. Werkt via de Windows-app: die moet open staan.', fields: [
+      ['@', 'Uitstraling'],
+      ['color', 'Randkleur tijdens het draaien', 'color', '#9147ff'], FONT_FIELD,
+      ['@', 'Bank en uitslagen'],
+      ['bankpos', 'Bank-teller', 'select', 'bl', [['bl', 'Linksonder'], ['br', 'Rechtsonder'], ['tl', 'Linksboven'], ['tr', 'Rechtsboven'], ['off', 'Niet tonen']]],
+      ['feed', 'Laatste 3 uitslagen in een hoek tonen', 'check', true],
+      ['@', 'Tijd en geluid'],
+      ['dur', 'Hoe lang de uitslag op beeld blijft', 'range', 6, [3, 20, 1, 's']],
+      ['sound', 'Geluid', 'select', 'chime', [['chime', 'Belletje'], ['fanfare', 'Fanfare'], ['none', 'Geen geluid']]], ['vol', 'Volume', 'range', 60, [5, 100, 5, '%']]] },
   ];
   const ovCfg = store.get('ov', {});
   OVERLAYS.forEach((o) => { ovCfg[o.type] = Object.assign(Object.fromEntries(o.fields.filter((f) => f[0] !== '@').map((f) => [f[0], f[3]])), ovCfg[o.type] || {}); });
@@ -2688,6 +2938,7 @@
   if (!ovCfg.raid.cbox) ovCfg.raid.cbox = '1360,600,520,292';
   delete ovCfg.raid.size;
   ['bits', 'donation'].forEach((t, i) => { if (!ovCfg[t].box) ovCfg[t].box = i ? '560,310,800,200' : '560,90,800,200'; });
+  if (!ovCfg.gamble.box) ovCfg.gamble.box = '660,250,600,440';
   if (!ovCfg.wall.area) ovCfg.wall.area = '460,140,1000,800';   // emote-wall: eigen vak
   if (!ovCfg.combo.cbx) ovCfg.combo.cbx = '1380,820,480,200';  // combo: eigen vak
   // vakken die je in het voorbeeld kunt slepen, per overlay
@@ -2695,6 +2946,7 @@
     raid: (c) => [['box', '🚀 Melding']].concat(c.clip ? [['cbox', '🎬 Clip']] : []),
     bits: () => [['box', '💎 Melding']],
     donation: () => [['box', '💰 Melding']],
+    gamble: () => [['box', '🎰 Uitslag']],
     wall: (c) => (c.zone === 'free' ? [['area', '🧱 Emote-vlak']] : []),
     combo: (c) => (c.pos === 'free' ? [['cbx', '🔥 Combo']] : []),
   };
@@ -2704,8 +2956,8 @@
   function ovUrl(o, extra) {
     const p = new URLSearchParams({ type: o.type, ch: ovChan() });
     Object.entries(ovCfg[o.type]).forEach(([k, v]) => { const c = ovCfg[o.type]; if ((k === 'img' && c.imgmode !== 'custom') || (k === 'area' && c.zone !== 'free') || (k === 'cbx' && c.pos !== 'free')) return; p.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : k === 'color' || k === 'tcolor' ? String(v).replace('#', '') : v); });
-    if (!ALERTS.includes(o.type) && ovCfg.off.length) p.set('off', ovCfg.off.join(' '));
-    if (!ALERTS.includes(o.type) && ovCfg.cem.length) p.set('cem', ovCfg.cem.map((c) => c.name + '|' + c.url).join(' '));
+    if (!NO_EMOTES.includes(o.type) && ovCfg.off.length) p.set('off', ovCfg.off.join(' '));
+    if (!NO_EMOTES.includes(o.type) && ovCfg.cem.length) p.set('cem', ovCfg.cem.map((c) => c.name + '|' + c.url).join(' '));
     Object.entries(extra || {}).forEach(([k, v]) => p.set(k, v));
     return base + 'overlay.html?' + p.toString();
   }
@@ -2733,7 +2985,7 @@
         '<div><div class="pv"><iframe title="Voorbeeld" allow="autoplay; fullscreen"></iframe><div class="vedit"></div></div>' +
         '<p class="hint" data-vhint style="margin:6px 0 0"></p>' + '<div class="acts"><button data-a="test">▶ Test</button><button data-a="live" title="Speelt de test af in OBS (via de Windows-app)">📡 Test live</button><label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-a="loop"> doorlopend testen</label>' +
         '<button class="primary" data-a="copy" style="margin-left:auto">📋 Kopieer OBS-link</button></div><div class="link"></div>' +
-        (!ALERTS.includes(o.type) ? '<p class="hint">' + (ovCfg.off.length ? ovCfg.off.length + ' emote(s) staan uit; ' : '') + 'welke emotes meedoen kies je bij <a href="#" data-ov-go="emotes">😀 Emotes</a>.</p>' : '') + '</div></div>';
+        (!NO_EMOTES.includes(o.type) ? '<p class="hint">' + (ovCfg.off.length ? ovCfg.off.length + ' emote(s) staan uit; ' : '') + 'welke emotes meedoen kies je bij <a href="#" data-ov-go="emotes">😀 Emotes</a>.</p>' : '') + '</div></div>';
       wireOvEditor(o, box);
     }
     refreshOverlay(o);
@@ -2741,7 +2993,7 @@
   function premOvNote(o) {
     if (isPrem()) return '';
     const get = '<a href="' + PREM_URL + '" target="_blank" rel="noopener">Premium nemen op r5mod.nl</a>';
-    if (PREM_OV.includes(o.type)) return '<div class="premnote">⭐ ' + (o.type === 'combo' ? 'De emote-combo' : 'De donatie-melding') + ' is <b>Premium</b>: zonder Premium blijft hij leeg in OBS. ' + get + '.</div>';
+    if (PREM_OV.includes(o.type)) return '<div class="premnote">⭐ ' + ({ combo: 'De emote-combo', donation: 'De donatie-melding', gamble: 'De gamble-overlay' }[o.type]) + ' is <b>Premium</b>: zonder Premium blijft hij leeg in OBS. ' + get + '.</div>';
     return '<div class="premnote">Gratis: standaardstijl met een klein R5Mod-label. Eigen kleuren, lettertypes en animaties, en geen label, met ⭐ <b>Premium</b>. ' + get + '.</div>';
   }
   function fieldHtml(o, [k, l, t, , x], free) {
@@ -2854,7 +3106,7 @@
     const okCh = ovChan() && ovChan() !== 'demo';
     card.querySelector('.link').textContent = okCh ? ovUrl(o) : (ovChan() === 'demo' ? 'In de demo is er geen echte link: vul bovenaan je eigen kanaalnaam in.' : 'Vul bovenaan je kanaalnaam in om de link te maken.');
     const loop = card.querySelector('[data-a=loop]').checked;
-    const src = ovUrl(o, Object.assign({ preview: '1' }, loop ? { test: '1' } : ALERTS.includes(o.type) ? { hold: '1' } : {}, okCh ? {} : { ch: '' }));
+    const src = ovUrl(o, Object.assign({ preview: '1' }, loop ? { test: '1' } : NO_EMOTES.includes(o.type) ? { hold: '1' } : {}, okCh ? {} : { ch: '' }));
     if ((force || f.dataset.src !== src) && state.page === 'overlays') { f.dataset.src = src; f.src = src; }
     scalePv(card);
   }
