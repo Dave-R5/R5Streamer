@@ -638,7 +638,7 @@
     const pname = r.pname || 'punten', reels = gReels(r);
     const av = r.avatar || (r.login ? await avatarOf(r.login) : '');
     el.innerHTML = '<div class="crack"></div><div class="who">' + (av ? '<img src="' + esc(av) + '" alt="">' : '') + '<span>' + esc(r.name) + '</span></div>' +
-      '<div class="bet">zet ' + gfmt(r.bet) + ' ' + esc(pname) + ' in</div><div class="reels">' + reels.map(() => '<div class="reel spin"><span>' + G_ALL[Math.floor(Math.random() * G_ALL.length)] + '</span></div>').join('') + '</div>' +
+      '<div class="bet">' + (r.rob ? '🦹 overvalt de bank voor ' : 'zet ') + gfmt(r.bet) + ' ' + esc(pname) + (r.rob ? '' : ' in') + '</div><div class="reels">' + reels.map(() => '<div class="reel spin"><span>' + G_ALL[Math.floor(Math.random() * G_ALL.length)] + '</span></div>').join('') + '</div>' +
       '<div class="big"></div><div class="amt"></div><div class="bal"></div>';
     document.body.appendChild(el);
     el.getBoundingClientRect();
@@ -652,7 +652,7 @@
     setTimeout(() => {
       clearInterval(flick);
       el.classList.add('k-' + r.kind);
-      el.querySelector('.big').textContent = { win: r.mult > 2 ? 'WINST! x' + r.mult : 'WINST!', lose: 'VERLOREN', bankrupt: 'BANKROET', bank: 'BANK GEKRAAKT!' }[r.kind] || '';
+      el.querySelector('.big').textContent = { win: r.mult > 2 ? 'WINST! x' + r.mult : 'WINST!', lose: r.rob ? 'MISLUKT' : 'VERLOREN', bankrupt: 'BANKROET', bank: 'BANK GEKRAAKT!' }[r.kind] || '';
       el.querySelector('.amt').textContent = r.kind === 'win' || r.kind === 'bank' ? '+' + gfmt(r.win) + ' ' + pname : r.kind === 'bankrupt' ? 'alle ' + gfmt(r.bet) + ' ' + pname + ' kwijt' : '−' + gfmt(r.bet) + ' ' + pname;
       el.querySelector('.bal').textContent = 'saldo: ' + gfmt(r.bal) + (r.kind === 'lose' && r.bank != null ? (r.toBank == null ? ' · inzet gaat naar de bank' : r.toBank > 0 ? ' · ' + gfmt(r.toBank) + ' gaat naar de bank' : '') : r.kind === 'bank' ? ' · de bank staat weer op 0' : r.kind === 'bankrupt' ? ' · opnieuw sparen!' : '');
       el.classList.add('done');
@@ -804,7 +804,7 @@
         const r = await fetch('http://127.0.0.1:17565/cmd/' + cfg.ch, { cache: 'no-store' });
         const list = r.ok ? await r.json() : [];
         if (after != null) list.filter((c) => c.n > after).forEach((c) => {
-          if (c.kind === 'live' && GAMBLE) { const d = c.data || {}; if (c.type === 'gamble') gamble({ kind: String(d.kind || ''), name: String(d.name || ''), login: String(d.login || ''), bet: +d.bet || 0, win: +d.win || 0, mult: +d.mult || 0, bal: +d.bal || 0, bank: d.bank == null ? null : +d.bank, pname: String(d.pname || 'punten') }); else if (c.type === 'bank' && prem && +d.bank !== gBankVal) gBank(+d.bank); }
+          if (c.kind === 'live' && GAMBLE) { const d = c.data || {}; if (c.type === 'gamble') gamble({ kind: String(d.kind || ''), name: String(d.name || ''), login: String(d.login || ''), bet: +d.bet || 0, win: +d.win || 0, mult: +d.mult || 0, bal: +d.bal || 0, bank: d.bank == null ? null : +d.bank, toBank: d.toBank == null ? null : +d.toBank, rob: !!d.rob, pname: String(d.pname || 'punten') }); else if (c.type === 'bank' && prem && +d.bank !== gBankVal) gBank(+d.bank); }
           if (c.kind === 'test' && (c.type === cfg.type || c.type === 'all')) {
             if (GAMBLE) gTest(); else if (ALERT) testRaid(); else for (let i = 0; i < (cfg.type === 'combo' ? cfg.min + 2 : 8); i++) setTimeout(fakeChat, i * 350);
           }

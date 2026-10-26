@@ -545,7 +545,7 @@
           <label class="chk" style="margin:0"><input type="checkbox" id="ptsOn"> <b>Kijkerspunten aan</b></label>
           <span class="hint" id="ptsState"></span>
         </div>
-        <p class="hint" style="margin:6px 0 0">Kijkers sparen punten door te kijken (en extra bij een follow, sub of raid). Met <b>!punten</b> zien ze hun saldo en met <b>!gamble 100</b>, <b>!gamble 50%</b> of <b>!gamble all</b> spelen ze om punten. De commands hieronder pas je aan zoals bij Chat commands; als de kijkerspunten aan staan, staan ze daar ook in de lijst. Verloren inzet gaat naar de <b>bank</b>; wie de bank kraakt, wint alles wat erin zit. Kijkers geven hun eigen punten aan een ander met <b>!geefpunten @naam 100</b>. Jij en je mods voegen punten toe met <b>!addpoints @naam 100</b> (of -100 om af te pakken), zetten een saldo met <b>!setpoints @naam 500</b> en starten een raffle met <b>!raffle 1000</b> (kijkers doen mee met <b>!join</b>). Bij elk command kies je wie het mag: ook alleen lead mods of alleen jij. Werkt alleen als je live bent, in de Windows-app. De punten staan veilig op r5mod.nl: de app haalt ze op bij het openen en stuurt alles terug als je stream stopt of als je de app sluit. De gamble-uitslag zie je in OBS met de overlay <b>🎰 Gamble</b> (⭐ Premium).</p>
+        <p class="hint" style="margin:6px 0 0">Kijkers sparen punten door te kijken (en extra bij een follow, sub of raid). Met <b>!punten</b> zien ze hun saldo en met <b>!gamble 100</b>, <b>!gamble 50%</b> of <b>!gamble all</b> spelen ze om punten. De commands hieronder pas je aan zoals bij Chat commands; als de kijkerspunten aan staan, staan ze daar ook in de lijst. Verloren inzet gaat naar de <b>bank</b>; wie de bank kraakt, wint alles wat erin zit. Met <b>!robbank</b> betalen kijkers voor een kleine kans om de hele bank te beroven. Kijkers geven hun eigen punten aan een ander met <b>!geefpunten @naam 100</b>. Jij en je mods voegen punten toe met <b>!addpoints @naam 100</b> (of -100 om af te pakken), zetten een saldo met <b>!setpoints @naam 500</b> en starten een raffle met <b>!raffle 1000</b> (kijkers doen mee met <b>!join</b>). Bij elk command kies je wie het mag: ook alleen lead mods of alleen jij. Werkt alleen als je live bent, in de Windows-app. De punten staan veilig op r5mod.nl: de app haalt ze op bij het openen en stuurt alles terug als je stream stopt of als je de app sluit. De gamble-uitslag zie je in OBS met de overlay <b>🎰 Gamble</b> (⭐ Premium).</p>
         <div class="ptsh">Commands</div>
         <div id="ptsCmds"></div>
         <div id="ptsEd" hidden></div>
@@ -766,6 +766,7 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
+            <li>Kijkerspunten: nieuw <b>!robbank</b> (ook !steelbank). Een poging kost standaard 5000 punten en heeft elke keer een willekeurige kans tussen 2% en 5% (in te stellen) om de hele bank te winnen. Mislukt het, dan gaan de kosten naar de bank. De Gamble-overlay laat het ook zien.</li>
             <li>Kijkerspunten: bij ⚙ Instellingen → Gamble kies je nu welk <b>percentage</b> van een verloren inzet naar de bank gaat (standaard 100%). Met een minimum en maximum (bijv. 60% tot 100%) kiest hij bij elk verlies willekeurig een percentage daartussen. In de verliestekst kun je <code>${tobank}</code> gebruiken voor dat bedrag.</li>
             <li>Kijkerspunten: nieuwe commands <b>!raffle 1000</b> (kijkers doen mee met <b>!join</b>, na 60 s wint één van hen), <b>!setpoints @naam 500</b> en <b>!addpoints @naam 100</b> (mods voegen punten toe). <b>!geefpunten</b> is nu voor kijkers: daarmee geven ze hun eigen punten aan een ander. Bij "Wie mag het gebruiken" kun je nu ook <b>Lead mods</b> kiezen, bij alle commands. Het uitklapvak ⚙ Instellingen is duidelijker, met kopjes per onderdeel.</li>
             <li><b>Windows-app 1.4.0</b>: installeren voor alle gebruikers zet de app nu standaard in <code>C:\Program Files\R5Mod\R5 StreamerHub</code>, en in het Startmenu staat hij in de map <b>R5Mod</b>. Een bestaande installatie blijft gewoon waar hij staat.</li>
@@ -1154,6 +1155,7 @@
     { id: 'setpts', pts: 'set', name: 'setpoints', aliases: ['zetpunten'], resp: '${touser} heeft nu ${points} ${pname}.', level: 'mod', cd: 0, ucd: 0, on: true, uses: 0, def: true },
     { id: 'raffle', pts: 'raffle', name: 'raffle', aliases: ['loterij'], resp: '🎟 RAFFLE: ${amount} ${pname} te winnen! Typ !join binnen ${time} seconden om mee te doen.', level: 'mod', cd: 0, ucd: 0, on: true, uses: 0, def: true },
     { id: 'join', pts: 'join', name: 'join', aliases: ['doemee'], resp: '', level: 'all', cd: 0, ucd: 0, on: true, uses: 0, def: true },
+    { id: 'rob', pts: 'rob', name: 'robbank', aliases: ['steelbank'], resp: '🦹 ${user} BEROOFT DE BANK (${kans}% kans) en gaat ervandoor met ${win} ${pname}! Saldo: ${points}.', level: 'all', cd: 0, ucd: 300, on: true, uses: 0, def: true },
     { id: 'lb', pts: 'lb', name: 'leaderboard', aliases: ['ranglijst', 'top'], resp: '🏆 Ranglijst en commands: ${link}', level: 'all', cd: 300, ucd: 0, on: true, uses: 0, def: true },
   ];
   {
@@ -1307,7 +1309,7 @@
   }
   // het bewerkvak staat bij de lijst waar je op ✎ klikte: Chat commands of Kijkerspunten
   const edHost = () => (cmdEdit && cmdEdit.pts ? $('#ptsEd') : $('#cmdEd'));
-  const PTS_VARS = { bal: '${user} wie het typte · ${touser} over wie (bij !punten @naam) · ${points} saldo · ${pname} naam van de punten', gamble: '${user} · ${win} gewonnen · ${mult} (x3 of x5, anders leeg) · ${bet} inzet · ${points} nieuw saldo · ${bank} bank · ${pname}', give: '${user} de mod · ${touser} de kijker · ${amount} aantal · ${points} nieuw saldo · ${pname}', transfer: '${user} de gever · ${touser} wie het krijgt · ${amount} aantal · ${points} saldo van de gever · ${topoints} saldo van de ontvanger · ${pname}', set: '${user} de mod · ${touser} de kijker · ${points} nieuw saldo · ${pname}', raffle: 'start-bericht · ${amount} prijs · ${time} seconden · ${join} het join-command · ${user} · ${pname}; de winnaar-tekst staat bij ⚙ Instellingen', join: 'leeg laten = geen antwoord (aanbevolen, anders veel chatberichten) · ${user}', lb: '${link} je pagina op r5mod.nl · ${user} · eerst wordt de actuele stand opgeslagen' };
+  const PTS_VARS = { bal: '${user} wie het typte · ${touser} over wie (bij !punten @naam) · ${points} saldo · ${pname} naam van de punten', gamble: '${user} · ${win} gewonnen · ${mult} (x3 of x5, anders leeg) · ${bet} inzet · ${points} nieuw saldo · ${bank} bank · ${pname}', give: '${user} de mod · ${touser} de kijker · ${amount} aantal · ${points} nieuw saldo · ${pname}', transfer: '${user} de gever · ${touser} wie het krijgt · ${amount} aantal · ${points} saldo van de gever · ${topoints} saldo van de ontvanger · ${pname}', set: '${user} de mod · ${touser} de kijker · ${points} nieuw saldo · ${pname}', raffle: 'start-bericht · ${amount} prijs · ${time} seconden · ${join} het join-command · ${user} · ${pname}; de winnaar-tekst staat bij ⚙ Instellingen', join: 'leeg laten = geen antwoord (aanbevolen, anders veel chatberichten) · ${user}', rob: 'bij slagen · ${user} · ${win} de hele bank · ${kans} slagingskans van die poging · ${cost} kosten · ${points} nieuw saldo · ${pname}; kosten en kans en de tekst bij mislukken staan bij ⚙ Instellingen', lb: '${link} je pagina op r5mod.nl · ${user} · eerst wordt de actuele stand opgeslagen' };
   function renderCmdEd() {
     const other = cmdEdit && cmdEdit.pts ? $('#cmdEd') : $('#ptsEd');
     other.hidden = true; other.innerHTML = ''; other.dataset.for = '';
@@ -1418,6 +1420,10 @@
     ['tLose', 'Chatbericht bij verlies (${user} ${bet} inzet ${tobank} naar de bank ${points} saldo ${bank} bank ${pname})', 'long', '😬 ${user} verliest ${bet} ${pname}. De bank staat nu op ${bank}. Saldo: ${points}.'],
     ['tBroke', 'Chatbericht bij bankroet (all-in ingezet en verloren)', 'long', '💥 ${user} ging all-in en is BANKROET. Alle ${bet} ${pname} zijn weg.'],
     ['tBank', 'Chatbericht als iemand de bank kraakt en alles wint wat erin zat (${win} = het bedrag uit de bank)', 'long', '🏦 ${user} KRAAKT DE BANK en wint ${win} ${pname}! Saldo: ${points}.'],
+    ['', '🦹 Bank beroven', 'head', '!robbank (of !steelbank): betalen voor een kleine kans op de hele bank'],
+    ['robCost', 'Kosten per poging', 'num', 5000, 1, 1e9], ['robMin', 'Kans op slagen: minimaal (%)', 'num', 2, 0, 100], ['robMax', '… maximaal (%) (elke poging willekeurig daartussen)', 'num', 5, 0, 100],
+    ['tRobFail', 'Chatbericht als het mislukt (${user} ${cost} ${kans} ${bank} ${points} ${pname})', 'long', '🚨 ${user} probeerde de bank te beroven (${kans}% kans) maar werd gepakt! ${cost} ${pname} gaan naar de bank, die nu op ${bank} staat.'],
+    ['tRobEmpty', 'Chatbericht als de bank leeg is', 'long', '🏦 ${user} de bank is leeg, er valt niets te stelen.'],
     ['', '🎟 Raffle', 'head', 'start met !raffle 1000 (of !raffle 1000 30 voor 30 seconden)'],
     ['rTime', 'Standaard tijd om mee te doen (seconden)', 'num', 60, 10, 600], ['rMax', 'Maximale prijs (0 = geen)', 'num', 0, 0, 1e9],
     ['tRaffle', 'Tekst voor de winnaar (${winner} ${amount} ${count} deelnemers ${pname})', 'long', '🎉 ${winner} wint de raffle en krijgt ${amount} ${pname}! (${count} deelnemers)'],
@@ -1502,6 +1508,7 @@
     set: (c) => 'Zet iemands ' + pc.name + ' op een vast aantal: !' + c.name + ' @naam 500.',
     raffle: (c) => 'Start een raffle: !' + c.name + ' 1000. Wie meedoet, maakt kans op de prijs.',
     join: (c) => 'Doe mee aan een lopende raffle.',
+    rob: (c) => 'Beroof de bank voor ' + nl(pc.robCost) + ' ' + pc.name + ': ' + pc.robMin + (pc.robMax > pc.robMin ? '-' + pc.robMax : '') + '% kans dat je de hele bank wint. Mislukt het, dan gaat je geld naar de bank.',
     lb: () => 'Zet de link naar deze pagina in de chat, met de actuele stand.',
   };
   const ptsPage = () => ({ display: (state.user && state.user.display_name) || (state.me && state.me.login) || '', pname: pc.name,
@@ -1599,6 +1606,7 @@
       return;
     }
     if (c.pts === 'gamble') gamble(c, id, login, name || login, parts[0]);
+    if (c.pts === 'rob') robBank(c, id, login, name || login);
     // eerst de actuele stand naar r5mod.nl, dan pas de link (lukt het niet, dan toch de link met de vorige stand)
     if (c.pts === 'lb') ptsFlush(true).finally(() => ptsSay(ptsFill(c.resp, { user: who, link: pageLink(), pname: pc.name })));
   }
@@ -1625,6 +1633,29 @@
       pts.log.unshift({ t: Date.now(), kind: 'raffle', name: wl, login: wl, win: r.amount, count: ids.length }); pts.log.length = Math.min(pts.log.length, 30);
       ptsDirty();
     }, time * 1000);
+  }
+  // !robbank: vaste kosten, kleine (willekeurige) kans op de hele bank; mislukt het, dan gaan de kosten naar de bank
+  function robBank(c, id, login, name) {
+    const who = '@' + name;
+    if (!/^\d+$/.test(id)) return;
+    const now = Date.now(), left = (c.ucd || 0) * 1000 - (now - (pts.cd['r' + id] || 0));
+    if (left > 0 && userLevel(login, '') < 5) { if (now - (pts.saidAt['r' + id] || 0) > 15000) { pts.saidAt['r' + id] = now; ptsSay(who + ' je kunt over ' + Math.ceil(left / 1000) + ' s weer de bank beroven.'); } return; }
+    const bank = bankNow(), cost = pc.robCost, bal = ptsOf(id);
+    if (bank <= 0) return ptsSay(ptsFill(pc.tRobEmpty, { user: who, pname: pc.name }));
+    if (bal < cost) return ptsSay(who + ' een bankoverval kost ' + pn(cost) + '; je hebt er ' + nl(bal) + '.');
+    pts.cd['r' + id] = now;
+    const lo = Math.max(0, Math.min(100, pc.robMin)), hi = Math.max(lo, Math.min(100, pc.robMax)), kans = Math.round((lo + Math.random() * (hi - lo)) * 10) / 10;
+    const ok = Math.random() * 100 < kans;
+    ptsAdd(id, login, -cost);
+    let win = 0;
+    if (ok) { win = bank; ptsAdd(id, login, win); pts.bankD -= bank; } else pts.bankD += cost;
+    ptsSaveLocal();
+    const bal2 = ptsOf(id), v = { user: who, win: nl(win), kans: String(kans).replace('.', ','), cost: nl(cost), points: nl(bal2), bank: nl(bankNow()), pname: pc.name };
+    ptsSay(ptsFill(ok ? c.resp : pc.tRobFail, v));
+    const data = { kind: ok ? 'bank' : 'lose', rob: true, name, login, bet: cost, win: ok ? win - cost : -cost, mult: 0, bal: bal2, bank: bankNow(), toBank: ok ? 0 : cost, pname: pc.name };
+    pts.log.unshift(Object.assign({ t: now }, data, { kind: ok ? 'robok' : 'robfail', win })); pts.log.length = Math.min(pts.log.length, 30);
+    if (window.r5app && window.r5app.cmd) window.r5app.cmd(state.me.login, { kind: 'live', type: 'gamble', data: Object.assign({}, data, { win: ok ? win : -cost }) }).catch(() => {});
+    ptsDirty();
   }
   function gamble(c, id, login, name, arg) {
     const who = '@' + name, say = ptsSay;
@@ -1681,7 +1712,7 @@
       : rows.length ? '<table class="cmdt"><thead><tr><th>#</th><th>Kijker</th><th>' + esc(pc.name) + '</th></tr></thead><tbody>' + rows.map(([l, p], i) => '<tr><td class="hint">' + (i + 1) + '</td><td class="n">' + esc(l) + '</td><td>' + nl(p) + '</td></tr>').join('') + '</tbody></table>'
       : '<div class="empty">' + (q ? 'Geen kijker gevonden.' : 'Nog niemand heeft ' + esc(pc.name) + '.') + '</div>';
     $('#ptsLog').innerHTML = pts.log.length ? pts.log.slice(0, 10).map((g) => '<div class="ptslog"><span class="hint">' + hhmm(g.t) + '</span> <b>' + esc(g.name) + '</b> ' +
-      (g.kind === 'raffle' ? '<span class="w">wint de raffle: +' + nl(g.win) + '</span> <span class="hint">(' + nl(g.count) + ' deelnemers)</span>' : g.kind === 'bank' ? '<span class="b">kraakt de bank: +' + nl(g.win) + '</span>' : g.kind === 'win' ? '<span class="w">wint +' + nl(g.win) + (g.mult > 2 ? ' (x' + g.mult + ')' : '') + '</span>' : g.kind === 'bankrupt' ? '<span class="l">bankroet: −' + nl(g.bet) + '</span>' : '<span class="l">verliest −' + nl(g.bet) + '</span>') + '</div>').join('') : '<div class="empty">Nog geen gambles of raffles deze sessie.</div>';
+      (g.kind === 'robok' ? '<span class="b">🦹 beroofde de bank: +' + nl(g.win) + '</span>' : g.kind === 'robfail' ? '<span class="l">🚨 bankoverval mislukt: −' + nl(g.bet) + '</span>' : g.kind === 'raffle' ? '<span class="w">wint de raffle: +' + nl(g.win) + '</span> <span class="hint">(' + nl(g.count) + ' deelnemers)</span>' : g.kind === 'bank' ? '<span class="b">kraakt de bank: +' + nl(g.win) + '</span>' : g.kind === 'win' ? '<span class="w">wint +' + nl(g.win) + (g.mult > 2 ? ' (x' + g.mult + ')' : '') + '</span>' : g.kind === 'bankrupt' ? '<span class="l">bankroet: −' + nl(g.bet) + '</span>' : '<span class="l">verliest −' + nl(g.bet) + '</span>') + '</div>').join('') : '<div class="empty">Nog geen gambles of raffles deze sessie.</div>';
   }
   $('#ptsOn').onchange = (e) => { pc.on = e.target.checked; savePc(); if (pc.on) ptsStart(); renderCmds(); };
   $('#ptsQ').oninput = renderPts;
