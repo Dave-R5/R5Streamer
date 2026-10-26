@@ -270,6 +270,14 @@
   .cem img { height: 28px; max-width: 56px; object-fit: contain; }
   .cem small { color: var(--muted); }
   .cem button { padding: 0 6px; min-height: 0; line-height: 20px; }
+  .prempill { display: inline-block; font-size: 10.5px; font-weight: 700; color: var(--gold); background: #3d2a00; border: 1px solid #6b4a00; border-radius: 10px; padding: 0 7px; margin-left: 6px; vertical-align: 1px; white-space: nowrap; }
+  #premBadge { font-size: 11.5px; font-weight: 700; border-radius: 10px; padding: 2px 9px; text-decoration: none; white-space: nowrap; }
+  #premBadge.on { color: #1a1300; background: linear-gradient(135deg, #ffd76a, #f5a623); }
+  #premBadge.off { color: var(--gold); background: #3d2a00; border: 1px solid #6b4a00; }
+  .premnote { border: 1px solid #6b4a00; background: rgba(245,197,66,.08); border-radius: 8px; padding: 8px 10px; font-size: 13px; margin: 8px 0; }
+  .premnote a { color: var(--gold); }
+  .premcols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .premcols ul { margin: 4px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
+  @media (max-width: 640px) { .premcols { grid-template-columns: 1fr; } }
   .soonpill { display: inline-block; font-size: 10.5px; font-weight: 700; color: var(--gold); background: #3d2a00; border: 1px solid #6b4a00; border-radius: 10px; padding: 0 7px; margin-left: 6px; vertical-align: 1px; }
 
   /* instellingen */
@@ -420,6 +428,7 @@
   </nav>
   <span id="layBtns" data-need-dash><button id="hdrTidy" title="Alle blokken netjes naast en onder elkaar zetten, zonder gaten">▦ Netjes schikken</button><button id="hdrLay" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button><button id="hdrCustom" title="Je eigen vaste indeling ontwerpen; ▦ Netjes schikken gaat daarna altijd terug naar deze indeling">▣ Eigen indeling</button></span>
   <span id="demoBadge" hidden>DEMO</span>
+  <a id="premBadge" hidden target="_blank" rel="noopener"></a>
   <button id="helpBtn" title="Hulp: wat kan R5 StreamerHub?">❓</button>
   <span id="account"></span>
 </header>
@@ -537,6 +546,15 @@
         <label class="optrow"><input type="checkbox" id="demoOn"> Demo-modus: nepstream met nepchat, om alles uit te proberen</label>
         <p class="hint">In de demo wordt niets opgeslagen en gaat er niets naar Twitch.</p>
       </div>
+      <div class="card s12" id="premCard">
+        <h2>⭐ Premium</h2>
+        <div id="premState"></div>
+        <div class="premcols">
+          <div><b>Gratis</b><ul><li>Live-status, kijkers, volgers, subs, bits en raids</li><li>Chat in het overzicht</li><li>Emote-wall en raid melding in standaardstijl</li></ul></div>
+          <div><b>⭐ Premium</b><ul><li>Live donaties via StreamElements en TipeeeStream, in één overzicht</li><li>Emote-combo-overlay (en de donatie-melding)</li><li>Eigen kleuren, lettertypes en animaties voor overlays</li><li>Overlays zonder R5Mod-label</li><li>Voorrang bij support</li></ul></div>
+        </div>
+        <div class="row" style="justify-content:flex-start;margin-top:10px"><a class="btn" href="https://r5mod.nl/" target="_blank" rel="noopener">⭐ Premium op r5mod.nl</a><button id="premRefresh">Status vernieuwen</button></div>
+      </div>
       <div class="card s12">
         <h2>📊 Overzicht en Live</h2>
         <label class="optrow"><input type="checkbox" id="optBots" checked> Bekende bots niet meetellen bij top-chatters (Nightbot, StreamElements, …)</label>
@@ -546,6 +564,7 @@
         <p class="hint">Blokken zet je vrij neer door ze aan ⠿ te slepen (ze lijnen vanzelf uit, net als in R5 ModHub); met de hoek rechtsonder maak je ze groter of kleiner. Aan- of uitzetten doe je met <b>✎ Indeling</b>, alles weer strak zetten met <b>▦ Netjes schikken</b>.</p>
         <h3 class="sub">🔌 Koppelingen</h3>
         <p class="hint" style="margin-top:0">Zet een vinkje bij de dienst die je gebruikt; dan verschijnt het vak om hem te koppelen. Zo zie je je donaties bij Overzicht en Live.</p>
+        <div class="premnote" id="intPrem" hidden>⭐ Donaties koppelen is <b>Premium</b>. <a href="https://r5mod.nl/" target="_blank" rel="noopener">Premium nemen op r5mod.nl</a>; daarna werkt het meteen.</div>
         <div class="intpick"><label class="chk"><input type="checkbox" id="seOn"> 🟢 StreamElements</label><label class="chk"><input type="checkbox" id="tpOn"> 🟣 TipeeeStream</label></div>
         <div id="intBox">
           <details class="help-sec" id="seBox" hidden>
@@ -659,6 +678,14 @@
       </ul>
     </details>
     <details class="help-sec">
+      <summary><span class="hi">⭐</span>Premium<small>gratis en Premium</small></summary>
+      <ul>
+        <li><b>Gratis</b>: live-status, kijkers, volgers, subs, bits en raids, chat in het overzicht, en de emote-wall en raid melding in standaardstijl (met een klein R5Mod-label).</li>
+        <li><b>Premium</b>: live donaties via StreamElements en TipeeeStream in één overzicht, de emote-combo-overlay en donatie-melding, eigen kleuren, lettertypes en animaties voor overlays, overlays zonder R5Mod-label en voorrang bij support.</li>
+        <li>Premium neem je op <a href="https://r5mod.nl/" target="_blank" rel="noopener">r5mod.nl</a>. Log hier in met hetzelfde Twitch-account; bij ⚙ Instellingen → ⭐ Premium zie je je status. Je OBS-links blijven hetzelfde: de overlays zien vanzelf dat je kanaal Premium heeft.</li>
+      </ul>
+    </details>
+    <details class="help-sec">
       <summary><span class="hi">📊</span>Overzicht<small>jouw stream in cijfers</small></summary>
       <ul>
         <li><b>Stream</b>: live-status, live-tijd, en je <b>titel en categorie</b> direct aanpassen.</li>
@@ -701,8 +728,9 @@
       <summary><span class="hi">📜</span>Changelog<small>wat is er veranderd</small></summary>
       <div class="cl">
         <details class="cl-ver" open>
-          <summary>Nieuw sinds 1.0 <small>24 okt 2026</small></summary>
+          <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
+            <li><b>⭐ R5 StreamerHub Premium</b>: gratis blijven live-status, kijkers, volgers, subs, bits, raids, chat en de emote-wall en raid melding in standaardstijl. Met Premium (via r5mod.nl): live donaties in één overzicht, emote-combo, eigen kleuren, <b>lettertypes</b> (nieuw) en animaties voor overlays, overlays zonder R5Mod-label en voorrang bij support. Je status staat rechtsboven en bij ⚙ Instellingen.</li>
             <li><b>Nieuw adres: streamerhub.r5mod.nl</b>. Het oude adres r5streamer.daver5.nl stuurt je door en neemt je instellingen mee; log daarna opnieuw in en vul je StreamElements- of TipeeeStream-sleutel opnieuw in. Overlay-links in OBS met het oude adres blijven werken. De Windows-app werkt zichzelf bij naar 1.3.0 en gaat dan vanzelf naar het nieuwe adres.</li>
             <li><b>Nieuw tabblad Live</b>: chat (ook zelf sturen), minispeler die op pauze start, kijkerslijst, activiteit en donaties.</li>
             <li><b>Zelf indelen zoals in R5 ModHub</b>: blokken op Overzicht en Live vrij neerzetten waar je wilt (ze lijnen vanzelf uit en schuiven opzij), vrij groter of kleiner maken, en blokken en tegels aan of uit zetten met ✎ Indeling. ▦ Netjes schikken zet alles weer strak.</li>
@@ -1290,6 +1318,69 @@
     } catch (e) { toast('Versturen mislukt: ' + e.message, 'err'); return false; }
   }
 
+  // ---------- Premium (r5mod.nl) ----------
+  // Het antwoord van r5mod.nl is ondertekend (Ed25519); de publieke sleutel staat hier vast, zodat een nagemaakt antwoord geen Premium geeft.
+  // overlay.html controleert dit zelf ook (per kanaal), want een OBS-link kan iedereen aanpassen.
+  const PREM_KEY = 'Tikhiac/A6udCP2MSP/4ohtdUs9aURBVnEV+eoZG6+Q=';
+  const PREM_URL = 'https://r5mod.nl/';
+  const b64 = (x) => Uint8Array.from(atob(x), (c) => c.charCodeAt(0));
+  let naclP = null;
+  async function edVerify(sig, msg) {
+    try {
+      const k = await crypto.subtle.importKey('raw', b64(PREM_KEY), { name: 'Ed25519' }, false, ['verify']);
+      return await crypto.subtle.verify('Ed25519', k, sig, msg);
+    } catch {
+      // oudere browsers kennen Ed25519 nog niet: dan met tweetnacl
+      naclP = naclP || new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/tweetnacl/1.0.3/nacl-fast.min.js'; sc.onload = () => ok(window.nacl); sc.onerror = no; document.head.appendChild(sc); });
+      try { return (await naclP).sign.detached.verify(msg, sig, b64(PREM_KEY)); } catch { naclP = null; return false; }
+    }
+  }
+  async function premValid(r, id) {
+    if (!r || r.product !== 'streamerhub' || String(r.twitch_id) !== String(id) || typeof r.signature !== 'string') return false;
+    const now = Date.now() / 1000;
+    if (!(r.issued_at > now - 7 * 86400 && r.issued_at < now + 600)) return false;
+    const msg = ['r5mod-premium', 'v1', r.product, r.twitch_id, r.premium ? '1' : '0', r.expires_at ?? '', r.issued_at].join('|');
+    try { return await edVerify(b64(r.signature), new TextEncoder().encode(msg)); } catch { return false; }
+  }
+  const prem = { on: false, r: null, checked: false, err: '' };
+  const isPrem = () => prem.on && !state.demo && !!state.me;
+  async function premCheck(fresh) {
+    if (!state.me || state.demo) { prem.on = false; prem.r = null; prem.checked = false; return premRender(); }
+    const id = state.me.user_id, key = 'prem.' + id;
+    const c = store.get(key, null);
+    let r = null;
+    if (!fresh && c && c.issued_at > Date.now() / 1000 - 3 * 3600 && await premValid(c, id)) r = c;
+    if (!r) {
+      try {
+        const j = await fetch('https://r5mod.nl/api/streamerhub/premium?twitch_id=' + encodeURIComponent(id), { cache: 'no-store' }).then((x) => x.json());
+        if (await premValid(j, id)) { r = j; store.set(key, j); prem.err = ''; } else prem.err = 'antwoord van r5mod.nl klopt niet';
+      } catch { prem.err = 'r5mod.nl niet bereikbaar'; }
+      // zonder internet blijft het laatste geldige antwoord tot 7 dagen gelden
+      if (!r && await premValid(c, id)) r = c;
+    }
+    const was = prem.on;
+    prem.r = r; prem.checked = true;
+    prem.on = !!(r && r.premium && r.expires_at && r.expires_at > Date.now() / 1000);
+    premRender();
+    if (prem.on !== was) { renderInteg(); renderDash(); if (state.page === 'overlays') { edFor = ''; renderOverlays(); } if (prem.on) donPoll(); }
+  }
+  setInterval(() => premCheck(true), 3 * 3600 * 1000);
+  function premRender() {
+    const b = $('#premBadge'), on = isPrem();
+    b.hidden = !state.me || state.demo || !prem.checked;
+    b.className = on ? 'on' : 'off';
+    b.textContent = on ? '⭐ Premium' : '⭐ Gratis';
+    b.href = PREM_URL;
+    b.title = on ? 'R5 StreamerHub Premium is actief' : 'Je gebruikt de gratis versie. Klik voor Premium op r5mod.nl';
+    const exp = prem.r && prem.r.expires_at;
+    $('#premState').innerHTML = state.demo ? '<p class="hint">In de demo zie je alles; Premium hoort bij je eigen kanaal.</p>'
+      : !state.me ? '<p class="hint" style="margin-top:0">Log in met Twitch om je Premium-status te zien.</p>'
+      : !prem.checked ? '<p class="hint" style="margin-top:0">Premium-status ophalen…</p>'
+      : on ? '<p style="margin-top:0">✓ <b>Premium is actief</b> voor ' + esc(state.me.login) + (exp && exp < 4102444800 ? ', tot ' + new Date(exp * 1000).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' }) : '') + '. Bedankt!</p>'
+      : '<p style="margin-top:0">Je gebruikt de <b>gratis</b> versie.' + (prem.err ? ' <span class="hint">(' + esc(prem.err) + ')</span>' : '') + '</p>';
+  }
+  $('#premRefresh').onclick = async () => { $('#premState').innerHTML = '<p class="hint" style="margin-top:0">Bezig…</p>'; await premCheck(true); toast(isPrem() ? 'Premium is actief.' : 'Geen Premium gevonden voor dit account.', isPrem() ? 'ok' : ''); };
+
   // ---------- koppelingen: StreamElements (donaties) ----------
   // De JWT Token blijft op dit apparaat en gaat alleen naar api.streamelements.com.
   const integ = Object.assign({}, store.get('integ', {}), { on: true });   // 'on' was het oude algemene vinkje; nu telt het vinkje per dienst
@@ -1297,10 +1388,10 @@
   integ.tp = Object.assign({ on: false, key: '' }, integ.tp || {});
   const saveInteg = () => store.set('integ', integ);
   const se = { tips: null, status: '', ok: false, seen: new Set() };
-  const seActive = () => !!(integ.on && integ.se.on && integ.se.id && integ.se.jwt);
+  const seActive = () => !!(isPrem() && integ.on && integ.se.on && integ.se.id && integ.se.jwt);   // donaties zijn Premium
   // TipeeeStream: de API key blijft op dit apparaat en gaat alleen naar api.tipeeestream.com.
   const tp = { tips: null, status: '', ok: false };
-  const tpActive = () => !!(integ.on && integ.tp.on && integ.tp.key);
+  const tpActive = () => !!(isPrem() && integ.on && integ.tp.on && integ.tp.key);
   const donActive = () => seActive() || tpActive();
   // alle donaties van de actieve koppelingen samen, nieuwste eerst
   const donList = () => [...(seActive() && se.tips || []), ...(tpActive() && tp.tips || [])].sort((a, b) => b.t - a.t);
@@ -1351,8 +1442,11 @@
   }
   setInterval(donPoll, window.r5app && window.r5app.donations ? 10000 : 30000);
   function renderInteg() {
-    $('#seBox').hidden = !integ.se.on;
-    $('#tpBox').hidden = !integ.tp.on;
+    const pr = isPrem();
+    $('#intPrem').hidden = pr || state.demo;
+    $('#seOn').disabled = $('#tpOn').disabled = !pr;
+    $('#seBox').hidden = !integ.se.on || !pr;
+    $('#tpBox').hidden = !integ.tp.on || !pr;
     $('#seOn').checked = integ.se.on;
     if (document.activeElement !== $('#seId')) $('#seId').value = integ.se.id;
     if (document.activeElement !== $('#seJwt')) $('#seJwt').value = integ.se.jwt;
@@ -2067,6 +2161,7 @@
     $('#welcome').hidden = on || !['overview', 'live'].includes(state.page);
     document.querySelectorAll('[data-need-dash]').forEach((el) => { el.hidden = !on; });
     renderSettings();
+    premRender();
     renderInteg();
     renderDash();
     renderVods();
@@ -2140,7 +2235,7 @@
       const bitsSum = cheers.reduce((a, c) => a + c.bits, 0);
       R(id, 'dsum').textContent = ss ? [on ? donTotal(ss.donations) : '', bitsSum ? nl(bitsSum) + ' bits' : ''].filter(Boolean).join(' + ') + (on || bitsSum ? (id === 'ldon' ? '' : ss === cur ? ' deze stream' : ' laatste stream') : '') : '';
       const list = [...dons.map((d) => Object.assign({ k: 'don' }, d)), ...cheers.map((c) => Object.assign({ k: 'bits' }, c))].sort((x, y) => y.t - x.t).slice(0, 40);
-      const note = !on ? '<div class="hint dnote">💰 Donaties zie je hier als je StreamElements of TipeeeStream koppelt bij ⚙ Instellingen.</div>'
+      const note = !on ? '<div class="hint dnote">' + (isPrem() ? '💰 Donaties zie je hier als je StreamElements of TipeeeStream koppelt bij ⚙ Instellingen.' : '⭐ Live donaties zie je hier met <a href="' + PREM_URL + '" target="_blank" rel="noopener">Premium</a>; bits zie je altijd.') + '</div>'
         : !state.demo && !donOk() ? '<div class="hint dnote">' + (donErr() ? esc(donErr()) + '. Kijk bij ⚙ Instellingen.' : 'Donaties laden…') + '</div>' : '';
       el.innerHTML = note + (list.length ? list.map((d) => '<div class="row"><span style="flex:1;min-width:0"><b>' + esc(d.name) + '</b>' + (d.msg ? '<span class="dm">' + esc(d.msg) + '</span>' : '') + '</span><span class="n">' +
         (d.k === 'bits' ? '<span class="amt bitsamt">💎 ' + nl(d.bits) + ' bits</span>' : '<span class="amt">💰 ' + money(d.amount, d.cur) + '</span>') + '<br>' + ago(d.t) + '</span></div>').join('')
@@ -2168,7 +2263,7 @@
       tile('bits', nl(s ? s.bits : null), ''),
       tile('raids', nl(s ? s.raidsIn.length : null), s && s.raidsIn.length ? nl(s.raidsIn.reduce((p, r) => p + r[1], 0)) + ' kijkers mee' : ''),
       tile('redeems', nl(s ? s.redeems : null), 'ingewisseld'),
-      donOn ? tile('donations', s ? donTotal(dons) : '—', s ? dons.length + ' donatie' + (dons.length === 1 ? '' : 's') : '', dons.length > 0) : tile('donations', '—', 'koppel in ⚙ Instellingen', false, true),
+      donOn ? tile('donations', s ? donTotal(dons) : '—', s ? dons.length + ' donatie' + (dons.length === 1 ? '' : 's') : '', dons.length > 0) : tile('donations', '—', isPrem() ? 'koppel in ⚙ Instellingen' : '⭐ Premium', false, true),
     ].join('') || '<div class="empty">Alle tegels staan uit. Zet ze aan met ✎ Indeling.</div>';
   }
   function ago(t) {
@@ -2517,10 +2612,16 @@
 
   // ---------- overlays ----------
   // gedeelde velden voor bits- en donatiemeldingen (zelfde opmaak als de raid melding)
+  // lettertypes voor de overlays (Google Fonts); moet gelijk blijven met FONTS in overlay.html
+  const FONT_FIELD = ['font', 'Lettertype', 'select', '', [['', 'Standaard'], ...['Bangers', 'Luckiest Guy', 'Bebas Neue', 'Montserrat', 'Poppins', 'Fredoka', 'Orbitron', 'Press Start 2P', 'Permanent Marker'].map((f) => [f, f])]];
+  // Premium: deze instellingen werken alleen met Premium; gratis gebruikt de overlay de standaardstijl
+  const PREM_KEYS = ['color', 'tcolor', 'font', 'style', 'ranim', 'anim'];
+  const PREM_OV = ['combo', 'donation'];
+  const PREM_PILL = '<span class="prempill">⭐ Premium</span>';
   const ALERT_FIELDS = (t) => [
     ['@', 'Uitstraling'],
     ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]],
-    ['color', 'Kleur', 'color', t === 'bits' ? '#1f9cff' : '#00b87a'], ['tcolor', 'Tekstkleur', 'color', '#ffffff'],
+    ['color', 'Kleur', 'color', t === 'bits' ? '#1f9cff' : '#00b87a'], ['tcolor', 'Tekstkleur', 'color', '#ffffff'], FONT_FIELD,
     ['rocket', 'Versiering (' + (t === 'bits' ? '💎' : '💰') + ')', 'check', true],
     ['@', 'Tekst'],
     ['title', 'Kop (leeg = geen kop)', 'text', t === 'bits' ? 'Bits!' : 'Donatie!'],
@@ -2549,12 +2650,12 @@
     { type: 'combo', name: '🔥 Emote-combo', desc: 'Spamt je chat dezelfde emote, dan verschijnt een grote teller.', fields: [
       ['pos', 'Plek op het scherm', 'select', 'br', [['br', 'Rechtsonder'], ['bl', 'Linksonder'], ['tr', 'Rechtsboven'], ['tl', 'Linksboven'], ['tc', 'Boven in het midden'], ['c', 'Midden'], ['free', 'Vrije keuze (sleep het vak in het voorbeeld)']]],
       ['size', 'Grootte', 'range', 90, [40, 240, 5, 'px']], ['min', 'Combo vanaf', 'range', 4, [2, 20, 1, '×']],
-      ['win', 'Max. tijd tussen twee keer', 'range', 8, [3, 30, 1, 's']], ['color', 'Kleur', 'color', '#9147ff'],
+      ['win', 'Max. tijd tussen twee keer', 'range', 8, [3, 30, 1, 's']], ['color', 'Kleur', 'color', '#9147ff'], FONT_FIELD,
       ['sound', 'Geluidje bij een nieuwe combo', 'check', false], ['vol', 'Volume', 'range', 50, [5, 100, 5, '%']]] },
     { type: 'raid', name: '🚀 Raid melding', desc: 'Helemaal zelf in te stellen: uitstraling, tekst, afbeelding, binnenkomst, geluid en een clip van de raider. Plek en grootte sleep je in het voorbeeld.', fields: [
       ['@', 'Uitstraling'],
       ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]],
-      ['color', 'Kleur', 'color', '#9147ff'], ['tcolor', 'Tekstkleur', 'color', '#ffffff'],
+      ['color', 'Kleur', 'color', '#9147ff'], ['tcolor', 'Tekstkleur', 'color', '#ffffff'], FONT_FIELD,
       ['rocket', 'Raket als versiering', 'check', true],
       ['@', 'Tekst'],
       ['title', 'Kop (leeg = geen kop)', 'text', 'Raid!'],
@@ -2612,7 +2713,7 @@
     inp.disabled = !!(state.me && !state.demo);
     $('#ovChanHint').textContent = state.me && !state.demo ? 'je eigen kanaal (ingelogd)' : 'vul je kanaalnaam in, inloggen is niet nodig';
     const tiles = [['all', '🧩 Alles in één', 'Eén OBS-bron met al je overlays en meldingen samen. Kies welke meedoen.']].concat(OVERLAYS.map((o) => [o.type, o.name, o.desc])).concat([['emotes', '😀 Emotes', 'Kies welke emotes in de emote-wall en combo mogen, en voeg je eigen emotes toe.']]);
-    $('#ovTiles').innerHTML = tiles.map(([t, n, d]) => '<button class="ovtile' + (ovSel === t ? ' on' : '') + '" data-ov="' + t + '"><b>' + n + '</b><small>' + d + '</small>' +
+    $('#ovTiles').innerHTML = tiles.map(([t, n, d]) => '<button class="ovtile' + (ovSel === t ? ' on' : '') + '" data-ov="' + t + '"><b>' + n + (PREM_OV.includes(t) && !isPrem() ? PREM_PILL : '') + '</b><small>' + d + '</small>' +
       (t === 'emotes' ? '<small data-emcount>' + emCountText() + '</small>' : '') + '</button>').join('');
     renderOvEditor();
   }
@@ -2626,7 +2727,7 @@
     const o = OVERLAYS.find((x) => x.type === ovSel) || OVERLAYS[0];
     if (edFor !== o.type || !box.querySelector('.ov')) {
       edFor = o.type;
-      box.innerHTML = '<div class="card ov" data-type="' + o.type + '"><div class="f"><h3>' + o.name + '</h3><div class="hint">' + o.desc + '</div>' + o.fields.map((f) => fieldHtml(o, f)).join('') + '</div>' +
+      box.innerHTML = '<div class="card ov" data-type="' + o.type + '"><div class="f"><h3>' + o.name + '</h3><div class="hint">' + o.desc + '</div>' + premOvNote(o) + o.fields.map((f) => fieldHtml(o, f)).join('') + '</div>' +
         '<div><div class="pv"><iframe title="Voorbeeld" allow="autoplay; fullscreen"></iframe><div class="vedit"></div></div>' +
         '<p class="hint" data-vhint style="margin:6px 0 0"></p>' + '<div class="acts"><button data-a="test">▶ Test</button><button data-a="live" title="Speelt de test af in OBS (via de Windows-app)">📡 Test live</button><label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-a="loop"> doorlopend testen</label>' +
         '<button class="primary" data-a="copy" style="margin-left:auto">📋 Kopieer OBS-link</button></div><div class="link"></div>' +
@@ -2635,9 +2736,16 @@
     }
     refreshOverlay(o);
   }
-  function fieldHtml(o, [k, l, t, , x]) {
+  function premOvNote(o) {
+    if (isPrem()) return '';
+    const get = '<a href="' + PREM_URL + '" target="_blank" rel="noopener">Premium nemen op r5mod.nl</a>';
+    if (PREM_OV.includes(o.type)) return '<div class="premnote">⭐ ' + (o.type === 'combo' ? 'De emote-combo' : 'De donatie-melding') + ' is <b>Premium</b>: zonder Premium blijft hij leeg in OBS. ' + get + '.</div>';
+    return '<div class="premnote">Gratis: standaardstijl met een klein R5Mod-label. Eigen kleuren, lettertypes en animaties, en geen label, met ⭐ <b>Premium</b>. ' + get + '.</div>';
+  }
+  function fieldHtml(o, [k, l, t, , x], free) {
     if (k === '@') return '<div class="fsec">' + l + '</div>';
     const id = 'f-' + o.type + '-' + k, v = ovCfg[o.type][k];
+    if (PREM_KEYS.includes(k) && !isPrem() && !free) return '<label for="' + id + '">' + l + PREM_PILL + '</label>' + fieldHtml(o, [k, '', t, , x], true).replace(/^<label[^>]*><\/label>/, '').replace(/ data-k="/, ' disabled data-k="');
     const hide = k === 'img' && ovCfg[o.type].imgmode !== 'custom' ? ' hidden' : '';
     if (t === 'select') return '<label for="' + id + '">' + l + '</label><select id="' + id + '" data-k="' + k + '">' + x.map(([val, lab]) => '<option value="' + val + '"' + (val === v ? ' selected' : '') + '>' + lab + '</option>').join('') + '</select>';
     if (t === 'range') return '<label for="' + id + '">' + l + '</label><div class="rng"><input type="range" id="' + id + '" data-k="' + k + '" min="' + x[0] + '" max="' + x[1] + '" step="' + x[2] + '" value="' + v + '"><output data-u="' + x[3] + '">' + v + x[3] + '</output></div>';
@@ -3029,6 +3137,7 @@
   // ---------- starten ----------
   async function boot() {
     await validate();
+    premCheck();
     if (state.me) {
       try { state.user = (await helix('GET', 'users', { id: state.me.user_id })).data[0] || null; } catch {}
       loadEmotes(state.me.user_id);
