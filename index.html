@@ -541,7 +541,7 @@
           <summary class="hint">⚙ Instellingen: verdienen, bonussen, gamble en teksten</summary>
           <div class="cmded ptsset" id="ptsSet"></div>
         </details>
-        <div class="ovhead"><b id="ptsBank"></b><span class="hint" id="ptsSync"></span><button id="ptsFlush" style="margin-left:auto" title="Nu alle wijzigingen naar r5mod.nl sturen">⤒ Nu opslaan</button></div>
+        <div class="ovhead"><b id="ptsBank"></b><span class="hint" id="ptsSync"></span><a class="btn" id="ptsPage" target="_blank" rel="noopener" style="margin-left:auto" hidden>🏆 Je pagina</a><button id="ptsFlush" title="Nu alle wijzigingen naar r5mod.nl sturen">⤒ Nu opslaan</button></div>
         <div class="cmdbar"><input id="ptsQ" placeholder="Zoek kijker…" autocomplete="off"></div>
         <div id="ptsTop"></div>
         <div class="ptsh">Laatste gambles</div>
@@ -754,6 +754,7 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
+            <li>Kijkerspunten: nieuwe pagina per streamer op <b>r5mod.nl/s/jouwnaam</b> met de ranglijst, de bank en je chat commands. Met <b>!leaderboard</b> (ook !ranglijst en !top) slaat de app eerst de actuele stand op en zet daarna de link in de chat. De knop 🏆 Je pagina staat bij de kijkerspunten.</li>
             <li>Kijkerspunten: <b>!punten</b>, <b>!gamble</b> en <b>!geefpunten</b> staan nu als lijst in de module, net als Chat commands (naam, andere namen, wie, wachttijd en antwoord aanpassen). Staan de kijkerspunten aan, dan staan ze ook in de lijst bij Chat commands. De instellingen en de teksten voor verlies, bankroet en de bank staan in een apart uitklapvak.</li>
             <li><b>🪙 Kijkerspunten en gamble</b> (🧩 Modules, Windows-app 1.3.5): kijkers sparen punten door te kijken en met een follow, sub of raid. Met <b>!punten</b> zien ze hun saldo en met <b>!gamble</b> spelen ze om punten (100, 50% of all). Verloren inzet gaat naar de bank, die je kunt kraken. Mods geven punten met <b>!geefpunten</b>. De punten staan veilig op r5mod.nl: ophalen bij het openen, opslaan als je stream stopt of de app sluit, en na een crash gaat niets verloren.</li>
             <li>Nieuwe overlay <b>🎰 Gamble</b> (⭐ Premium): de uitslag van !gamble op je scherm met draaiende rollen, munten-regen bij winst, verlies, <b>bankroet</b> bij all-in en <b>bank gekraakt</b>, plus een bank-teller en de laatste uitslagen.</li>
@@ -1134,6 +1135,7 @@
     { id: 'pts', pts: 'bal', name: 'punten', aliases: ['points'], resp: '${touser} heeft ${points} ${pname}.', level: 'all', cd: 0, ucd: 10, on: true, uses: 0, def: true },
     { id: 'gamble', pts: 'gamble', name: 'gamble', aliases: ['gok'], resp: '🎰 ${user} wint ${win} ${pname}${mult}! Saldo: ${points}.', level: 'all', cd: 0, ucd: 60, on: true, uses: 0, def: true },
     { id: 'givepts', pts: 'give', name: 'geefpunten', aliases: ['givepoints'], resp: '${touser} krijgt ${amount} ${pname}. Saldo: ${points}.', level: 'mod', cd: 0, ucd: 0, on: true, uses: 0, def: true },
+    { id: 'lb', pts: 'lb', name: 'leaderboard', aliases: ['ranglijst', 'top'], resp: '🏆 Ranglijst en commands: ${link}', level: 'all', cd: 300, ucd: 0, on: true, uses: 0, def: true },
   ];
   {
     const old = store.get('ptscfg', {});   // eerdere instellingen van de module (eigen namen en wachttijd) overnemen
@@ -1278,7 +1280,7 @@
   }
   // het bewerkvak staat bij de lijst waar je op ✎ klikte: Chat commands of Kijkerspunten
   const edHost = () => (cmdEdit && cmdEdit.pts ? $('#ptsEd') : $('#cmdEd'));
-  const PTS_VARS = { bal: '${user} wie het typte · ${touser} over wie (bij !punten @naam) · ${points} saldo · ${pname} naam van de punten', gamble: '${user} · ${win} gewonnen · ${mult} (x3 of x5, anders leeg) · ${bet} inzet · ${points} nieuw saldo · ${bank} bank · ${pname}', give: '${user} de mod · ${touser} de kijker · ${amount} aantal · ${points} nieuw saldo · ${pname}' };
+  const PTS_VARS = { bal: '${user} wie het typte · ${touser} over wie (bij !punten @naam) · ${points} saldo · ${pname} naam van de punten', gamble: '${user} · ${win} gewonnen · ${mult} (x3 of x5, anders leeg) · ${bet} inzet · ${points} nieuw saldo · ${bank} bank · ${pname}', give: '${user} de mod · ${touser} de kijker · ${amount} aantal · ${points} nieuw saldo · ${pname}', lb: '${link} je pagina op r5mod.nl · ${user} · eerst wordt de actuele stand opgeslagen' };
   function renderCmdEd() {
     const other = cmdEdit && cmdEdit.pts ? $('#cmdEd') : $('#ptsEd');
     other.hidden = true; other.innerHTML = ''; other.dataset.for = '';
@@ -1415,7 +1417,7 @@
   }
   async function ptsUpload(data) {
     const viewers = Object.entries(data.delta || {}).filter(([, v]) => v && v[1]).map(([id, v]) => [id, v[0], v[1]]);
-    const r = await fetch(PTS_API, { method: 'POST', headers: { Authorization: 'Bearer ' + state.token, 'Content-Type': 'application/json' }, body: JSON.stringify({ batch: data.batch, viewers, bank: data.bank || 0 }) });
+    const r = await fetch(PTS_API, { method: 'POST', headers: { Authorization: 'Bearer ' + state.token, 'Content-Type': 'application/json' }, body: JSON.stringify({ batch: data.batch, viewers, bank: data.bank || 0, page: ptsPage() }) });
     if (!r.ok) throw new Error('r5mod.nl gaf fout ' + r.status);
   }
   async function ptsDownload() {
@@ -1452,9 +1454,20 @@
   }
   // alles wat nog niet op r5mod.nl staat in één keer uploaden; daarna het bestand op de pc wissen
   let ptsFlushP = null;
-  function ptsFlush() {
+  // openbare pagina r5mod.nl/s/<naam>: wat daar bij de commands staat (gaat mee met elke upload)
+  const pageLink = () => 'https://r5mod.nl/s/' + ((state.me && state.me.login) || '');
+  const PTS_DESC = {
+    bal: (c) => 'Laat zien hoeveel ' + pc.name + ' je hebt; met !' + c.name + ' @naam zie je die van een ander.',
+    gamble: (c) => 'Speel om ' + pc.name + ': !' + c.name + ' 100, !' + c.name + ' 50% of !' + c.name + ' all. Verloren inzet gaat naar de bank; wie de bank kraakt, wint alles.',
+    give: (c) => 'Geef of pak ' + pc.name + ': !' + c.name + ' @naam 100.',
+    lb: () => 'Zet de link naar deze pagina in de chat, met de actuele stand.',
+  };
+  const ptsPage = () => ({ display: (state.user && state.user.display_name) || (state.me && state.me.login) || '', pname: pc.name,
+    commands: cmds.filter((c) => c.on && cmdShown(c) && c.level !== 'bc' && (c.pts || cmdOn)).map((c) => ({ name: c.name, aliases: c.aliases || [], resp: c.pts ? PTS_DESC[c.pts](c) : c.resp, level: c.level })) });
+  // keep: tijdens de stream (bij !leaderboard) het bestand op de pc laten staan; alleen bij offline/afsluiten wissen
+  function ptsFlush(keep) {
     if (ptsFlushP) return ptsFlushP;
-    if (!ptsApp || !pts.ch || !pts.base || !hasDelta() || !state.token) return Promise.resolve(true);
+    if (!ptsApp || !pts.ch || !pts.base || (!hasDelta() && !keep) || !state.token) return Promise.resolve(true);
     const snap = JSON.parse(JSON.stringify({ batch: pts.batch, delta: pts.delta, bank: pts.bankD }));
     pts.status = 'opslaan op r5mod.nl…'; ptsDirty();
     ptsFlushP = ptsUpload(snap).then(async () => {
@@ -1468,7 +1481,8 @@
       pts.bank = Math.max(0, pts.bank + snap.bank); pts.bankD -= snap.bank;
       pts.batch = newBatch(); pts.syncedAt = Date.now(); pts.status = '';
       clearTimeout(ptsSaveT);
-      if (hasDelta()) ptsSaveLocal(); else await window.r5app.points('clear', pts.ch);
+      if (keep) await window.r5app.points('save', pts.ch, JSON.stringify({ v: 1, ch: pts.ch, batch: pts.batch, delta: pts.delta, bank: pts.bankD, t: Date.now() }));
+      else if (hasDelta()) ptsSaveLocal(); else await window.r5app.points('clear', pts.ch);
       return true;
     }).catch((e) => { pts.status = 'opslaan mislukt (' + e.message + '); het staat veilig op deze pc en gaat de volgende keer mee.'; return false; })
       .finally(() => { ptsFlushP = null; ptsDirty(); });
@@ -1517,6 +1531,8 @@
       return ptsSay(ptsFill(c.resp, { user: who, touser: '@' + to, amount: nl(n), points: nl(ptsOf(tid)), pname: pc.name }));
     }
     if (c.pts === 'gamble') gamble(c, id, login, name || login, parts[0]);
+    // eerst de actuele stand naar r5mod.nl, dan pas de link (lukt het niet, dan toch de link met de vorige stand)
+    if (c.pts === 'lb') ptsFlush(true).finally(() => ptsSay(ptsFill(c.resp, { user: who, link: pageLink(), pname: pc.name })));
   }
   function gamble(c, id, login, name, arg) {
     const who = '@' + name, say = ptsSay;
@@ -1564,6 +1580,8 @@
     const open = Object.keys(pts.delta).length;
     $('#ptsSync').textContent = pts.base ? (pts.syncedAt ? 'opgehaald/opgeslagen om ' + hhmm(pts.syncedAt) : '') + (open ? ' · ' + open + ' kijker' + (open === 1 ? '' : 's') + ' nog niet op r5mod.nl' : ' · alles staat op r5mod.nl') : '';
     $('#ptsFlush').disabled = !pts.base || !hasDelta();
+    $('#ptsPage').hidden = !ptsApp || !state.me || !pc.on; $('#ptsPage').href = pageLink();
+    $('#ptsFlush').style.marginLeft = $('#ptsPage').hidden ? 'auto' : '';
     const q = $('#ptsQ').value.trim().toLowerCase().replace(/^@/, '');
     const ids = new Set([...Object.keys(pts.base || {}), ...Object.keys(pts.delta)]);
     const rows = [...ids].map((id) => [((pts.delta[id] || pts.base[id] || [])[0]) || '?', ptsOf(id)]).filter(([l, p]) => p > 0 && (!q || l.includes(q))).sort((a, b) => b[1] - a[1]).slice(0, 25);
@@ -1575,7 +1593,7 @@
   }
   $('#ptsOn').onchange = (e) => { pc.on = e.target.checked; savePc(); if (pc.on) ptsStart(); renderCmds(); };
   $('#ptsQ').oninput = renderPts;
-  $('#ptsFlush').onclick = async () => { if (await ptsFlush()) toast('Kijkerspunten opgeslagen op r5mod.nl.', 'ok'); else toast('Opslaan lukte niet; het staat veilig op deze pc.', 'err'); };
+  $('#ptsFlush').onclick = async () => { if (await ptsFlush(!!cur)) toast('Kijkerspunten opgeslagen op r5mod.nl.', 'ok'); else toast('Opslaan lukte niet; het staat veilig op deze pc.', 'err'); };
   $('#ptsSet').addEventListener('change', (e) => {
     const i = e.target, k = i.dataset.pk, f = PTS_FIELDS.find((x) => x[0] === k);
     if (!f) return;
