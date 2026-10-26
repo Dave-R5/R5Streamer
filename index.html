@@ -766,6 +766,7 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
+            <li>Kijkerspunten: nieuw <b>!bank</b> (ook !pot) laat zien hoeveel er in de bank zit.</li>
             <li>Kijkerspunten: nieuw <b>!robbank</b> (ook !steelbank en !rob). Een poging kost standaard 5000 punten en heeft elke keer een willekeurige kans tussen 2% en 5% (in te stellen) om de hele bank te winnen. Mislukt het, dan gaan de kosten naar de bank. De Gamble-overlay laat het ook zien.</li>
             <li>Kijkerspunten: bij ⚙ Instellingen → Gamble kies je nu welk <b>percentage</b> van een verloren inzet naar de bank gaat (standaard 100%). Met een minimum en maximum (bijv. 60% tot 100%) kiest hij bij elk verlies willekeurig een percentage daartussen. In de verliestekst kun je <code>${tobank}</code> gebruiken voor dat bedrag.</li>
             <li>Kijkerspunten: nieuwe commands <b>!raffle 1000</b> (kijkers doen mee met <b>!join</b>, na 60 s wint één van hen), <b>!setpoints @naam 500</b> en <b>!addpoints @naam 100</b> (mods voegen punten toe). <b>!geefpunten</b> is nu voor kijkers: daarmee geven ze hun eigen punten aan een ander. Bij "Wie mag het gebruiken" kun je nu ook <b>Lead mods</b> kiezen, bij alle commands. Het uitklapvak ⚙ Instellingen is duidelijker, met kopjes per onderdeel.</li>
@@ -1155,6 +1156,7 @@
     { id: 'setpts', pts: 'set', name: 'setpoints', aliases: ['zetpunten'], resp: '${touser} heeft nu ${points} ${pname}.', level: 'mod', cd: 0, ucd: 0, on: true, uses: 0, def: true },
     { id: 'raffle', pts: 'raffle', name: 'raffle', aliases: ['loterij'], resp: '🎟 RAFFLE: ${amount} ${pname} te winnen! Typ !join binnen ${time} seconden om mee te doen.', level: 'mod', cd: 0, ucd: 0, on: true, uses: 0, def: true },
     { id: 'join', pts: 'join', name: 'join', aliases: ['doemee'], resp: '', level: 'all', cd: 0, ucd: 0, on: true, uses: 0, def: true },
+    { id: 'bank', pts: 'bank', name: 'bank', aliases: ['pot'], resp: '🏦 In de bank zit ${bank} ${pname}. Kraak hem met !gamble of beroof hem met !robbank!', level: 'all', cd: 10, ucd: 30, on: true, uses: 0, def: true },
     { id: 'rob', pts: 'rob', name: 'robbank', aliases: ['steelbank', 'rob'], resp: '🦹 ${user} BEROOFT DE BANK (${kans}% kans) en gaat ervandoor met ${win} ${pname}! Saldo: ${points}.', level: 'all', cd: 0, ucd: 300, on: true, uses: 0, def: true },
     { id: 'lb', pts: 'lb', name: 'leaderboard', aliases: ['ranglijst', 'top'], resp: '🏆 Ranglijst en commands: ${link}', level: 'all', cd: 300, ucd: 0, on: true, uses: 0, def: true },
   ];
@@ -1312,7 +1314,7 @@
   }
   // het bewerkvak staat bij de lijst waar je op ✎ klikte: Chat commands of Kijkerspunten
   const edHost = () => (cmdEdit && cmdEdit.pts ? $('#ptsEd') : $('#cmdEd'));
-  const PTS_VARS = { bal: '${user} wie het typte · ${touser} over wie (bij !punten @naam) · ${points} saldo · ${pname} naam van de punten', gamble: '${user} · ${win} gewonnen · ${mult} (x3 of x5, anders leeg) · ${bet} inzet · ${points} nieuw saldo · ${bank} bank · ${pname}', give: '${user} de mod · ${touser} de kijker · ${amount} aantal · ${points} nieuw saldo · ${pname}', transfer: '${user} de gever · ${touser} wie het krijgt · ${amount} aantal · ${points} saldo van de gever · ${topoints} saldo van de ontvanger · ${pname}', set: '${user} de mod · ${touser} de kijker · ${points} nieuw saldo · ${pname}', raffle: 'start-bericht · ${amount} prijs · ${time} seconden · ${join} het join-command · ${user} · ${pname}; de winnaar-tekst staat bij ⚙ Instellingen', join: 'leeg laten = geen antwoord (aanbevolen, anders veel chatberichten) · ${user}', rob: 'bij slagen · ${user} · ${win} de hele bank · ${kans} slagingskans van die poging · ${cost} kosten · ${points} nieuw saldo · ${pname}; kosten en kans en de tekst bij mislukken staan bij ⚙ Instellingen', lb: '${link} je pagina op r5mod.nl · ${user} · eerst wordt de actuele stand opgeslagen' };
+  const PTS_VARS = { bal: '${user} wie het typte · ${touser} over wie (bij !punten @naam) · ${points} saldo · ${pname} naam van de punten', gamble: '${user} · ${win} gewonnen · ${mult} (x3 of x5, anders leeg) · ${bet} inzet · ${points} nieuw saldo · ${bank} bank · ${pname}', give: '${user} de mod · ${touser} de kijker · ${amount} aantal · ${points} nieuw saldo · ${pname}', transfer: '${user} de gever · ${touser} wie het krijgt · ${amount} aantal · ${points} saldo van de gever · ${topoints} saldo van de ontvanger · ${pname}', set: '${user} de mod · ${touser} de kijker · ${points} nieuw saldo · ${pname}', raffle: 'start-bericht · ${amount} prijs · ${time} seconden · ${join} het join-command · ${user} · ${pname}; de winnaar-tekst staat bij ⚙ Instellingen', join: 'leeg laten = geen antwoord (aanbevolen, anders veel chatberichten) · ${user}', bank: '${bank} wat er nu in de bank zit · ${user} · ${pname}', rob: 'bij slagen · ${user} · ${win} de hele bank · ${kans} slagingskans van die poging · ${cost} kosten · ${points} nieuw saldo · ${pname}; kosten en kans en de tekst bij mislukken staan bij ⚙ Instellingen', lb: '${link} je pagina op r5mod.nl · ${user} · eerst wordt de actuele stand opgeslagen' };
   function renderCmdEd() {
     const other = cmdEdit && cmdEdit.pts ? $('#cmdEd') : $('#ptsEd');
     other.hidden = true; other.innerHTML = ''; other.dataset.for = '';
@@ -1511,6 +1513,7 @@
     set: (c) => 'Zet iemands ' + pc.name + ' op een vast aantal: !' + c.name + ' @naam 500.',
     raffle: (c) => 'Start een raffle: !' + c.name + ' 1000. Wie meedoet, maakt kans op de prijs.',
     join: (c) => 'Doe mee aan een lopende raffle.',
+    bank: () => 'Laat zien hoeveel ' + pc.name + ' er in de bank zitten.',
     rob: (c) => 'Beroof de bank voor ' + nl(pc.robCost) + ' ' + pc.name + ': ' + pc.robMin + (pc.robMax > pc.robMin ? '-' + pc.robMax : '') + '% kans dat je de hele bank wint. Mislukt het, dan gaat je geld naar de bank.',
     lb: () => 'Zet de link naar deze pagina in de chat, met de actuele stand.',
   };
@@ -1609,6 +1612,7 @@
       return;
     }
     if (c.pts === 'gamble') gamble(c, id, login, name || login, parts[0]);
+    if (c.pts === 'bank') return ptsSay(ptsFill(c.resp, { user: who, bank: nl(bankNow()), pname: pc.name }));
     if (c.pts === 'rob') robBank(c, id, login, name || login);
     // eerst de actuele stand naar r5mod.nl, dan pas de link (lukt het niet, dan toch de link met de vorige stand)
     if (c.pts === 'lb') ptsFlush(true).finally(() => ptsSay(ptsFill(c.resp, { user: who, link: pageLink(), pname: pc.name })));
