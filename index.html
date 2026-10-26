@@ -766,7 +766,7 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
-            <li>Kijkerspunten: nieuw <b>!robbank</b> (ook !steelbank). Een poging kost standaard 5000 punten en heeft elke keer een willekeurige kans tussen 2% en 5% (in te stellen) om de hele bank te winnen. Mislukt het, dan gaan de kosten naar de bank. De Gamble-overlay laat het ook zien.</li>
+            <li>Kijkerspunten: nieuw <b>!robbank</b> (ook !steelbank en !rob). Een poging kost standaard 5000 punten en heeft elke keer een willekeurige kans tussen 2% en 5% (in te stellen) om de hele bank te winnen. Mislukt het, dan gaan de kosten naar de bank. De Gamble-overlay laat het ook zien.</li>
             <li>Kijkerspunten: bij ⚙ Instellingen → Gamble kies je nu welk <b>percentage</b> van een verloren inzet naar de bank gaat (standaard 100%). Met een minimum en maximum (bijv. 60% tot 100%) kiest hij bij elk verlies willekeurig een percentage daartussen. In de verliestekst kun je <code>${tobank}</code> gebruiken voor dat bedrag.</li>
             <li>Kijkerspunten: nieuwe commands <b>!raffle 1000</b> (kijkers doen mee met <b>!join</b>, na 60 s wint één van hen), <b>!setpoints @naam 500</b> en <b>!addpoints @naam 100</b> (mods voegen punten toe). <b>!geefpunten</b> is nu voor kijkers: daarmee geven ze hun eigen punten aan een ander. Bij "Wie mag het gebruiken" kun je nu ook <b>Lead mods</b> kiezen, bij alle commands. Het uitklapvak ⚙ Instellingen is duidelijker, met kopjes per onderdeel.</li>
             <li><b>Windows-app 1.4.0</b>: installeren voor alle gebruikers zet de app nu standaard in <code>C:\Program Files\R5Mod\R5 StreamerHub</code>, en in het Startmenu staat hij in de map <b>R5Mod</b>. Een bestaande installatie blijft gewoon waar hij staat.</li>
@@ -1155,7 +1155,7 @@
     { id: 'setpts', pts: 'set', name: 'setpoints', aliases: ['zetpunten'], resp: '${touser} heeft nu ${points} ${pname}.', level: 'mod', cd: 0, ucd: 0, on: true, uses: 0, def: true },
     { id: 'raffle', pts: 'raffle', name: 'raffle', aliases: ['loterij'], resp: '🎟 RAFFLE: ${amount} ${pname} te winnen! Typ !join binnen ${time} seconden om mee te doen.', level: 'mod', cd: 0, ucd: 0, on: true, uses: 0, def: true },
     { id: 'join', pts: 'join', name: 'join', aliases: ['doemee'], resp: '', level: 'all', cd: 0, ucd: 0, on: true, uses: 0, def: true },
-    { id: 'rob', pts: 'rob', name: 'robbank', aliases: ['steelbank'], resp: '🦹 ${user} BEROOFT DE BANK (${kans}% kans) en gaat ervandoor met ${win} ${pname}! Saldo: ${points}.', level: 'all', cd: 0, ucd: 300, on: true, uses: 0, def: true },
+    { id: 'rob', pts: 'rob', name: 'robbank', aliases: ['steelbank', 'rob'], resp: '🦹 ${user} BEROOFT DE BANK (${kans}% kans) en gaat ervandoor met ${win} ${pname}! Saldo: ${points}.', level: 'all', cd: 0, ucd: 300, on: true, uses: 0, def: true },
     { id: 'lb', pts: 'lb', name: 'leaderboard', aliases: ['ranglijst', 'top'], resp: '🏆 Ranglijst en commands: ${link}', level: 'all', cd: 300, ucd: 0, on: true, uses: 0, def: true },
   ];
   {
@@ -1168,6 +1168,9 @@
       if (add.name === 'geefpunten') add.name = 'addpoints';
       else if (!taken('addpoints')) add.aliases.push('addpoints');
     }
+    const rob = cmds.find((c) => c.id === 'rob');   // !rob kwam er later bij
+    if (rob && !store.get('robAlias') && !taken('rob') && !cmds.some((c) => c.name === 'rob' || (c.aliases || []).includes('rob'))) (rob.aliases = rob.aliases || []).push('rob');
+    store.set('robAlias', 1);
     PTS_CMDS.forEach((p) => {
       if (cmds.some((c) => c.id === p.id)) return;
       const c = Object.assign({}, p, { aliases: p.aliases.filter((a) => !taken(a)) });
