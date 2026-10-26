@@ -344,7 +344,7 @@
   .cmdt .lvl { font-size: 11px; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); white-space: nowrap; }
   .cmded { border: 1px solid var(--accent); border-radius: 10px; padding: 12px; margin: 8px 0 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 12px; }
   .ptsset { border-color: var(--line); } .ptsset label:not(.chk) { display: block; font-size: 12px; color: var(--muted); margin-bottom: 3px; } .ptsset input:not([type=checkbox]) { width: 100%; box-sizing: border-box; }
-  .ptsset .chk { align-self: end; display: flex; gap: 6px; align-items: center; min-height: 34px; color: var(--text); font-size: 13px; }
+  .ptsset .chk { grid-column: span 2; align-self: end; display: flex; gap: 6px; align-items: center; min-height: 34px; color: var(--text); font-size: 13px; }
   .ptsh { margin: 14px 0 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
   .ptslog { font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--line); } .ptslog .w { color: #f5c542; } .ptslog .l { color: #ff6b6b; } .ptslog .b { color: #39d98a; }
   .cmded label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
@@ -533,8 +533,14 @@
           <label class="chk" style="margin:0"><input type="checkbox" id="ptsOn"> <b>Kijkerspunten aan</b></label>
           <span class="hint" id="ptsState"></span>
         </div>
-        <p class="hint" style="margin:6px 0 0">Kijkers sparen punten door te kijken (en extra bij een follow, sub of raid). Met <b>!punten</b> zien ze hun saldo en met <b>!gamble 100</b>, <b>!gamble 50%</b> of <b>!gamble all</b> spelen ze om punten. Verloren inzet gaat naar de <b>bank</b>; wie de bank kraakt, wint alles wat erin zit. Jij en je mods geven of nemen punten met <b>!geefpunten @naam 100</b> (of -100). Werkt alleen als je live bent, in de Windows-app. De punten staan veilig op r5mod.nl: de app haalt ze op bij het openen en stuurt alles terug als je stream stopt of als je de app sluit. De gamble-uitslag zie je in OBS met de overlay <b>🎰 Gamble</b> (⭐ Premium).</p>
-        <div class="cmded ptsset" id="ptsSet"></div>
+        <p class="hint" style="margin:6px 0 0">Kijkers sparen punten door te kijken (en extra bij een follow, sub of raid). Met <b>!punten</b> zien ze hun saldo en met <b>!gamble 100</b>, <b>!gamble 50%</b> of <b>!gamble all</b> spelen ze om punten. De commands hieronder pas je aan zoals bij Chat commands; als de kijkerspunten aan staan, staan ze daar ook in de lijst. Verloren inzet gaat naar de <b>bank</b>; wie de bank kraakt, wint alles wat erin zit. Jij en je mods geven of nemen punten met <b>!geefpunten @naam 100</b> (of -100). Werkt alleen als je live bent, in de Windows-app. De punten staan veilig op r5mod.nl: de app haalt ze op bij het openen en stuurt alles terug als je stream stopt of als je de app sluit. De gamble-uitslag zie je in OBS met de overlay <b>🎰 Gamble</b> (⭐ Premium).</p>
+        <div class="ptsh">Commands</div>
+        <div id="ptsCmds"></div>
+        <div id="ptsEd" hidden></div>
+        <details class="obs" id="ptsSetBox">
+          <summary class="hint">⚙ Instellingen: verdienen, bonussen, gamble en teksten</summary>
+          <div class="cmded ptsset" id="ptsSet"></div>
+        </details>
         <div class="ovhead"><b id="ptsBank"></b><span class="hint" id="ptsSync"></span><button id="ptsFlush" style="margin-left:auto" title="Nu alle wijzigingen naar r5mod.nl sturen">⤒ Nu opslaan</button></div>
         <div class="cmdbar"><input id="ptsQ" placeholder="Zoek kijker…" autocomplete="off"></div>
         <div id="ptsTop"></div>
@@ -748,6 +754,7 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
+            <li>Kijkerspunten: <b>!punten</b>, <b>!gamble</b> en <b>!geefpunten</b> staan nu als lijst in de module, net als Chat commands (naam, andere namen, wie, wachttijd en antwoord aanpassen). Staan de kijkerspunten aan, dan staan ze ook in de lijst bij Chat commands. De instellingen en de teksten voor verlies, bankroet en de bank staan in een apart uitklapvak.</li>
             <li><b>🪙 Kijkerspunten en gamble</b> (🧩 Modules, Windows-app 1.3.5): kijkers sparen punten door te kijken en met een follow, sub of raid. Met <b>!punten</b> zien ze hun saldo en met <b>!gamble</b> spelen ze om punten (100, 50% of all). Verloren inzet gaat naar de bank, die je kunt kraken. Mods geven punten met <b>!geefpunten</b>. De punten staan veilig op r5mod.nl: ophalen bij het openen, opslaan als je stream stopt of de app sluit, en na een crash gaat niets verloren.</li>
             <li>Nieuwe overlay <b>🎰 Gamble</b> (⭐ Premium): de uitslag van !gamble op je scherm met draaiende rollen, munten-regen bij winst, verlies, <b>bankroet</b> bij all-in en <b>bank gekraakt</b>, plus een bank-teller en de laatste uitslagen.</li>
             <li>Overal in de app (hulp, changelog en links) staat nu alleen nog het adres <b>streamerhub.r5mod.nl</b>; verwijzingen naar het oude adres zijn weggehaald.</li>
@@ -1027,8 +1034,7 @@
     if (m.command === 'PRIVMSG') {
       let text = m.params[1] || '';
       if (text.startsWith('\u0001ACTION ')) text = text.slice(8, -1);
-      chatMsg(m.prefix.split('!')[0], t['display-name'], text, t.emotes || '', +t.bits || 0, t.color, t.badges || '');
-      ptsMsg(t, m.prefix.split('!')[0], t['display-name'], text, t.badges || '');
+      chatMsg(m.prefix.split('!')[0], t['display-name'], text, t.emotes || '', +t.bits || 0, t.color, t.badges || '', t);
       if (/broadcaster/.test(t.badges || '')) songMsg(text, +t['tmi-sent-ts'] || Date.now());
     } else if (m.command === 'USERNOTICE') {
       const who = t['display-name'] || t.login || '';
@@ -1072,9 +1078,9 @@
   }
   function nameColor(n) { let h = 0; for (const c of String(n)) h = (h * 31 + c.charCodeAt(0)) % 360; return 'hsl(' + h + ',70%,65%)'; }
 
-  function chatMsg(login, name, text, emTag, bits, color, badges) {
+  function chatMsg(login, name, text, emTag, bits, color, badges, tags) {
     chatLine({ name: name || login, login, text, emotes: emTag, bits, color, badges });
-    runCmd(login, name, text, badges);
+    runCmd(login, name, text, badges, tags);
     if (!cur) return;
     cur.msgs++;
     cur.chatters[login] = (cur.chatters[login] || [0, name || login]);
@@ -1123,12 +1129,34 @@
   ];
   let cmds = store.get('cmds', null);
   if (!Array.isArray(cmds)) cmds = DEFAULT_CMDS.map((c) => Object.assign({}, c));
+  // vaste commands van 🪙 Kijkerspunten (pts = soort); ze staan alleen in de lijst en werken alleen als de kijkerspunten aan staan
+  const PTS_CMDS = [
+    { id: 'pts', pts: 'bal', name: 'punten', aliases: ['points'], resp: '${touser} heeft ${points} ${pname}.', level: 'all', cd: 0, ucd: 10, on: true, uses: 0, def: true },
+    { id: 'gamble', pts: 'gamble', name: 'gamble', aliases: ['gok'], resp: '🎰 ${user} wint ${win} ${pname}${mult}! Saldo: ${points}.', level: 'all', cd: 0, ucd: 60, on: true, uses: 0, def: true },
+    { id: 'givepts', pts: 'give', name: 'geefpunten', aliases: ['givepoints'], resp: '${touser} krijgt ${amount} ${pname}. Saldo: ${points}.', level: 'mod', cd: 0, ucd: 0, on: true, uses: 0, def: true },
+  ];
+  {
+    const old = store.get('ptscfg', {});   // eerdere instellingen van de module (eigen namen en wachttijd) overnemen
+    const taken = (n) => cmds.some((c) => !c.pts && (c.name === n || (c.aliases || []).includes(n)));
+    PTS_CMDS.forEach((p) => {
+      if (cmds.some((c) => c.id === p.id)) return;
+      const c = Object.assign({}, p, { aliases: p.aliases.filter((a) => !taken(a)) });
+      if (p.id === 'pts' && old.cmd) c.name = old.cmd;
+      if (p.id === 'gamble' && old.gCmd) c.name = old.gCmd;
+      if (p.id === 'gamble' && old.gCd != null) c.ucd = old.gCd;
+      if (p.id === 'gamble' && old.gOn === false) c.on = false;
+      if (taken(c.name)) c.name += '2';
+      cmds.push(c);
+    });
+    store.set('cmds', cmds);
+  }
   let cmdOn = store.get('cmdOn', false);
   const saveCmds = () => store.set('cmds', cmds);
   const cmdLast = {}, cmdUserLast = {}, cmdSent = [];
   const userLevel = (login, badges) => (state.me && login === state.me.login) || /broadcaster/.test(badges || '') ? 4 : /moderator/.test(badges || '') ? 3 : /vip/.test(badges || '') ? 2 : /subscriber|founder/.test(badges || '') ? 1 : 0;
   const lvlNum = (l) => Math.max(0, CMD_LEVELS.findIndex((x) => x[0] === l));
-  const findCmd = (word) => cmds.find((c) => c.on && (c.name === word || (c.aliases || []).includes(word)));
+  const cmdShown = (c) => !c.pts || pc.on;   // commands van de kijkerspunten alleen als die aan staan
+  const findCmd = (word) => cmds.find((c) => c.on && cmdShown(c) && (c.name === word || (c.aliases || []).includes(word)));
   // zoals StreamElements: ${game ${1}}, ${channel ${1}}, ${title ${1}} gaan over een ander kanaal (bijv. bij !so @naam)
   async function cmdOut(c, login, name, args) {
     let text = c.resp.replace(/\$\{(\w+)\s+\$\{([^}]+)\}\}/g, (m, fn, inner) => '${' + fn + ' ' + cmdVars({ resp: '${' + inner + '}', uses: c.uses }, login, name, args).replace(/^@/, '').split(/\s+/)[0] + '}');
@@ -1175,23 +1203,25 @@
       return m;
     }).slice(0, 480);
   }
-  function runCmd(login, name, text, badges) {
-    if (!cmdOn || !text || text[0] !== '!') return;
+  function runCmd(login, name, text, badges, tags) {
+    if (!text || text[0] !== '!') return;
     // eigen antwoorden niet opnieuw als command zien
     if (state.me && login === state.me.login && cmdSent.some((x) => x.text === text && Date.now() - x.t < 15000)) return;
     const parts = text.slice(1).trim().split(/\s+/), word = (parts.shift() || '').toLowerCase();
-    if (['com', 'cmd', 'command'].includes(word)) return manageCmd(login, name, badges, parts, text);
+    if (['com', 'cmd', 'command'].includes(word)) return cmdOn && manageCmd(login, name, badges, parts, text);
     const c = findCmd(word);
-    if (!c) return;
+    if (!c || (!c.pts && !cmdOn)) return;   // kijkerspunten-commands werken ook als Chat commands uit staat
     const lvl = userLevel(login, badges);
     if (lvl < lvlNum(c.level)) return;
     const now = Date.now();
-    if (lvl < 4) {
+    if (lvl < 4 && c.pts !== 'gamble') {   // gamble heeft een eigen wachttijd met een melding
       if (c.cd && now - (cmdLast[c.id] || 0) < c.cd * 1000) return;
       if (c.ucd && now - (cmdUserLast[c.id + ':' + login] || 0) < c.ucd * 1000) return;
     }
+    if (c.pts && !ptsReady(login, name)) return;
     cmdLast[c.id] = now; cmdUserLast[c.id + ':' + login] = now;
     c.uses = (c.uses || 0) + 1; saveCmds();
+    if (c.pts) return ptsCmd(c, tags || {}, login, name, parts);
     cmdOut(c, login, name, parts).then((out) => {
       if (!out.trim()) return;
       cmdSent.push({ text: out, t: Date.now() }); if (cmdSent.length > 20) cmdSent.shift();
@@ -1211,6 +1241,7 @@
     if (!['add', 'edit', 'delete', 'del', 'remove'].includes(sub) || !valid) return say(who + ' gebruik: !com add !naam antwoord · !com edit !naam nieuw antwoord · !com delete !naam');
     if (['com', 'cmd', 'command'].includes(n)) return say(who + ' !' + n + ' is gereserveerd.');
     const c = owner(n);
+    if (c && c.pts && sub !== 'add' && sub !== 'edit') return say(who + ' !' + c.name + ' hoort bij de kijkerspunten en kan niet weg; zet hem uit bij Modules.');
     if (sub === 'add') {
       if (c) return say(who + ' !' + n + ' bestaat al. Gebruik !com edit !' + n + ' …');
       if (!resp) return say(who + ' geef ook een antwoord: !com add !' + n + ' tekst');
@@ -1234,16 +1265,24 @@
     $('#cmdState').textContent = !cmdOn ? 'staat uit' : state.demo ? 'aan (demo: antwoorden komen in de demo-chat)' : !state.me ? 'log in om te antwoorden' : !hasScope('user:write:chat') ? 'log opnieuw in (chat sturen)' : '✓ antwoordt in je chat';
     $('#cmdF').innerHTML = [['all', 'Alle'], ['own', 'Eigen'], ['def', 'Standaard']].map(([k, l]) => '<button data-cf="' + k + '" class="' + (cmdFilter === k ? 'on' : '') + '">' + l + '</button>').join('');
     const q = $('#cmdQ').value.trim().toLowerCase().replace(/^!/, '');
-    const list = cmds.filter((c) => (cmdFilter === 'all' || (cmdFilter === 'def') === !!c.def) && (!q || c.name.includes(q) || (c.aliases || []).some((a) => a.includes(q)) || c.resp.toLowerCase().includes(q)));
-    $('#cmdList').innerHTML = list.length ? '<table class="cmdt"><thead><tr><th>Command</th><th>Antwoord</th><th>Wie</th><th>Wachttijd</th><th>Gebruikt</th><th></th></tr></thead><tbody>' +
-      list.map((c) => '<tr class="' + (c.on ? '' : 'off') + '"><td class="n">!' + esc(c.name) + ((c.aliases || []).length ? '<small>' + c.aliases.map((a) => '!' + esc(a)).join(' ') + '</small>' : '') + '</td><td class="r">' + esc(c.resp) + '</td>' +
-        '<td><span class="lvl">' + (CMD_LEVELS.find((x) => x[0] === c.level) || CMD_LEVELS[0])[1] + '</span></td><td class="hint">' + (c.cd || 0) + ' s · ' + (c.ucd || 0) + ' s p.p.</td><td class="hint">' + nl(c.uses || 0) + '×</td>' +
-        '<td class="a"><label class="chk" style="display:inline-flex;margin:0 6px 0 0" title="Aan/uit"><input type="checkbox" data-con="' + c.id + '"' + (c.on ? ' checked' : '') + '></label><button data-ced="' + c.id + '" title="Bewerken">✎</button> <button data-cdel="' + c.id + '" title="Verwijderen">🗑</button></td></tr>').join('') + '</tbody></table>'
+    const list = cmds.filter((c) => cmdShown(c) && (cmdFilter === 'all' || (cmdFilter === 'def') === !!c.def) && (!q || c.name.includes(q) || (c.aliases || []).some((a) => a.includes(q)) || c.resp.toLowerCase().includes(q)));
+    $('#cmdList').innerHTML = list.length ? cmdTable(list)
       : '<div class="empty">' + (q ? 'Geen command gevonden.' : 'Nog geen commands. Klik op ＋ Nieuw command.') + '</div>';
     renderCmdEd();
   }
+  function cmdTable(list) {
+    return '<table class="cmdt"><thead><tr><th>Command</th><th>Antwoord</th><th>Wie</th><th>Wachttijd</th><th>Gebruikt</th><th></th></tr></thead><tbody>' +
+      list.map((c) => '<tr class="' + (c.on ? '' : 'off') + '"><td class="n">' + (c.pts ? '<span title="Kijkerspunten">🪙</span> ' : '') + '!' + esc(c.name) + ((c.aliases || []).length ? '<small>' + c.aliases.map((a) => '!' + esc(a)).join(' ') + '</small>' : '') + '</td><td class="r">' + esc(c.resp) + (c.pts === 'gamble' ? '<small class="hint" style="display:block">bij winst; teksten voor verlies, bankroet en de bank bij ⚙ Instellingen van de kijkerspunten</small>' : '') + '</td>' +
+        '<td><span class="lvl">' + (CMD_LEVELS.find((x) => x[0] === c.level) || CMD_LEVELS[0])[1] + '</span></td><td class="hint">' + (c.cd || 0) + ' s · ' + (c.ucd || 0) + ' s p.p.</td><td class="hint">' + nl(c.uses || 0) + '×</td>' +
+        '<td class="a"><label class="chk" style="display:inline-flex;margin:0 6px 0 0" title="Aan/uit"><input type="checkbox" data-con="' + c.id + '"' + (c.on ? ' checked' : '') + '></label><button data-ced="' + c.id + '" title="Bewerken">✎</button>' + (c.pts ? '' : ' <button data-cdel="' + c.id + '" title="Verwijderen">🗑</button>') + '</td></tr>').join('') + '</tbody></table>';
+  }
+  // het bewerkvak staat bij de lijst waar je op ✎ klikte: Chat commands of Kijkerspunten
+  const edHost = () => (cmdEdit && cmdEdit.pts ? $('#ptsEd') : $('#cmdEd'));
+  const PTS_VARS = { bal: '${user} wie het typte · ${touser} over wie (bij !punten @naam) · ${points} saldo · ${pname} naam van de punten', gamble: '${user} · ${win} gewonnen · ${mult} (x3 of x5, anders leeg) · ${bet} inzet · ${points} nieuw saldo · ${bank} bank · ${pname}', give: '${user} de mod · ${touser} de kijker · ${amount} aantal · ${points} nieuw saldo · ${pname}' };
   function renderCmdEd() {
-    const ed = $('#cmdEd');
+    const other = cmdEdit && cmdEdit.pts ? $('#cmdEd') : $('#ptsEd');
+    other.hidden = true; other.innerHTML = ''; other.dataset.for = '';
+    const ed = edHost();
     if (!cmdEdit) { ed.hidden = true; ed.innerHTML = ''; return; }
     if (ed.dataset.for === cmdEdit.id && !ed.hidden) return;
     const c = cmdEdit;
@@ -1253,7 +1292,7 @@
       '<div><label>Wie mag het gebruiken</label><select data-cf2="level">' + CMD_LEVELS.map(([k, l]) => '<option value="' + k + '"' + (c.level === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></div>' +
       '<div><label>Wachttijd voor iedereen (seconden)</label><input type="number" min="0" max="3600" data-cf2="cd" value="' + (c.cd || 0) + '"></div>' +
       '<div><label>Wachttijd per kijker (seconden)</label><input type="number" min="0" max="3600" data-cf2="ucd" value="' + (c.ucd || 0) + '"></div>' +
-      '<div class="wide"><label>Antwoord (variabelen zoals ${user} staan onderaan)</label><textarea data-cf2="resp" maxlength="480" placeholder="Kom erbij op Discord: https://discord.gg/…">' + esc(c.resp) + '</textarea></div>' +
+      '<div class="wide"><label>' + (c.pts ? (c.pts === 'gamble' ? 'Antwoord bij winst' : 'Antwoord') + ' · ' + PTS_VARS[c.pts] : 'Antwoord (variabelen zoals ${user} staan onderaan)') + '</label><textarea data-cf2="resp" maxlength="480" placeholder="Kom erbij op Discord: https://discord.gg/…">' + esc(c.resp) + '</textarea></div>' +
       '<div class="wide acts" style="display:flex;gap:8px"><button class="primary" data-csave>Opslaan</button><button data-ccancel>Annuleren</button></div></div>';
     ed.querySelector('[data-cf2=name]').focus();
   }
@@ -1263,11 +1302,11 @@
   $('#page-commands').addEventListener('click', (e) => {
     const t = e.target, f = t.closest('[data-cf]');
     if (f) { cmdFilter = f.dataset.cf; renderCmds(); return; }
-    if (t.dataset.ced) { cmdEdit = Object.assign({}, cmds.find((c) => c.id === t.dataset.ced)); $('#cmdEd').dataset.for = ''; renderCmds(); $('#cmdEd').scrollIntoView({ block: 'nearest' }); return; }
+    if (t.dataset.ced) { cmdEdit = Object.assign({}, cmds.find((c) => c.id === t.dataset.ced)); $('#cmdEd').dataset.for = ''; $('#ptsEd').dataset.for = ''; renderCmds(); edHost().scrollIntoView({ block: 'nearest' }); return; }
     if (t.dataset.cdel) { const c = cmds.find((x) => x.id === t.dataset.cdel); if (c && confirm('Command !' + c.name + ' verwijderen?')) { cmds = cmds.filter((x) => x !== c); saveCmds(); renderCmds(); } return; }
     if (t.hasAttribute('data-ccancel')) { cmdEdit = null; renderCmds(); return; }
     if (t.hasAttribute('data-csave')) {
-      const ed = $('#cmdEd'), g = (k) => ed.querySelector('[data-cf2=' + k + ']').value.trim();
+      const ed = edHost(), g = (k) => ed.querySelector('[data-cf2=' + k + ']').value.trim();
       const name = g('name').replace(/^!+/, '').toLowerCase();
       if (!/^[\w\u00C0-\u024F-]{1,25}$/.test(name)) return toast('Geef het command een naam zonder spaties, bijv. !discord', 'err');
       const aliases = [...new Set(g('aliases').toLowerCase().split(/[\s,]+/).map((a) => a.replace(/^!+/, '')).filter((a) => /^[\w\u00C0-\u024F-]{1,25}$/.test(a) && a !== name))];
@@ -1286,6 +1325,7 @@
     if (!t.startsWith('!')) { out.textContent = ''; return; }
     const parts = t.slice(1).split(/\s+/), c = findCmd((parts.shift() || '').toLowerCase());
     if (!c) { out.textContent = 'Geen command met die naam (of hij staat uit).'; return; }
+    if (c.pts) { out.textContent = '🪙 Command van de kijkerspunten: werkt in je chat als je live bent.'; return; }
     clearTimeout(out.t);
     out.t = setTimeout(async () => { out.textContent = '→ ' + await cmdOut(c, (state.me && state.me.login) || 'jij', (state.user && state.user.display_name) || 'jij', parts); }, 300);
   };
@@ -1335,12 +1375,14 @@
   const PTS_API = 'https://r5mod.nl/api/streamerhub/points';
   const ptsApp = !!(window.r5app && window.r5app.points);
   const PTS_FIELDS = [
-    ['name', 'Naam van de punten', 'text', 'punten'], ['cmd', 'Command voor je saldo', 'text', 'punten'],
+    ['name', 'Naam van de punten', 'text', 'punten'],
     ['earn', 'Punten per keer kijken', 'num', 10, 0, 100000], ['every', 'Elke … minuten', 'num', 5, 1, 120],
     ['follow', 'Bonus bij een follow', 'num', 50, 0, 1000000], ['sub', 'Bonus bij een sub', 'num', 250, 0, 1000000], ['raid', 'Bonus voor de raider', 'num', 100, 0, 1000000],
-    ['gOn', 'Gamble aan', 'check', true], ['gCmd', 'Gamble-command', 'text', 'gamble'],
-    ['gMin', 'Minimale inzet', 'num', 10, 1, 1e9], ['gMax', 'Maximale inzet (0 = geen)', 'num', 0, 0, 1e9], ['gCd', 'Wachttijd per kijker (s)', 'num', 60, 0, 3600],
+    ['gMin', 'Minimale inzet', 'num', 10, 1, 1e9], ['gMax', 'Maximale inzet (0 = geen)', 'num', 0, 0, 1e9],
     ['gWin', 'Winkans (%)', 'num', 45, 0, 95], ['gJack', 'Kans om de bank te kraken (%)', 'num', 1, 0, 50], ['gBank', 'Verloren inzet gaat naar de bank', 'check', true],
+    ['tLose', 'Tekst bij verlies (${user} ${bet} ${points} ${bank} ${pname})', 'long', '😬 ${user} verliest ${bet} ${pname}. De bank staat nu op ${bank}. Saldo: ${points}.'],
+    ['tBroke', 'Tekst bij bankroet (all-in verloren)', 'long', '💥 ${user} ging all-in en is BANKROET. Alle ${bet} ${pname} zijn weg.'],
+    ['tBank', 'Tekst als iemand de bank kraakt (${win} = de hele bank)', 'long', '🏦 ${user} KRAAKT DE BANK en wint ${win} ${pname}! Saldo: ${points}.'],
   ];
   const pc = Object.assign(Object.fromEntries(PTS_FIELDS.map((f) => [f[0], f[3]])), { on: false }, store.get('ptscfg', {}));
   const savePc = () => store.set('ptscfg', pc);
@@ -1449,40 +1491,41 @@
     const hit = (o) => Object.keys(o).find((id) => o[id][0] === login);
     return hit(pts.delta) || (pts.base && hit(pts.base)) || ((chatters || []).find((u) => u.login === login) || {}).id || '';
   }
-  function ptsMsg(tags, login, name, text, badges) {
-    if (!pc.on || !ptsApp || !text || text[0] !== '!' || state.demo) return;
-    if (state.me && login === state.me.login && cmdSent.some((x) => x.text === text && Date.now() - x.t < 15000)) return;
-    const parts = text.slice(1).trim().split(/\s+/), word = (parts.shift() || '').toLowerCase(), id = tags['user-id'] || '', who = '@' + (name || login);
-    const say = (t) => { cmdSent.push({ text: t, t: Date.now() }); if (cmdSent.length > 20) cmdSent.shift(); sendChat(t); };
-    const isPts = word === String(pc.cmd).toLowerCase(), isGamble = pc.gOn && word === String(pc.gCmd).toLowerCase(), isGive = word === 'geefpunten' || word === 'givepoints';
-    if (!isPts && !isGamble && !isGive) return;
-    if (!cur) { if (Date.now() - (pts.saidAt.off || 0) > 60000) { pts.saidAt.off = Date.now(); say(who + ' ' + pc.name + ' werken alleen als de stream live is.'); } return; }
-    if (!pts.base) { if (Date.now() - (pts.saidAt.wait || 0) > 30000) { pts.saidAt.wait = Date.now(); say(who + ' de ' + pc.name + ' zijn nog niet geladen, probeer het zo nog eens.'); } return; }
-    if (isPts) {
-      const to = (parts[0] || '').replace(/^@/, '').toLowerCase(), tid = to ? ptsFindId(to) : id;
-      if (Date.now() - (pts.saidAt['p' + id] || 0) < 10000) return;
-      pts.saidAt['p' + id] = Date.now();
-      return say(to && to !== login ? '@' + to + ' heeft ' + pn(tid ? ptsOf(tid) : 0) + '.' : who + ' je hebt ' + pn(ptsOf(id)) + '.');
-    }
-    if (isGive) {
-      if (userLevel(login, badges) < 3) return;
-      const to = (parts[0] || '').replace(/^@/, '').toLowerCase(), n = Math.trunc(+String(parts[1] || '').replace(/[.,]/g, ''));
-      if (!/^\w{2,25}$/.test(to) || !n) return say(who + ' gebruik: !geefpunten @naam 100 (of -100 om af te pakken)');
-      const tid = ptsFindId(to);
-      if (!tid) return say(who + ' ik ken ' + to + ' nog niet; die moet eerst in de chat zijn geweest.');
-      ptsAdd(tid, to, n);
-      return say('@' + to + (n > 0 ? ' krijgt ' + pn(n) : ' raakt ' + pn(-n) + ' kwijt') + '. Saldo: ' + nl(ptsOf(tid)) + '.');
-    }
-    gamble(id, login, name || login, parts[0], say);
+  const ptsSay = (t) => { cmdSent.push({ text: t, t: Date.now() }); if (cmdSent.length > 20) cmdSent.shift(); sendChat(t); };
+  const ptsFill = (tpl, v) => String(tpl || '').replace(/\$\{(\w+)\}/g, (m, k) => (v[k] != null ? String(v[k]) : m)).replace(/\s+/g, ' ').trim().slice(0, 480);
+  // mag een kijkerspunten-command nu? anders (af en toe) zeggen waarom niet
+  function ptsReady(login, name) {
+    if (!pc.on || !ptsApp || state.demo) return false;
+    const who = '@' + (name || login);
+    if (!cur) { if (Date.now() - (pts.saidAt.off || 0) > 60000) { pts.saidAt.off = Date.now(); ptsSay(who + ' ' + pc.name + ' werken alleen als de stream live is.'); } return false; }
+    if (!pts.base) { if (Date.now() - (pts.saidAt.wait || 0) > 30000) { pts.saidAt.wait = Date.now(); ptsSay(who + ' de ' + pc.name + ' zijn nog niet geladen, probeer het zo nog eens.'); } return false; }
+    return true;
   }
-  function gamble(id, login, name, arg, say) {
-    const who = '@' + name;
+  // !punten, !gamble en !geefpunten (namen, wie, wachttijd en antwoord staan in de commands-lijst)
+  function ptsCmd(c, tags, login, name, parts) {
+    const id = tags['user-id'] || '', who = '@' + (name || login);
+    if (c.pts === 'bal') {
+      const to = (parts[0] || '').replace(/^@/, '').toLowerCase(), other = to && to !== login, tid = other ? ptsFindId(to) : id;
+      return ptsSay(ptsFill(c.resp, { user: who, touser: other ? '@' + to : who, points: nl(tid ? ptsOf(tid) : 0), pname: pc.name }));
+    }
+    if (c.pts === 'give') {
+      const to = (parts[0] || '').replace(/^@/, '').toLowerCase(), n = Math.trunc(+String(parts[1] || '').replace(/[.,]/g, ''));
+      if (!/^\w{2,25}$/.test(to) || !n) return ptsSay(who + ' gebruik: !' + c.name + ' @naam 100 (of -100 om af te pakken)');
+      const tid = ptsFindId(to);
+      if (!tid) return ptsSay(who + ' ik ken ' + to + ' nog niet; die moet eerst in de chat zijn geweest.');
+      ptsAdd(tid, to, n);
+      return ptsSay(ptsFill(c.resp, { user: who, touser: '@' + to, amount: nl(n), points: nl(ptsOf(tid)), pname: pc.name }));
+    }
+    if (c.pts === 'gamble') gamble(c, id, login, name || login, parts[0]);
+  }
+  function gamble(c, id, login, name, arg) {
+    const who = '@' + name, say = ptsSay;
     if (!/^\d+$/.test(id)) return;
-    const now = Date.now(), left = pc.gCd * 1000 - (now - (pts.cd[id] || 0));
-    if (left > 0) { if (now - (pts.saidAt['g' + id] || 0) > 15000) { pts.saidAt['g' + id] = now; say(who + ' je kunt over ' + Math.ceil(left / 1000) + ' s weer gamblen.'); } return; }
-    const bal = ptsOf(id), a = String(arg || '').toLowerCase().replace(/[.,]/g, '');
+    const now = Date.now(), left = (c.ucd || 0) * 1000 - (now - (pts.cd[id] || 0));
+    if (left > 0 && userLevel(login, '') < 4) { if (now - (pts.saidAt['g' + id] || 0) > 15000) { pts.saidAt['g' + id] = now; say(who + ' je kunt over ' + Math.ceil(left / 1000) + ' s weer gamblen.'); } return; }
+    const bal = ptsOf(id), a = String(arg || '').toLowerCase().replace(/[.,]/g, ''), use = '!' + c.name;
     let bet = ['all', 'alles', 'allin'].includes(a) ? bal : /^\d+%$/.test(a) ? Math.floor(bal * Math.min(100, +a.slice(0, -1)) / 100) : /^\d+k$/.test(a) ? +a.slice(0, -1) * 1000 : parseInt(a, 10);
-    if (!bet || bet < 1) return say(who + ' gebruik: !' + pc.gCmd + ' 100, !' + pc.gCmd + ' 50% of !' + pc.gCmd + ' all. Je hebt ' + pn(bal) + '.');
+    if (!bet || bet < 1) return say(who + ' gebruik: ' + use + ' 100, ' + use + ' 50% of ' + use + ' all. Je hebt ' + pn(bal) + '.');
     if (pc.gMax && bet > pc.gMax) bet = pc.gMax;
     if (bet > bal) return say(who + ' je hebt maar ' + pn(bal) + '.');
     if (bet < pc.gMin) return say(who + ' je moet minimaal ' + pn(pc.gMin) + ' inzetten' + (bal < pc.gMin ? '; je hebt er ' + nl(bal) + '.' : '.'));
@@ -1497,25 +1540,25 @@
     else if (res.win < 0 && pc.gBank) pts.bankD += bet;
     ptsSaveLocal();
     const bal2 = ptsOf(id);
-    say(res.kind === 'bank' ? '🏦 ' + who + ' KRAAKT DE BANK en wint ' + pn(res.win) + '! Saldo: ' + nl(bal2) + '.'
-      : res.kind === 'win' ? '🎰 ' + who + ' wint ' + pn(res.win) + (res.mult > 2 ? ' (x' + res.mult + '!)' : '') + '. Saldo: ' + nl(bal2) + '.'
-      : res.kind === 'bankrupt' ? '💥 ' + who + ' ging all-in en is BANKROET. Alle ' + pn(bet) + ' zijn weg.'
-      : '😬 ' + who + ' verliest ' + pn(bet) + (pc.gBank ? ' (gaat naar de bank, die staat nu op ' + nl(bankNow()) + ')' : '') + '. Saldo: ' + nl(bal2) + '.');
+    const v = { user: who, win: nl(res.win), mult: res.mult > 2 ? ' (x' + res.mult + ')' : '', bet: nl(bet), points: nl(bal2), bank: nl(bankNow()), pname: pc.name };
+    say(ptsFill(res.kind === 'bank' ? pc.tBank : res.kind === 'win' ? c.resp : res.kind === 'bankrupt' ? pc.tBroke : pc.tLose, v));
     const data = { kind: res.kind, name, login, bet, win: res.win, mult: res.mult, bal: bal2, bank: bankNow(), pname: pc.name };
     pts.log.unshift(Object.assign({ t: now }, data)); pts.log.length = Math.min(pts.log.length, 30);
     if (window.r5app && window.r5app.cmd) window.r5app.cmd(state.me.login, { kind: 'live', type: 'gamble', data }).catch(() => {});
     ptsDirty();
   }
+  const gambleOn = () => !!(cmds.find((c) => c.pts === 'gamble') || {}).on;
   // de bank-teller in de overlay up-to-date houden (ook na het opstarten van OBS)
-  setInterval(() => { if (ptsActive() && pc.gOn && window.r5app.cmd) window.r5app.cmd(state.me.login, { kind: 'live', type: 'bank', data: { bank: bankNow(), pname: pc.name } }).catch(() => {}); }, 20000);
+  setInterval(() => { if (ptsActive() && gambleOn() && window.r5app.cmd) window.r5app.cmd(state.me.login, { kind: 'live', type: 'bank', data: { bank: bankNow(), pname: pc.name } }).catch(() => {}); }, 20000);
   function renderPts() {
     $('#ptsOn').checked = pc.on;
-    $('[data-modsum=pts]').textContent = !ptsApp ? 'alleen in de Windows-app' : pc.on ? (pc.gOn ? 'aan, met gamble' : 'aan') : 'uit';
+    $('[data-modsum=pts]').textContent = !ptsApp ? 'alleen in de Windows-app' : pc.on ? (gambleOn() ? 'aan, met gamble' : 'aan') : 'uit';
     $('#ptsState').textContent = !ptsApp ? 'werkt alleen in de Windows-app' : !pc.on ? 'staat uit' : !state.me ? 'log in om te beginnen' : !hasScope('user:write:chat') ? 'log opnieuw in (chat sturen)' : pts.status ? pts.status : !pts.base ? '' : cur ? '✓ live: punten worden verdiend' : '✓ klaar; punten tellen zodra je live bent';
     const set = $('#ptsSet');
     if (!set.childElementCount) set.innerHTML = PTS_FIELDS.map(([k, l, t, , lo, hi]) => t === 'check'
       ? '<label class="chk" style="margin:0"><input type="checkbox" data-pk="' + k + '"> ' + l + '</label>'
-      : '<div><label>' + l + '</label><input ' + (t === 'num' ? 'type="number" min="' + lo + '" max="' + hi + '"' : 'maxlength="25"') + ' data-pk="' + k + '"></div>').join('');
+      : '<div' + (t === 'long' ? ' class="wide"' : '') + '><label>' + esc(l) + '</label><input ' + (t === 'num' ? 'type="number" min="' + lo + '" max="' + hi + '"' : t === 'long' ? 'maxlength="480"' : 'maxlength="25"') + ' data-pk="' + k + '"></div>').join('');
+    $('#ptsCmds').innerHTML = cmdTable(cmds.filter((c) => c.pts));
     set.querySelectorAll('[data-pk]').forEach((i) => { if (document.activeElement === i) return; if (i.type === 'checkbox') i.checked = !!pc[i.dataset.pk]; else i.value = pc[i.dataset.pk]; });
     $('#ptsBank').textContent = pts.base ? '🏦 Bank: ' + pn(bankNow()) : '';
     const open = Object.keys(pts.delta).length;
@@ -1530,7 +1573,7 @@
     $('#ptsLog').innerHTML = pts.log.length ? pts.log.slice(0, 10).map((g) => '<div class="ptslog"><span class="hint">' + hhmm(g.t) + '</span> <b>' + esc(g.name) + '</b> ' +
       (g.kind === 'bank' ? '<span class="b">kraakt de bank: +' + nl(g.win) + '</span>' : g.kind === 'win' ? '<span class="w">wint +' + nl(g.win) + (g.mult > 2 ? ' (x' + g.mult + ')' : '') + '</span>' : g.kind === 'bankrupt' ? '<span class="l">bankroet: −' + nl(g.bet) + '</span>' : '<span class="l">verliest −' + nl(g.bet) + '</span>') + '</div>').join('') : '<div class="empty">Nog geen gambles deze sessie.</div>';
   }
-  $('#ptsOn').onchange = (e) => { pc.on = e.target.checked; savePc(); if (pc.on) ptsStart(); renderPts(); };
+  $('#ptsOn').onchange = (e) => { pc.on = e.target.checked; savePc(); if (pc.on) ptsStart(); renderCmds(); };
   $('#ptsQ').oninput = renderPts;
   $('#ptsFlush').onclick = async () => { if (await ptsFlush()) toast('Kijkerspunten opgeslagen op r5mod.nl.', 'ok'); else toast('Opslaan lukte niet; het staat veilig op deze pc.', 'err'); };
   $('#ptsSet').addEventListener('change', (e) => {
@@ -1538,7 +1581,7 @@
     if (!f) return;
     if (f[2] === 'check') pc[k] = i.checked;
     else if (f[2] === 'num') pc[k] = Math.max(f[4], Math.min(f[5], Math.trunc(+i.value) || 0));
-    else { const v = i.value.trim().replace(/^!+/, ''); pc[k] = (k === 'name' ? v : v.toLowerCase().replace(/[^\wÀ-ɏ-]/g, '')) || f[3]; }
+    else pc[k] = i.value.trim() || f[3];
     savePc(); renderPts();
   });
 
