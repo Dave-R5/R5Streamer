@@ -797,6 +797,7 @@
         <li><b>Emote-wall</b>: emotes uit je chat vliegen omhoog, regenen naar beneden, ploppen op of stuiteren over je scherm.</li>
         <li><b>Emote-combo</b>: spamt je chat dezelfde emote, dan verschijnt een grote teller (bijv. <b>PogChamp × 12</b>).</li>
         <li><b>Raid melding</b>: naam, profielfoto (of je eigen afbeelding) en aantal kijkers, met geluid als je wilt.</li>
+        <li><b>🎬 Aftiteling</b> (⭐ Premium): een bedankje aan het einde van je stream dat over je scherm rolt, met iedereen die doneerde, bits gaf, abonneerde, raidde, ging volgen of keek. Zet hem in een eigen OBS-scène; zet bij de bron <b>Bron vernieuwen wanneer de scène actief wordt</b> aan, dan begint hij steeds vanaf het begin.</li>
         <li><b>Emotes</b>: alle emotes van je kanaal (Twitch, 7TV, BTTV, FFZ). Klik op een emote om hem uit of aan te zetten voor de emote-wall en combo. Eigen emotes upload je in de Windows-app, of je voegt ze toe met een link.</li>
         <li>Klik op <b>📋 Kopieer OBS-link</b> en plak hem in OBS als Browserbron (1920 × 1080). De overlays werken zonder inloggen en zonder dat R5 StreamerHub open staat.</li>
       </ul>
@@ -814,8 +815,9 @@
       <summary><span class="hi">📜</span>Changelog<small>wat is er veranderd</small></summary>
       <div class="cl">
         <details class="cl-ver" open>
-          <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
+          <summary>Nieuw sinds 1.0 <small>27 okt 2026</small></summary>
           <ul>
+            <li>Nieuwe overlay <b>🎬 Aftiteling</b> (⭐ Premium, Windows-app 1.4.5): een bedankje voor het einde van je stream dat over je scherm rolt, met donateurs, bits, cadeau-subs, nieuwe abonnees, raids, nieuwe volgers en kijkers van deze stream. Per onderdeel aan of uit, eigen kopjes en teksten, en als achtergrond een kleurverloop, effen kleur, eigen afbeelding of doorzichtig. Met een eigen vaste link (overlay.html?jouwnaam/credits) voor een aparte OBS-scène.</li>
             <li><b>Emotes: bronnen kiezen</b>: bij 😀 Emotes vink je aan welke bronnen de overlays gebruiken (Twitch, 7TV, BTTV, FFZ) en of globale emotes meedoen. Eerder waren de knoppen daar alleen een filter voor de lijst, waardoor er toch alle emotes in OBS kwamen.</li>
             <li><b>Melding helemaal verbergen</b>: bij de raid-, bits-, donatie- en alerts-overlay kun je de melding (tekst, plaatje en banner) uitzetten; geluid, voorlezen en de emote-explosie blijven.</li>
             <li><b>Banner uitzetten</b>: bij Uitstraling van de raid-, bits-, donatie-, alerts- en gamble-overlay zet je met één vinkje de banner (achtergrond) uit; dan staat alleen de tekst en afbeelding op beeld.</li>
@@ -1122,15 +1124,17 @@
       const id = t['msg-id'];
       if (id === 'sub' || id === 'resub') {
         const mo = +t['msg-param-cumulative-months'] || 0;
+        credit('sub', who);
         event('sub', '⭐', who + (id === 'resub' ? ' is opnieuw geabonneerd' + (mo > 1 ? ' (' + mo + ' maanden)' : '') : ' is geabonneerd'), m.params[1] || '', { subs: 1 });
         chatAlert(id === 'resub' ? 'resub' : 'sub', { user: who, months: mo, message: m.params[1] || '' });
         ptsBonus(t['user-id'], t.login, pc.sub);
       } else if (id === 'subgift') {
-        if (!t['msg-param-origin-id'] || !giftBatch[t['msg-param-origin-id']]) { event('sub', '🎁', who + ' geeft een abonnement aan ' + (t['msg-param-recipient-display-name'] || ''), '', { gifts: 1, subs: 1 }); chatAlert('gift', { user: who, count: 1, recipient: t['msg-param-recipient-display-name'] || '' }); }
+        if (!t['msg-param-origin-id'] || !giftBatch[t['msg-param-origin-id']]) { credit('gift', who); event('sub', '🎁', who + ' geeft een abonnement aan ' + (t['msg-param-recipient-display-name'] || ''), '', { gifts: 1, subs: 1 }); chatAlert('gift', { user: who, count: 1, recipient: t['msg-param-recipient-display-name'] || '' }); }
         else if (cur) { cur.subs++; cur.gifts++; }
       } else if (id === 'submysterygift') {
         const n = +t['msg-param-mass-gift-count'] || 0;
         if (t['msg-param-origin-id']) giftBatch[t['msg-param-origin-id']] = 1;
+        credit('gift', who, n);
         event('sub', '🎁', who + ' geeft ' + n + ' abonnementen weg', '', {});
         chatAlert('gift', { user: who, count: n, recipient: '' });
       } else if (id === 'raid') raidIn(t['msg-param-displayName'] || who, +t['msg-param-viewerCount'] || 0, t['msg-param-login'] || t.login || '', t['msg-param-profileImageURL'] || '', t['user-id']);
@@ -1187,6 +1191,39 @@
     if (kind !== 'bits') chatLine({ ev: true, text: ic + ' ' + text });
     dirty();
   }
+  // aftiteling: wie er deze stream was, per soort (sub, gift, fol: naam -> aantal; view: login -> naam)
+  function credit(kind, name, n) {
+    if (!cur || !name) return;
+    const m = (cur.cr = cur.cr || {})[kind] || (cur.cr[kind] = {});
+    m[name] = (m[name] || 0) + (n || 1);
+  }
+  function creditsData(s) {
+    const d = { title: s ? s.title || '' : '', game: s ? s.game || '' : '', don: [], bits: [], sub: [], gift: [], fol: [], raid: [], view: [] };
+    if (!s) return d;
+    const cr = s.cr || {}, me = state.me ? state.me.login : '', bots = new Set(BOTS);
+    const top = (m) => Object.entries(m).sort((a, b) => b[1] - a[1]);
+    const sum = (list) => { const m = {}; list.forEach(([k, v]) => { m[k] = (m[k] || 0) + v; }); return top(m); };
+    d.don = sum((s.donations || []).map((x) => [x.name + '\u0001' + (x.cur || 'EUR'), +x.amount || 0])).map(([k, v]) => { const [n, c] = k.split('\u0001'); return [n, money(v, c)]; });
+    d.bits = sum((s.cheers || []).map((x) => [x.name, x.bits])).map(([n, v]) => [n, nl(v) + ' bits']);
+    d.gift = top(cr.gift || {}).map(([n, v]) => [n, v + (v === 1 ? ' sub' : ' subs')]);
+    d.sub = Object.keys(cr.sub || {}).map((n) => [n, '']);
+    d.fol = Object.keys(cr.fol || {}).map((n) => [n, '']);
+    d.raid = sum((s.raidsIn || []).map(([, n, name]) => [name, n])).map(([n, v]) => [n, nl(v) + ' kijkers']);
+    const seen = {};
+    Object.entries(s.chatters || {}).forEach(([l, x]) => { seen[l] = x[1]; });
+    Object.entries(cr.view || {}).forEach(([l, n]) => { if (!seen[l]) seen[l] = n; });
+    d.view = Object.entries(seen).filter(([l]) => l !== me && !bots.has(l)).map(([, n]) => n).sort((a, b) => a.localeCompare(b)).slice(0, 1500).map((n) => [n, '']);
+    return d;
+  }
+  // Windows-app: de aftiteling in OBS haalt dit op via /cr/<naam>
+  let crLast = '';
+  setInterval(() => {
+    if (!(window.r5app && window.r5app.credits) || !state.me || state.demo) return;
+    const j = JSON.stringify(creditsData(shown()));
+    if (j === crLast) return;
+    crLast = j;
+    window.r5app.credits(state.me.login, JSON.parse(j)).catch(() => { crLast = ''; });
+  }, 5000);
   function raidIn(name, n, login, avatar, id) {
     if (!cur) return;
     ptsBonus(id, login, pc.raid);
@@ -2071,6 +2108,7 @@
       if (!pts.cd['f' + ev.user_id]) { pts.cd['f' + ev.user_id] = 1; ptsBonus(ev.user_id, ev.user_login, pc.follow); }   // één keer per sessie (geen punten door steeds te ont- en hervolgen)
       if (state.followers != null) state.followers++;
       recentFollows.unshift({ user_name: ev.user_name, followed_at: ev.followed_at || new Date().toISOString() });
+      credit('fol', ev.user_name);
       event('follow', '💜', ev.user_name + ' volgt je nu', '', { follows: 1 });
       if (window.r5app && window.r5app.cmd) window.r5app.cmd(state.me.login, { kind: 'live', type: 'follow', data: { name: ev.user_name, login: ev.user_login } }).catch(() => {});
       renderDash();
@@ -2132,6 +2170,7 @@
         if (!after) break;
       }
       chatters = all.sort((a, b) => a.name.localeCompare(b.name));
+      if (cur) { const v = (cur.cr = cur.cr || {}).view || (cur.cr.view = {}); all.forEach((u) => { v[u.login] = u.name; }); }
       ptsEarn(chatters);
     } catch { chatters = null; }
     await loadRoles();
@@ -3170,7 +3209,7 @@
   const FONT_FIELD = ['font', 'Lettertype', 'select', '', [['', 'Standaard'], ...['Bangers', 'Luckiest Guy', 'Bebas Neue', 'Montserrat', 'Poppins', 'Fredoka', 'Orbitron', 'Press Start 2P', 'Permanent Marker'].map((f) => [f, f])]];
   // Premium: deze instellingen werken alleen met Premium; gratis gebruikt de overlay de standaardstijl
   const PREM_KEYS = ['color', 'tcolor', 'font', 'style', 'ranim', 'anim'];
-  const PREM_OV = ['combo', 'donation', 'gamble', 'alert'];
+  const PREM_OV = ['combo', 'donation', 'gamble', 'alert', 'credits'];
   const PREM_PILL = '<span class="prempill">⭐ Premium</span>';
   const ALERT_FIELDS = (t) => [
     ['@', 'Uitstraling'],
@@ -3195,7 +3234,7 @@
     ['ttsvol', 'Volume voorlezen', 'range', 80, [5, 100, 5, '%']],
   ];
   const ALERTS = ['raid', 'bits', 'donation'];
-  const NO_EMOTES = ALERTS.concat(['gamble']);   // overlays zonder emotes uit de chat
+  const NO_EMOTES = ALERTS.concat(['gamble', 'credits']);   // overlays zonder emotes uit de chat
   const HOLD_OV = NO_EMOTES.concat(['alert']);   // overlays met een vaste voorbeeldmelding in de editor
   // alerts (overlay 🔔 Alerts en de emote-regen in de emote-wall); moet gelijk blijven met AK in overlay.html
   const AK_DEF = [   // soort, naam, kop, tekst (variabelen), kleur, minimum
@@ -3282,7 +3321,33 @@
       ['@', 'Tijd en geluid'],
       ['dur', 'Hoe lang de uitslag op beeld blijft', 'range', 6, [3, 20, 1, 's']],
       ['sound', 'Geluid', 'select', 'chime', [['chime', 'Belletje'], ['fanfare', 'Fanfare'], ['none', 'Geen geluid']]], ['vol', 'Volume', 'range', 60, [5, 100, 5, '%']]] },
+    // scene: een eigen OBS-scène voor het einde van je stream, doet niet mee in Alles in één
+    { type: 'credits', scene: true, name: '🎬 Aftiteling', desc: 'Voor het einde van je stream: een bedankje dat over je scherm rolt, met donateurs, bits, abonnees, cadeau-subs, raids, nieuwe volgers en kijkers van deze stream. Kies wat je wilt zien en zet er je eigen achtergrond onder. Werkt via de Windows-app: die moet open staan.', fields: [
+      ['@', 'Wat tonen'],
+      ['s_don', 'Donaties', 'check', true], ['s_bits', 'Bits', 'check', true], ['s_gift', 'Cadeau-subs', 'check', true], ['s_sub', 'Nieuwe abonnees', 'check', true],
+      ['s_raid', 'Raids', 'check', true], ['s_fol', 'Nieuwe volgers', 'check', true], ['s_view', 'Kijkers (iedereen die in de chat of kijkerslijst stond)', 'check', true],
+      ['showamt', 'Bedragen en aantallen tonen', 'check', true],
+      ['@', 'Tekst'],
+      ['title', 'Titel bovenaan (leeg = geen titel)', 'text', 'Bedankt voor het kijken!'],
+      ['subt', 'Regel onder de titel ({title} = streamtitel, {game} = categorie)', 'text', '{game}'],
+      ['endt', 'Tekst aan het einde', 'text', 'Tot de volgende keer! 💜'],
+      ['@', 'Kopjes'],
+      ['l_don', 'Donaties', 'text', '💰 Donaties'], ['l_bits', 'Bits', 'text', '💎 Bits'], ['l_gift', 'Cadeau-subs', 'text', '🎁 Cadeau-subs'], ['l_sub', 'Nieuwe abonnees', 'text', '⭐ Nieuwe abonnees'],
+      ['l_raid', 'Raids', 'text', '🚀 Raids'], ['l_fol', 'Nieuwe volgers', 'text', '💜 Nieuwe volgers'], ['l_view', 'Kijkers', 'text', '🙋 Kijkers'],
+      ['@', 'Achtergrond'],
+      ['bgmode', 'Achtergrond', 'select', 'grad', [['grad', 'Kleurverloop'], ['color', 'Effen kleur'], ['image', 'Eigen afbeelding'], ['none', 'Doorzichtig (je eigen OBS-scène eronder)']]],
+      ['bgcolor', 'Kleur', 'color', '#0e0e10'], ['bgcolor2', 'Tweede kleur (kleurverloop)', 'color', '#3a1d6e'],
+      ['bgimg', 'Link naar je eigen achtergrond (png, jpg, gif of webp)', 'image', ''],
+      ['bgdim', 'Afbeelding donkerder maken', 'range', 40, [0, 90, 5, '%']],
+      ['@', 'Uitstraling'],
+      ['color', 'Kleur van de kopjes', 'color', '#9147ff'], ['tcolor', 'Tekstkleur', 'color', '#ffffff'], FONT_FIELD,
+      ['size', 'Grootte van de namen', 'range', 40, [20, 80, 2, 'px']],
+      ['@', 'Beweging'],
+      ['speed', 'Snelheid', 'range', 70, [20, 250, 5, ' px/s']],
+      ['crend', 'Na afloop', 'select', 'loop', [['loop', 'Opnieuw beginnen'], ['stop', 'Laatste tekst blijft in beeld']]],
+      ['wait', 'Pauze voor het opnieuw begint', 'range', 3, [0, 30, 1, 's']]] },
   ];
+  const OV_ALL = OVERLAYS.filter((o) => !o.scene);   // overlays die in Alles in één mee kunnen doen
   const ovCfg = store.get('ov', {});
   OVERLAYS.forEach((o) => { ovCfg[o.type] = Object.assign(Object.fromEntries(o.fields.filter((f) => f[0] !== '@').map((f) => [f[0], f[3]])), ovCfg[o.type] || {}); });
   Object.values(ovCfg).forEach((c) => { if (c && typeof c === 'object' && !Array.isArray(c)) delete c['@']; });
@@ -3313,13 +3378,14 @@
     alert: () => [['box', '🔔 Melding']],
     wall: (c) => (c.zone === 'free' ? [['area', '🧱 Emote-vlak']] : []),
     combo: (c) => (c.pos === 'free' ? [['cbx', '🔥 Combo']] : []),
+    credits: () => [],
   };
   let ovSel = store.get('ovSel', 'wall');
   const ovChan = () => (state.me && !state.demo ? state.me.login : '') || store.get('ovChan', '') || (state.demo ? 'demo' : '');
   const base = location.href.replace(/[#?].*$/, '').replace(/index\.html$/, '').replace(/\/?$/, '/');
   function ovUrl(o, extra) {
     const p = new URLSearchParams({ type: o.type, ch: ovChan() });
-    Object.entries(ovCfg[o.type]).forEach(([k, v]) => { const c = ovCfg[o.type]; if ((k === 'img' && c.imgmode !== 'custom') || (k === 'area' && c.zone !== 'free') || (k === 'cbx' && c.pos !== 'free')) return; p.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : /^(t?color|c_\w+)$/.test(k) ? String(v).replace('#', '') : v); });
+    Object.entries(ovCfg[o.type]).forEach(([k, v]) => { const c = ovCfg[o.type]; if ((k === 'img' && c.imgmode !== 'custom') || (k === 'bgimg' && c.bgmode !== 'image') || (k === 'area' && c.zone !== 'free') || (k === 'cbx' && c.pos !== 'free')) return; p.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : /^(t?color|c_\w+|bgcolor2?)$/.test(k) ? String(v).replace('#', '') : v); });
     if (!NO_EMOTES.includes(o.type) && ovCfg.off.length) p.set('off', ovCfg.off.join(' '));
     if (!NO_EMOTES.includes(o.type) && ovCfg.cem.length) p.set('cem', ovCfg.cem.map((c) => c.name + '|' + c.url).join(' '));
     if (!NO_EMOTES.includes(o.type)) {
@@ -3362,7 +3428,7 @@
   function premOvNote(o) {
     if (isPrem()) return '';
     const get = '<a href="' + PREM_URL + '" target="_blank" rel="noopener">Premium nemen op r5mod.nl</a>';
-    if (PREM_OV.includes(o.type)) return '<div class="premnote">⭐ ' + ({ combo: 'De emote-combo', donation: 'De donatie-melding', gamble: 'De gamble-overlay', alert: 'De alert-overlay' }[o.type]) + ' is <b>Premium</b>: zonder Premium blijft hij leeg in OBS. ' + get + '.</div>';
+    if (PREM_OV.includes(o.type)) return '<div class="premnote">⭐ ' + ({ combo: 'De emote-combo', donation: 'De donatie-melding', gamble: 'De gamble-overlay', alert: 'De alert-overlay', credits: 'De aftiteling' }[o.type]) + ' is <b>Premium</b>: zonder Premium blijft hij leeg in OBS. ' + get + '.</div>';
     return '<div class="premnote">Gratis: standaardstijl met een klein R5Mod-label. Eigen kleuren, lettertypes en animaties, en geen label, met ⭐ <b>Premium</b>. ' + get + '.</div>';
   }
   // elk kopje ('@') wordt een inklapbaar vak; welke open staan, onthouden we per overlay
@@ -3383,7 +3449,7 @@
     if (k === '@') return '<div class="fsec">' + l + '</div>';
     const id = 'f-' + o.type + '-' + k, v = ovCfg[o.type][k];
     if (PREM_KEYS.includes(k) && !isPrem() && !free) return '<label for="' + id + '">' + l + PREM_PILL + '</label>' + fieldHtml(o, [k, '', t, , x], true).replace(/^<label[^>]*><\/label>/, '').replace(/ data-k="/, ' disabled data-k="');
-    const hide = k === 'img' && ovCfg[o.type].imgmode !== 'custom' ? ' hidden' : '';
+    const hide = (k === 'img' && ovCfg[o.type].imgmode !== 'custom') || (k === 'bgimg' && ovCfg[o.type].bgmode !== 'image') ? ' hidden' : '';
     if (t === 'select') return '<label for="' + id + '">' + l + '</label><select id="' + id + '" data-k="' + k + '">' + x.map(([val, lab]) => '<option value="' + val + '"' + (val === v ? ' selected' : '') + '>' + lab + '</option>').join('') + '</select>';
     if (t === 'range') return '<label for="' + id + '">' + l + '</label><div class="rng"><input type="range" id="' + id + '" data-k="' + k + '" min="' + x[0] + '" max="' + x[1] + '" step="' + x[2] + '" value="' + v + '"><output data-u="' + x[3] + '">' + v + x[3] + '</output></div>';
     if (t === 'check') return '<label class="chk"><input type="checkbox" data-k="' + k + '"' + (v ? ' checked' : '') + '> ' + l + '</label>';
@@ -3401,8 +3467,9 @@
         ovCfg[o.type][k] = inp.type === 'checkbox' ? inp.checked : inp.type === 'range' ? +inp.value : inp.value.trim();
         if (inp.type === 'range') inp.nextElementSibling.textContent = inp.value + inp.nextElementSibling.dataset.u;
         if (k === 'imgmode') card.querySelector('[data-imgbox]').hidden = inp.value !== 'custom';
+        if (k === 'bgmode') card.querySelector('[data-imgbox]').hidden = inp.value !== 'image';
         if (k === 'clip' || k === 'zone' || k === 'pos') drawVedit(card);
-        if (k === 'img') { const pv = card.querySelector('[data-imgpv]'); if (/^https:\/\//.test(inp.value.trim())) pv.src = inp.value.trim(); else pv.removeAttribute('src'); }
+        if (k === 'img' || k === 'bgimg') { const pv = card.querySelector('[data-imgpv]'); if (/^https:\/\//.test(inp.value.trim())) pv.src = inp.value.trim(); else pv.removeAttribute('src'); }
         store.set('ov', ovCfg);
         clearTimeout(card.t); card.t = setTimeout(() => refreshOverlay(o, true), 400);
       });
@@ -3415,7 +3482,9 @@
     card.querySelector('[data-a=copy]').onclick = async () => {
       if (!ovChan() || ovChan() === 'demo') return toast('Vul eerst je kanaalnaam in.', 'err');
       if (HOLD_OV.includes(o.type) && ovCfg[o.type].imgmode === 'custom' && !/^https:\/\//.test(ovCfg[o.type].img)) return toast('Plak eerst een link (https://…) naar je afbeelding, of kies een andere afbeelding.', 'err');
-      const url = ovUrl(o);
+      if (o.type === 'credits' && ovCfg.credits.bgmode === 'image' && !/^https:\/\//.test(ovCfg.credits.bgimg)) return toast('Plak eerst een link (https://…) naar je achtergrond, of kies een andere achtergrond.', 'err');
+      if (o.type === 'credits') syncFixed();
+      const url = o.type === 'credits' && appFixed ? fixedUrl('credits') : ovUrl(o);
       try { await navigator.clipboard.writeText(url); toast('Link gekopieerd. Plak hem in OBS als Browserbron (1920 × 1080).', 'ok'); }
       catch { prompt('Kopieer deze link:', url); }
     };
@@ -3487,7 +3556,7 @@
     const f = card.querySelector('iframe');
     if (!f) return;
     const okCh = ovChan() && ovChan() !== 'demo';
-    card.querySelector('.link').textContent = okCh ? ovUrl(o) : (ovChan() === 'demo' ? 'In de demo is er geen echte link: vul bovenaan je eigen kanaalnaam in.' : 'Vul bovenaan je kanaalnaam in om de link te maken.');
+    card.querySelector('.link').textContent = okCh ? (o.type === 'credits' && appFixed ? fixedUrl('credits') : ovUrl(o)) : (ovChan() === 'demo' ? 'In de demo is er geen echte link: vul bovenaan je eigen kanaalnaam in.' : 'Vul bovenaan je kanaalnaam in om de link te maken.');
     const loop = card.querySelector('[data-a=loop]').checked;
     const src = ovUrl(o, Object.assign({ preview: '1' }, loop ? { test: '1' } : HOLD_OV.includes(o.type) ? { hold: '1' } : {}, okCh ? {} : { ch: '' }));
     if ((force || f.dataset.src !== src) && state.page === 'overlays') { f.dataset.src = src; f.src = src; }
@@ -3503,25 +3572,28 @@
   if (!ovCfg.all.alert) { ovCfg.all.alert = 1; if (!ovCfg.all.skip.includes('alert')) ovCfg.all.skip.push('alert'); }
   const allUrl = (extra) => {
     const p = new URLSearchParams({ type: 'all', ch: ovChan() });
-    OVERLAYS.filter((o) => !ovCfg.all.skip.includes(o.type)).forEach((o) => { const q = new URLSearchParams(ovUrl(o).split('?')[1]); q.delete('type'); q.delete('ch'); p.set('o.' + o.type, q.toString()); });
+    OV_ALL.filter((o) => !ovCfg.all.skip.includes(o.type)).forEach((o) => { const q = new URLSearchParams(ovUrl(o).split('?')[1]); q.delete('type'); q.delete('ch'); p.set('o.' + o.type, q.toString()); });
     Object.entries(extra || {}).forEach(([k, v]) => p.set(k, v));
     return base + 'overlay.html?' + p.toString();
   };
   // vaste link via de Windows-app: overlay.html?<naam>/alerts; de app bewaart de instellingen, de site houdt ze bij
   const appFixed = !!(window.r5app && window.r5app.overlay);
-  const fixedUrl = () => base + 'overlay.html?' + ovChan() + '/alerts';
-  let fixedLast = '';
+  // de aftiteling heeft een eigen vaste link: overlay.html?<naam>/credits
+  const fixedUrl = (kind) => base + 'overlay.html?' + ovChan() + '/' + (kind || 'alerts');
+  const fixedLast = {};
   const syncFixed = () => {
     if (!appFixed || !ovChan() || ovChan() === 'demo') return;
-    const q = allUrl().split('?')[1];
-    if (q === fixedLast) return;
-    fixedLast = q;
-    window.r5app.overlay(ovChan(), 'alerts', q).catch(() => { fixedLast = ''; });
+    [['alerts', allUrl()], ['credits', ovUrl(OVERLAYS.find((o) => o.type === 'credits'))]].forEach(([kind, url]) => {
+      const q = url.split('?')[1];
+      if (q === fixedLast[kind]) return;
+      fixedLast[kind] = q;
+      window.r5app.overlay(ovChan(), kind, q).catch(() => { fixedLast[kind] = ''; });
+    });
   };
   if (appFixed) setInterval(syncFixed, 2000);
   function renderAllEditor(box) {
     box.innerHTML = '<div class="card ov"><div class="f"><h3>🧩 Alles in één</h3><div class="hint">Eén browserbron in OBS (1920 × 1080) met alles wat je aanvinkt. Elke overlay stel je in bij zijn eigen tegel; deze link neemt die instellingen mee. Na een wijziging kopieer je de link opnieuw.</div>' +
-      '<div class="fsec">Doet mee</div>' + OVERLAYS.map((o) => '<label class="chk"><input type="checkbox" data-inc="' + o.type + '"' + (ovCfg.all.skip.includes(o.type) ? '' : ' checked') + '> ' + o.name + '</label>').join('') +
+      '<div class="fsec">Doet mee</div>' + OV_ALL.map((o) => '<label class="chk"><input type="checkbox" data-inc="' + o.type + '"' + (ovCfg.all.skip.includes(o.type) ? '' : ' checked') + '> ' + o.name + '</label>').join('') +
       '<p class="hint">Komen er later nieuwe meldingen bij, dan staan ze hier ook en doen ze vanzelf mee. Vink je <b>🔔 Alerts</b> aan, zet dan de losse Raid, Bits en Donatie meldingen uit, anders zie je die dubbel.</p></div>' +
       '<div><div class="pv"><iframe title="Voorbeeld" allow="autoplay; fullscreen"></iframe></div><div class="acts"><button data-a="test">▶ Test</button><button data-a="live" title="Speelt een test van alles af in OBS (via de Windows-app)">📡 Test live</button><label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-a="loop"> doorlopend testen</label>' +
       '<button class="primary" data-a="copy" style="margin-left:auto">📋 Kopieer OBS-link</button></div><div class="link"></div>' +
@@ -3543,7 +3615,7 @@
     card.querySelector('[data-a=test]').onclick = () => { try { f.contentWindow.postMessage({ r5: 'test' }, location.origin); } catch {} };
     card.querySelector('[data-a=copy]').onclick = async () => {
       if (!ovChan() || ovChan() === 'demo') return toast('Vul eerst je kanaalnaam in.', 'err');
-      if (OVERLAYS.every((o) => ovCfg.all.skip.includes(o.type))) return toast('Vink minstens één overlay aan.', 'err');
+      if (OV_ALL.every((o) => ovCfg.all.skip.includes(o.type))) return toast('Vink minstens één overlay aan.', 'err');
       syncFixed();
       const url = appFixed ? fixedUrl() : allUrl();
       try { await navigator.clipboard.writeText(url); toast('Link gekopieerd. Plak hem in OBS als Browserbron (1920 × 1080).', 'ok'); }
