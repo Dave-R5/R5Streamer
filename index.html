@@ -299,6 +299,9 @@
   .carow { display: grid; grid-template-columns: 170px 1fr 160px; gap: 8px 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
   .carow input[type=text] { width: 100%; box-sizing: border-box; }
   .carow .cav { grid-column: 2 / -1; font-size: 11px; color: var(--muted); margin-top: -4px; }
+  .tmrow { display: grid; grid-template-columns: auto 1fr auto auto auto auto; gap: 8px 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+  .tmrow input[type=text] { width: 100%; box-sizing: border-box; } .tmrow input[type=number] { width: 60px; } .tmrow .tmn { display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+  @media (max-width: 700px) { .tmrow { grid-template-columns: auto 1fr; } .tmrow input[type=text] { grid-column: 2; } }
   .carow .camin { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); } .carow .camin input { width: 70px; }
   @media (max-width: 700px) { .carow { grid-template-columns: 1fr; } .carow .cav { grid-column: 1; } }
   .chat .m .u { cursor: pointer; } .chat .m .u:hover { text-decoration: underline; }
@@ -550,6 +553,15 @@
         <p class="hint" style="margin:6px 0 0">Een automatisch bericht in je chat bij een follow, abonnement, bits, raid of donatie, bijvoorbeeld "Bedankt voor de follow, ${user}!". Heb je dit ook bij StreamElements aan staan? Zet het daar dan uit.</p>
         <div id="caList"></div>
       </details>
+      <details class="card s12 mod" data-mod="timers">
+        <summary><b>⏱ Timers</b><span class="hint" data-modsum="timers"></span></summary>
+        <div class="ovhead" style="margin-top:10px">
+          <label class="chk" style="margin:0"><input type="checkbox" id="tmOn"> <b>Timers aan</b></label>
+          <button class="primary" id="tmNew" style="margin-left:auto">＋ Nieuwe timer</button>
+        </div>
+        <p class="hint" style="margin:6px 0 0">Berichten die vanzelf terugkomen in je chat, bijvoorbeeld elke 15 minuten je Discord-link. Alleen als je live bent. Met <b>na … chatberichten</b> wacht een timer tot er genoeg in de chat gezegd is, zodat een stille chat niet volloopt met alleen timers. Er gaat hooguit één timer per minuut. Je kunt dezelfde variabelen gebruiken als bij Chat commands, zoals <code>${channel}</code>, <code>${game}</code> en <code>${uptime}</code>.</p>
+        <div id="tmList"></div>
+      </details>
       <details class="card s12 mod" data-mod="pts">
         <summary><b>🪙 Kijkerspunten en gamble</b><span class="hint" data-modsum="pts"></span></summary>
         <div class="ovhead" style="margin-top:10px">
@@ -598,7 +610,7 @@
         <div id="premState"></div>
         <div class="premcols">
           <div><b>Gratis</b><ul><li>Live-status, kijkers, volgers, subs, bits en raids</li><li>Chat in het overzicht</li><li>Emote-wall en raid melding in standaardstijl</li></ul></div>
-          <div><b>⭐ Premium</b><ul><li>Live donaties via StreamElements en TipeeeStream, in één overzicht</li><li>Emote-combo-overlay (en de donatie-melding)</li><li>Eigen kleuren, lettertypes en animaties voor overlays</li><li>Overlays zonder R5Mod-label</li><li>Voorrang bij support</li></ul></div>
+          <div><b>⭐ Premium</b><ul><li>Live donaties via StreamElements en TipeeeStream, in één overzicht</li><li>Emote-combo-overlay, donatie-melding en 🔔 Alerts-overlay met emote-explosie</li><li>Eigen kleuren, lettertypes en animaties voor overlays</li><li>Overlays zonder R5Mod-label</li><li>Voorrang bij support</li></ul></div>
         </div>
         <div class="row" style="justify-content:flex-start;margin-top:10px"><a class="btn" href="https://r5mod.nl/" target="_blank" rel="noopener">⭐ Premium op r5mod.nl</a><button id="premRefresh">Status vernieuwen</button></div>
       </div>
@@ -795,6 +807,9 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
+            <li><b>🔔 Alerts-overlay</b> (⭐ Premium): één melding voor follow, sub, resub, cadeau-subs, bits, raid en donatie, per alert met eigen kop, tekst, kleur, geluid en minimum, en een <b>💥 emote-explosie</b> met de emotes van je kanaal of je eigen lijst.</li>
+            <li><b>🧱 Emote-wall bij alerts</b>: zet een emote-regen aan bij alerts en kies per alert (follow, sub, bits, raid …) of de wall erop reageert.</li>
+            <li><b>⏱ Timers</b> in 🧩 Modules: berichten die elke zoveel minuten vanzelf in je chat terugkomen, alleen als je live bent en pas na genoeg chatberichten.</li>
             <li><b>Rustigere bovenbalk</b>: ▦ Netjes schikken, ✎ Indeling en ▣ Eigen indeling zitten samen in <b>🖌 Personaliseer</b>. Je naam staat niet meer in de balk: klik op je <b>profielfoto</b> voor ⚙ Instellingen, ⭐ Premium en Uitloggen.</li>
             <li><b>☁ Cloud-sync via je Twitch-account</b>: indeling, instellingen, overlays, commands, kijkersnotities en streamgeschiedenis zijn op elke pc en in elke browser hetzelfde zodra je inlogt. Staat standaard aan, uitzetten kan bij ⚙ Instellingen → Gegevens. Je inlog en de sleutels van StreamElements en TipeeeStream gaan nooit mee; streams ouder dan 90 dagen worden opgeschoond.</li>
             <li><b>Verplichte update</b> in de Windows-app: staat er bij het opstarten een nieuwe versie klaar, dan wordt die eerst gedownload en geïnstalleerd voordat je verder kunt.</li>
@@ -907,7 +922,7 @@
 
   // ---------- opslag ----------
   // Cloud-sync via r5mod.nl (zie syncPull/syncPush). Nooit token of de StreamElements-/TipeeeStream-sleutels.
-  const SYNC_KEYS = ['layout', 'opts', 'ov', 'ovSel', 'ovChan', 'cmds', 'cmdOn', 'calerts', 'notes', 'sessions', 'ptscfg', 'robAlias', 'integ', 'twChat', 'ucardPos', 'modOpen'];
+  const SYNC_KEYS = ['layout', 'opts', 'ov', 'ovSel', 'ovChan', 'cmds', 'cmdOn', 'calerts', 'notes', 'sessions', 'ptscfg', 'robAlias', 'integ', 'twChat', 'ucardPos', 'modOpen', 'timers'];
   const twSync = { dirty: new Set(), t: null, busy: false, at: {}, st: '' };
   const store = {
     get(k, d) { try { const v = localStorage.getItem('r5s.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -1133,6 +1148,7 @@
 
   function chatMsg(login, name, text, emTag, bits, color, badges, tags) {
     chatLine({ name: name || login, login, text, emotes: emTag, bits, color, badges });
+    if (!(state.me && login === state.me.login) && login !== 'demo') tmChat++;
     runCmd(login, name, text, badges, tags);
     if (!cur) return;
     cur.msgs++;
@@ -1332,7 +1348,7 @@
   function renderCmds() {
     $('#cmdOn').checked = cmdOn;
     $('[data-modsum=cmds]').textContent = cmdOn ? cmds.filter((c) => c.on).length + ' commands aan' : 'uit';
-    renderCa(); renderPts();
+    renderCa(); renderTm(); renderPts();
     $('#cmdState').textContent = !cmdOn ? 'staat uit' : state.demo ? 'aan (demo: antwoorden komen in de demo-chat)' : !state.me ? 'log in om te antwoorden' : !hasScope('user:write:chat') ? 'log opnieuw in (chat sturen)' : '✓ antwoordt in je chat';
     $('#cmdF').innerHTML = [['all', 'Alle'], ['own', 'Eigen'], ['def', 'Standaard']].map(([k, l]) => '<button data-cf="' + k + '" class="' + (cmdFilter === k ? 'on' : '') + '">' + l + '</button>').join('');
     const q = $('#cmdQ').value.trim().toLowerCase().replace(/^!/, '');
@@ -1439,6 +1455,57 @@
     saveCa(); renderCa();
   });
   $('#caList').addEventListener('input', (e) => { const k = e.target.dataset.cat; if (k) { ca[k].text = e.target.value; saveCa(); } });
+  // ---------- timers: berichten die elke … minuten terugkomen in de chat ----------
+  // Elke timer: { id, on, msg, every (min), lines (min. chatberichten sinds de vorige keer) }
+  const timers = Object.assign({ on: false, list: [{ id: 't1', on: false, msg: 'Vind je de stream leuk? Volg ${channel} dan, dan mis je niets! 💜', every: 15, lines: 5 }] }, store.get('timers', {}));
+  if (!Array.isArray(timers.list)) timers.list = [];
+  const saveTm = () => store.set('timers', timers);
+  const tmState = {};   // id -> { last, at } (tijd en chatteller van de vorige keer)
+  let tmChat = 0, tmLastSent = 0;
+  function tmSend(t) {
+    const out = cmdVars({ resp: t.msg, uses: 0 }, (state.me && state.me.login) || 'jij', (state.user && state.user.display_name) || 'jij', []).replace(/\s+/g, ' ').trim();
+    if (!out) return;
+    cmdSent.push({ text: out, t: Date.now() }); if (cmdSent.length > 20) cmdSent.shift();
+    sendChat(out);
+    tmState[t.id] = { last: Date.now(), at: tmChat }; tmLastSent = Date.now();
+  }
+  setInterval(() => {
+    if (!timers.on || !cur || (!state.me && !state.demo)) return;
+    const now = Date.now();
+    timers.list.forEach((t) => { if (!tmState[t.id]) tmState[t.id] = { last: now, at: tmChat }; });   // eerste keer pas na de ingestelde tijd
+    if (now - tmLastSent < 60000) return;
+    const due = timers.list.filter((t) => t.on && t.msg.trim() && now - tmState[t.id].last >= t.every * 60000 && tmChat - tmState[t.id].at >= (t.lines || 0))
+      .sort((a, b) => tmState[a.id].last - tmState[b.id].last)[0];
+    if (due) tmSend(due);
+  }, 15000);
+  function renderTm() {
+    $('#tmOn').checked = timers.on;
+    $('#tmList').innerHTML = timers.list.length ? timers.list.map((t) => '<div class="tmrow" data-tm="' + t.id + '"><input type="checkbox" data-tk="on"' + (t.on ? ' checked' : '') + ' title="Aan/uit">' +
+      '<input type="text" data-tk="msg" value="' + esc(t.msg) + '" maxlength="480" placeholder="Bericht, bijv. Join mijn Discord: https://discord.gg/…">' +
+      '<span class="tmn">elke <input type="number" min="1" max="720" step="1" data-tk="every" value="' + t.every + '"> min</span>' +
+      '<span class="tmn">na <input type="number" min="0" max="500" step="1" data-tk="lines" value="' + t.lines + '"> chatberichten</span>' +
+      '<button data-tk="now" title="Nu in de chat zetten">▶ Nu</button><button data-tk="del" title="Verwijderen">✕</button></div>').join('')
+      : '<p class="hint">Nog geen timers. Klik op ＋ Nieuwe timer.</p>';
+    $('[data-modsum=timers]').textContent = timers.on ? timers.list.filter((t) => t.on).length + ' aan' : 'uit';
+  }
+  $('#tmOn').onchange = (e) => { timers.on = e.target.checked; saveTm(); renderTm(); };
+  $('#tmNew').onclick = () => { timers.list.push({ id: 't' + Date.now().toString(36), on: true, msg: '', every: 15, lines: 5 }); saveTm(); renderTm(); const i = $('#tmList .tmrow:last-child [data-tk=msg]'); if (i) i.focus(); };
+  $('#tmList').addEventListener('change', (e) => {
+    const row = e.target.closest('[data-tm]'), k = e.target.dataset.tk, t = row && timers.list.find((x) => x.id === row.dataset.tm);
+    if (!t || !k) return;
+    if (k === 'on') t.on = e.target.checked;
+    if (k === 'every') t.every = Math.max(1, Math.min(720, Math.round(+e.target.value) || 15));
+    if (k === 'lines') t.lines = Math.max(0, Math.min(500, Math.round(+e.target.value) || 0));
+    saveTm(); renderTm();
+  });
+  $('#tmList').addEventListener('input', (e) => { const row = e.target.closest('[data-tm]'); if (!row || e.target.dataset.tk !== 'msg') return; const t = timers.list.find((x) => x.id === row.dataset.tm); if (t) { t.msg = e.target.value; saveTm(); } });
+  $('#tmList').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-tk]'), row = b && b.closest('[data-tm]'), t = row && timers.list.find((x) => x.id === row.dataset.tm);
+    if (!t) return;
+    if (b.dataset.tk === 'del' && confirm('Deze timer verwijderen?')) { timers.list = timers.list.filter((x) => x !== t); saveTm(); renderTm(); }
+    if (b.dataset.tk === 'now') { if (!state.me && !state.demo) return toast('Log eerst in.', 'err'); if (!t.msg.trim()) return toast('Typ eerst een bericht.', 'err'); tmSend(t); toast('Timer in de chat gezet.', 'ok'); }
+  });
+
   // ---------- kijkerspunten en gamble (alleen in de Windows-app) ----------
   // De saldo's staan op r5mod.nl. Bij het openen haalt de app ze op; tijdens de stream gaat alles lokaal (een bestand op de pc,
   // via de app) en als de stream stopt of de app sluit, gaan in één keer de verschillen naar r5mod.nl. Pas als r5mod.nl dat
@@ -1992,6 +2059,7 @@
       if (state.followers != null) state.followers++;
       recentFollows.unshift({ user_name: ev.user_name, followed_at: ev.followed_at || new Date().toISOString() });
       event('follow', '💜', ev.user_name + ' volgt je nu', '', { follows: 1 });
+      if (window.r5app && window.r5app.cmd) window.r5app.cmd(state.me.login, { kind: 'live', type: 'follow', data: { name: ev.user_name, login: ev.user_login } }).catch(() => {});
       renderDash();
     } else if (type === 'channel.channel_points_custom_reward_redemption.add') {
       event('redeem', '🎁', ev.user_name + ' wisselde in: ' + ((ev.reward || {}).title || 'beloning') + ((ev.reward || {}).cost ? ' (' + nl(ev.reward.cost) + ' punten)' : ''), ev.user_input || '', { redeems: 1 });
@@ -3089,7 +3157,7 @@
   const FONT_FIELD = ['font', 'Lettertype', 'select', '', [['', 'Standaard'], ...['Bangers', 'Luckiest Guy', 'Bebas Neue', 'Montserrat', 'Poppins', 'Fredoka', 'Orbitron', 'Press Start 2P', 'Permanent Marker'].map((f) => [f, f])]];
   // Premium: deze instellingen werken alleen met Premium; gratis gebruikt de overlay de standaardstijl
   const PREM_KEYS = ['color', 'tcolor', 'font', 'style', 'ranim', 'anim'];
-  const PREM_OV = ['combo', 'donation', 'gamble'];
+  const PREM_OV = ['combo', 'donation', 'gamble', 'alert'];
   const PREM_PILL = '<span class="prempill">⭐ Premium</span>';
   const ALERT_FIELDS = (t) => [
     ['@', 'Uitstraling'],
@@ -3115,12 +3183,27 @@
   ];
   const ALERTS = ['raid', 'bits', 'donation'];
   const NO_EMOTES = ALERTS.concat(['gamble']);   // overlays zonder emotes uit de chat
+  const HOLD_OV = NO_EMOTES.concat(['alert']);   // overlays met een vaste voorbeeldmelding in de editor
+  // alerts (overlay 🔔 Alerts en de emote-regen in de emote-wall); moet gelijk blijven met AK in overlay.html
+  const AK_DEF = [   // soort, naam, kop, tekst (variabelen), kleur, minimum
+    ['follow', '💜 Follow', 'Nieuwe volger!', 'volgt je nu!', '', '#9147ff', null],
+    ['sub', '⭐ Sub', 'Nieuwe sub!', 'is nu abonnee!', '', '#f5a623', null],
+    ['resub', '⭐ Resub', 'Resub!', 'is al {months} maanden abonnee!', ', {months} = maanden', '#f5a623', null],
+    ['gift', '🎁 Cadeau-subs', 'Cadeau-subs!', 'geeft {count} abonnement(en) weg!', ', {count} = aantal', '#e0457b', ['Melding vanaf (aantal subs)', 1, [1, 100, 1, '']]],
+    ['bits', '💎 Bits', 'Bits!', 'gaf {bits} bits!', ', {bits} = aantal', '#1f9cff', ['Melding vanaf (bits)', 1, [1, 5000, 1, '']]],
+    ['raid', '🚀 Raid', 'Raid!', '{viewers} kijkers komen binnen!', ', {viewers} = kijkers', '#9147ff', ['Melding vanaf (kijkers)', 1, [1, 500, 1, '']]],
+    ['donation', '💰 Donatie', 'Donatie!', 'doneerde {amount}!', ', {amount} = bedrag', '#00b87a', ['Melding vanaf (bedrag)', 1, [0, 100, 0.5, '']]],
+  ];
   const OVERLAYS = [
     { type: 'wall', name: '🧱 Emote-wall', desc: 'Emotes uit je chat verschijnen op je scherm.', fields: [
       ['zone', 'Plek op het scherm', 'select', 'full', [['full', 'Hele scherm'], ['free', 'Vrije keuze (sleep het vak in het voorbeeld)']]],
       ['anim', 'Beweging', 'select', 'rise', [['rise', 'Omhoog zweven'], ['rain', 'Naar beneden regenen'], ['pop', 'Opploppen op een plek'], ['bounce', 'Stuiteren over het scherm']]],
       ['size', 'Grootte', 'range', 72, [24, 200, 4, 'px']], ['dur', 'Hoe lang op beeld', 'range', 6, [2, 20, 1, 's']],
-      ['per', 'Maximaal per bericht', 'range', 5, [1, 20, 1, '']], ['max', 'Maximaal tegelijk op beeld', 'range', 60, [5, 200, 5, '']]] },
+      ['per', 'Maximaal per bericht', 'range', 5, [1, 20, 1, '']], ['max', 'Maximaal tegelijk op beeld', 'range', 60, [5, 200, 5, '']],
+      ['@', 'Bij alerts'],
+      ['onalert', 'Emote-regen bij alerts (emotes van je kanaal en uit het bericht)', 'check', false],
+      ['alertn', 'Aantal emotes per alert', 'range', 30, [5, 150, 5, '']],
+      ...AK_DEF.map(([k, n]) => ['w_' + k, 'Reageert op ' + n, 'check', true])] },
     { type: 'combo', name: '🔥 Emote-combo', desc: 'Spamt je chat dezelfde emote, dan verschijnt een grote teller.', fields: [
       ['pos', 'Plek op het scherm', 'select', 'br', [['br', 'Rechtsonder'], ['bl', 'Linksonder'], ['tr', 'Rechtsboven'], ['tl', 'Linksboven'], ['tc', 'Boven in het midden'], ['c', 'Midden'], ['free', 'Vrije keuze (sleep het vak in het voorbeeld)']]],
       ['size', 'Grootte', 'range', 90, [40, 240, 5, 'px']], ['min', 'Combo vanaf', 'range', 4, [2, 20, 1, '×']],
@@ -3146,6 +3229,36 @@
       ['clipdur', 'Clip maximaal', 'range', 20, [5, 60, 1, 's']], ['clipsnd', 'Clip met geluid', 'check', true]] },
     { type: 'bits', name: '💎 Bits melding', desc: 'Een melding als iemand bits geeft, met het bericht erbij en als je wilt voorgelezen (TTS). Plek en grootte sleep je in het voorbeeld.', fields: ALERT_FIELDS('bits') },
     { type: 'donation', name: '💰 Donatie melding', desc: 'Een melding bij een donatie via StreamElements of TipeeeStream (Koppelingen in ⚙ Instellingen), met voorlezen (TTS). Werkt via de Windows-app: die moet open staan.', fields: ALERT_FIELDS('donation') },
+    { type: 'alert', name: '🔔 Alerts', desc: 'Eén melding voor follow, sub, cadeau-subs, bits, raid en donatie, per alert helemaal aan te passen, met emote-explosie. Follows en donaties gaan via de Windows-app.', fields: [
+      ['@', 'Uitstraling'],
+      ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]],
+      ['tcolor', 'Tekstkleur', 'color', '#ffffff'], FONT_FIELD,
+      ['rocket', 'Versiering (💜 ⭐ 🎁 💎 🚀 💰)', 'check', true],
+      ['imgmode', 'Afbeelding', 'select', 'avatar', [['avatar', 'Profielfoto'], ['custom', 'Eigen afbeelding'], ['none', 'Geen afbeelding']]],
+      ['img', 'Link naar je eigen afbeelding (png, jpg, gif of webp)', 'image', ''],
+      ['showmsg', 'Bericht tonen in de melding (sub, bits, donatie)', 'check', true],
+      ['@', 'Binnenkomst'],
+      ['ranim', 'Binnenkomen', 'select', 'pop', [['pop', 'Inploppen'], ['zoom', 'Inzoomen'], ['fade', 'Infaden'], ['top', 'Van boven'], ['bottom', 'Van onder'], ['left', 'Van links'], ['right', 'Van rechts']]],
+      ['dur', 'Hoe lang op beeld', 'range', 8, [3, 30, 1, 's']], ['vol', 'Volume geluid', 'range', 60, [5, 100, 5, '%']],
+      ['@', '💥 Emote-explosie'],
+      ['boom', 'Emote-explosie bij een alert', 'check', true],
+      ['boomn', 'Aantal emotes', 'range', 40, [5, 150, 5, '']], ['boomsize', 'Grootte', 'range', 72, [24, 200, 4, 'px']],
+      ['boomsrc', 'Welke emotes', 'select', 'chan', [['chan', 'Van je kanaal (7TV, BTTV, FFZ, eigen) en uit het bericht'], ['list', 'Alleen deze emotes (hieronder)']]],
+      ['boomlist', 'Eigen lijst (namen met een spatie ertussen)', 'text', ''],
+      ['@', 'Voorlezen (TTS)'],
+      ['tts', 'Bericht laten voorlezen', 'check', false],
+      ['ttslang', 'Stem', 'select', 'nl', [['nl', 'Nederlands'], ['en', 'Engels'], ['de', 'Duits'], ['fr', 'Frans'], ['es', 'Spaans']]],
+      ['ttsvol', 'Volume voorlezen', 'range', 80, [5, 100, 5, '%']],
+      ...AK_DEF.flatMap(([k, n, title, text, vars, color, min]) => [
+        ['@', n],
+        ['a_' + k, 'Aan', 'check', true],
+        ['t_' + k, 'Kop', 'text', title],
+        ['x_' + k, 'Tekst onder de naam ({name} = naam' + vars + ')', 'text', text],
+        ...(min ? [['m_' + k, min[0], 'range', min[1], min[2]]] : []),
+        ['c_' + k, 'Kleur', 'color', color],
+        ['s_' + k, 'Geluid', 'select', k === 'raid' || k === 'gift' ? 'fanfare' : 'chime', [['chime', 'Belletje'], ['fanfare', 'Fanfare'], ['none', 'Geen geluid']]],
+        ['b_' + k, 'Emote-explosie', 'check', true],
+      ])] },
     { type: 'gamble', name: '🎰 Gamble', desc: 'De uitslag van !gamble op je scherm: winst met munten-regen, verlies, bankroet bij all-in en de bank kraken, met een bank-teller. Zet de kijkerspunten aan bij 🧩 Modules. Werkt via de Windows-app: die moet open staan.', fields: [
       ['@', 'Uitstraling'],
       ['color', 'Randkleur tijdens het draaien', 'color', '#9147ff'], FONT_FIELD,
@@ -3170,6 +3283,7 @@
   delete ovCfg.raid.size;
   ['bits', 'donation'].forEach((t, i) => { if (!ovCfg[t].box) ovCfg[t].box = i ? '560,310,800,200' : '560,90,800,200'; });
   if (!ovCfg.gamble.box) ovCfg.gamble.box = '660,250,600,440';
+  if (!ovCfg.alert.box) ovCfg.alert.box = '560,90,800,200';
   if (!ovCfg.wall.area) ovCfg.wall.area = '460,140,1000,800';   // emote-wall: eigen vak
   if (!ovCfg.combo.cbx) ovCfg.combo.cbx = '1380,820,480,200';  // combo: eigen vak
   // vakken die je in het voorbeeld kunt slepen, per overlay
@@ -3178,6 +3292,7 @@
     bits: () => [['box', '💎 Melding']],
     donation: () => [['box', '💰 Melding']],
     gamble: () => [['box', '🎰 Uitslag']],
+    alert: () => [['box', '🔔 Melding']],
     wall: (c) => (c.zone === 'free' ? [['area', '🧱 Emote-vlak']] : []),
     combo: (c) => (c.pos === 'free' ? [['cbx', '🔥 Combo']] : []),
   };
@@ -3186,7 +3301,7 @@
   const base = location.href.replace(/[#?].*$/, '').replace(/index\.html$/, '').replace(/\/?$/, '/');
   function ovUrl(o, extra) {
     const p = new URLSearchParams({ type: o.type, ch: ovChan() });
-    Object.entries(ovCfg[o.type]).forEach(([k, v]) => { const c = ovCfg[o.type]; if ((k === 'img' && c.imgmode !== 'custom') || (k === 'area' && c.zone !== 'free') || (k === 'cbx' && c.pos !== 'free')) return; p.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : k === 'color' || k === 'tcolor' ? String(v).replace('#', '') : v); });
+    Object.entries(ovCfg[o.type]).forEach(([k, v]) => { const c = ovCfg[o.type]; if ((k === 'img' && c.imgmode !== 'custom') || (k === 'area' && c.zone !== 'free') || (k === 'cbx' && c.pos !== 'free')) return; p.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : /^(t?color|c_\w+)$/.test(k) ? String(v).replace('#', '') : v); });
     if (!NO_EMOTES.includes(o.type) && ovCfg.off.length) p.set('off', ovCfg.off.join(' '));
     if (!NO_EMOTES.includes(o.type) && ovCfg.cem.length) p.set('cem', ovCfg.cem.map((c) => c.name + '|' + c.url).join(' '));
     Object.entries(extra || {}).forEach(([k, v]) => p.set(k, v));
@@ -3224,7 +3339,7 @@
   function premOvNote(o) {
     if (isPrem()) return '';
     const get = '<a href="' + PREM_URL + '" target="_blank" rel="noopener">Premium nemen op r5mod.nl</a>';
-    if (PREM_OV.includes(o.type)) return '<div class="premnote">⭐ ' + ({ combo: 'De emote-combo', donation: 'De donatie-melding', gamble: 'De gamble-overlay' }[o.type]) + ' is <b>Premium</b>: zonder Premium blijft hij leeg in OBS. ' + get + '.</div>';
+    if (PREM_OV.includes(o.type)) return '<div class="premnote">⭐ ' + ({ combo: 'De emote-combo', donation: 'De donatie-melding', gamble: 'De gamble-overlay', alert: 'De alert-overlay' }[o.type]) + ' is <b>Premium</b>: zonder Premium blijft hij leeg in OBS. ' + get + '.</div>';
     return '<div class="premnote">Gratis: standaardstijl met een klein R5Mod-label. Eigen kleuren, lettertypes en animaties, en geen label, met ⭐ <b>Premium</b>. ' + get + '.</div>';
   }
   function fieldHtml(o, [k, l, t, , x], free) {
@@ -3262,7 +3377,7 @@
     card.querySelector('[data-a=loop]').onchange = () => refreshOverlay(o, true);
     card.querySelector('[data-a=copy]').onclick = async () => {
       if (!ovChan() || ovChan() === 'demo') return toast('Vul eerst je kanaalnaam in.', 'err');
-      if (ALERTS.includes(o.type) && ovCfg[o.type].imgmode === 'custom' && !/^https:\/\//.test(ovCfg[o.type].img)) return toast('Plak eerst een link (https://…) naar je afbeelding, of kies een andere afbeelding.', 'err');
+      if (HOLD_OV.includes(o.type) && ovCfg[o.type].imgmode === 'custom' && !/^https:\/\//.test(ovCfg[o.type].img)) return toast('Plak eerst een link (https://…) naar je afbeelding, of kies een andere afbeelding.', 'err');
       const url = ovUrl(o);
       try { await navigator.clipboard.writeText(url); toast('Link gekopieerd. Plak hem in OBS als Browserbron (1920 × 1080).', 'ok'); }
       catch { prompt('Kopieer deze link:', url); }
@@ -3337,7 +3452,7 @@
     const okCh = ovChan() && ovChan() !== 'demo';
     card.querySelector('.link').textContent = okCh ? ovUrl(o) : (ovChan() === 'demo' ? 'In de demo is er geen echte link: vul bovenaan je eigen kanaalnaam in.' : 'Vul bovenaan je kanaalnaam in om de link te maken.');
     const loop = card.querySelector('[data-a=loop]').checked;
-    const src = ovUrl(o, Object.assign({ preview: '1' }, loop ? { test: '1' } : NO_EMOTES.includes(o.type) ? { hold: '1' } : {}, okCh ? {} : { ch: '' }));
+    const src = ovUrl(o, Object.assign({ preview: '1' }, loop ? { test: '1' } : HOLD_OV.includes(o.type) ? { hold: '1' } : {}, okCh ? {} : { ch: '' }));
     if ((force || f.dataset.src !== src) && state.page === 'overlays') { f.dataset.src = src; f.src = src; }
     scalePv(card);
   }
@@ -3348,6 +3463,7 @@
   const emState = { q: '', src: 'all', scope: 'chan' };
   // alles-in-één: één link met elke gekozen overlay als eigen laag (o.<soort>); nieuwe soorten in OVERLAYS doen vanzelf mee
   if (!ovCfg.all || !Array.isArray(ovCfg.all.skip)) ovCfg.all = { skip: [] };
+  if (!ovCfg.all.alert) { ovCfg.all.alert = 1; if (!ovCfg.all.skip.includes('alert')) ovCfg.all.skip.push('alert'); }
   const allUrl = (extra) => {
     const p = new URLSearchParams({ type: 'all', ch: ovChan() });
     OVERLAYS.filter((o) => !ovCfg.all.skip.includes(o.type)).forEach((o) => { const q = new URLSearchParams(ovUrl(o).split('?')[1]); q.delete('type'); q.delete('ch'); p.set('o.' + o.type, q.toString()); });
@@ -3369,7 +3485,7 @@
   function renderAllEditor(box) {
     box.innerHTML = '<div class="card ov"><div class="f"><h3>🧩 Alles in één</h3><div class="hint">Eén browserbron in OBS (1920 × 1080) met alles wat je aanvinkt. Elke overlay stel je in bij zijn eigen tegel; deze link neemt die instellingen mee. Na een wijziging kopieer je de link opnieuw.</div>' +
       '<div class="fsec">Doet mee</div>' + OVERLAYS.map((o) => '<label class="chk"><input type="checkbox" data-inc="' + o.type + '"' + (ovCfg.all.skip.includes(o.type) ? '' : ' checked') + '> ' + o.name + '</label>').join('') +
-      '<p class="hint">Komen er later nieuwe meldingen bij, dan staan ze hier ook en doen ze vanzelf mee.</p></div>' +
+      '<p class="hint">Komen er later nieuwe meldingen bij, dan staan ze hier ook en doen ze vanzelf mee. Vink je <b>🔔 Alerts</b> aan, zet dan de losse Raid, Bits en Donatie meldingen uit, anders zie je die dubbel.</p></div>' +
       '<div><div class="pv"><iframe title="Voorbeeld" allow="autoplay; fullscreen"></iframe></div><div class="acts"><button data-a="test">▶ Test</button><button data-a="live" title="Speelt een test van alles af in OBS (via de Windows-app)">📡 Test live</button><label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-a="loop"> doorlopend testen</label>' +
       '<button class="primary" data-a="copy" style="margin-left:auto">📋 Kopieer OBS-link</button></div><div class="link"></div>' +
       '<p class="hint">' + (appFixed ? '🔗 Dit is een <b>vaste link</b>: die blijft altijd hetzelfde. Wat je verandert, neemt de overlay binnen een paar seconden over. De Windows-app moet daarvoor open staan tijdens het streamen.' : 'In de Windows-app krijg je een <b>vaste link</b> (…/overlay.html?jouwnaam/alerts) die hetzelfde blijft als je iets verandert. Hier in de browser kopieer je de link na een wijziging opnieuw.') + '</p></div></div>';

@@ -17,6 +17,9 @@
   @keyframes rain { from { transform: translate(0, 0) rotate(0); opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } to { transform: translate(var(--dx), var(--ty, 115vh)) rotate(var(--rot)); opacity: 0; } }
   @keyframes pop { 0% { transform: scale(0); opacity: 0; } 15% { transform: scale(1.25); opacity: 1; } 25% { transform: scale(1); } 80% { opacity: 1; transform: scale(1); } 100% { transform: scale(.6); opacity: 0; } }
   @keyframes fade { from { opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } to { opacity: 0; } }
+  /* emote-explosie (alerts): vanuit het midden van de melding naar buiten */
+  .boom { position: absolute; will-change: transform, opacity; animation: boom var(--d, 2s) cubic-bezier(.15,.8,.3,1) both; }
+  @keyframes boom { 0% { transform: translate(0, 0) scale(.2) rotate(0); opacity: 0; } 8% { opacity: 1; } 70% { opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(1) rotate(var(--rot)); opacity: 0; } }
 
   /* emote-combo */
   #combo { position: absolute; display: flex; align-items: center; gap: .25em; color: #fff; font-weight: 800;
@@ -211,7 +214,28 @@
     font: FONTS.includes(P.get('font')) ? P.get('font') : '',   // lettertype (Premium)
     bankpos: ['bl', 'br', 'tl', 'tr', 'off'].includes(P.get('bankpos')) ? P.get('bankpos') : 'bl',   // gamble: plek van de bank-teller
     feed: P.get('feed') !== '0',                       // gamble: laatste uitslagen tonen
+    onalert: P.get('onalert') === '1',                  // emote-wall: emote-regen bij alerts
+    alertn: num('alertn', 30, 5, 150),                  // emote-wall: aantal emotes per alert
+    boom: P.get('boom') !== '0',                        // alerts: emote-explosie
+    boomn: num('boomn', 40, 5, 150),
+    boomsize: num('boomsize', 72, 24, 200),
+    boomsrc: P.get('boomsrc') === 'list' ? 'list' : 'chan',   // emotes van je kanaal, of een eigen lijst
+    boomlist: (P.get('boomlist') || '').split(/[\s,]+/).filter(Boolean),
   };
+  // alerts (Premium): per soort aan/uit, kop, tekst, minimum, kleur, geluid en explosie
+  const hex = (k) => (/^[0-9a-f]{6}$/i.test(P.get(k) || '') ? '#' + P.get(k) : '');
+  const AK = {   // soort: [kop, tekst, versiering, kleur]
+    follow: ['Nieuwe volger!', 'volgt je nu!', '💜', '#9147ff'],
+    sub: ['Nieuwe sub!', 'is nu abonnee!', '⭐', '#f5a623'],
+    resub: ['Resub!', 'is al {months} maanden abonnee!', '⭐', '#f5a623'],
+    gift: ['Cadeau-subs!', 'geeft {count} abonnement(en) weg!', '🎁', '#e0457b'],
+    bits: ['Bits!', 'gaf {bits} bits!', '💎', '#1f9cff'],
+    raid: ['Raid!', '{viewers} kijkers komen binnen!', '🚀', '#9147ff'],
+    donation: ['Donatie!', 'doneerde {amount}!', '💰', '#00b87a'],
+  };
+  cfg.ev = Object.fromEntries(Object.entries(AK).map(([k, d]) => [k, { on: P.get('a_' + k) !== '0', title: P.get('t_' + k) ?? d[0], text: P.get('x_' + k) ?? d[1], deco: d[2],
+    color: hex('c_' + k) || d[3], min: num('m_' + k, 0, 0, 1e6), sound: ['chime', 'fanfare', 'none'].includes(P.get('s_' + k)) ? P.get('s_' + k) : 'chime', boom: P.get('b_' + k) !== '0' }]));
+  cfg.wk = new Set(Object.keys(AK).filter((k) => P.get('w_' + k) !== '0'));   // emote-wall: op welke alerts hij reageert
   if (cfg.preview) document.body.classList.add('preview');
   const stage = document.getElementById('stage');
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -253,7 +277,7 @@
   }
   const ORIG = { color: cfg.color, tcolor: cfg.tcolor, style: cfg.style, ranim: cfg.ranim, anim: cfg.anim, font: cfg.font };
   const STD = { color: { bits: '#1f9cff', donation: '#00b87a' }[cfg.type] || '#9147ff', tcolor: '#ffffff', style: 'card', ranim: 'pop', anim: 'rise', font: '' };
-  const PREM_ONLY = { combo: 'De emote-combo', donation: 'De donatie-melding', gamble: 'De gamble-overlay' }[cfg.type];
+  const PREM_ONLY = { combo: 'De emote-combo', donation: 'De donatie-melding', gamble: 'De gamble-overlay', alert: 'De alert-overlay' }[cfg.type];
   let prem = false, premId = '';
   function applyTier() {
     Object.assign(cfg, prem ? ORIG : STD);
@@ -292,9 +316,10 @@
   const getJson = (u) => fetch(u).then((r) => r.ok ? r.json() : null).catch(() => null);
   const BTTV = 'https://api.betterttv.net/3/cached/';
   Object.assign(emo, cfg.cem);
-  function addStv(list) { (list || []).forEach((e) => { const h = e.data && e.data.host; if (h && h.url) emo[e.name] = 'https:' + h.url + '/4x.webp'; }); }
-  function addBttv(list) { (list || []).forEach((e) => { emo[e.code] = 'https://cdn.betterttv.net/emote/' + e.id + '/3x'; }); }
-  function addFfz(list) { (list || []).forEach((e) => { const i = e.images || {}; const u = i['4x'] || i['2x'] || i['1x']; if (u) emo[e.code] = u; }); }
+  const chanEm = new Set(), recentEm = new Map();   // emotes van het kanaal (7TV/BTTV/FFZ) en laatst gebruikte emotes in de chat
+  function addStv(list, set) { (list || []).forEach((e) => { const h = e.data && e.data.host; if (h && h.url) { emo[e.name] = 'https:' + h.url + '/4x.webp'; if (set) set.add(e.name); } }); }
+  function addBttv(list, set) { (list || []).forEach((e) => { emo[e.code] = 'https://cdn.betterttv.net/emote/' + e.id + '/3x'; if (set) set.add(e.code); }); }
+  function addFfz(list, set) { (list || []).forEach((e) => { const i = e.images || {}; const u = i['4x'] || i['2x'] || i['1x']; if (u) { emo[e.code] = u; if (set) set.add(e.code); } }); }
   async function loadGlobal() {
     const [s, b, f] = await Promise.all([getJson('https://7tv.io/v3/emote-sets/global'), getJson(BTTV + 'emotes/global'), getJson(BTTV + 'frankerfacez/emotes/global')]);
     if (s) addStv(s.emotes); if (Array.isArray(b)) addBttv(b); if (Array.isArray(f)) addFfz(f);
@@ -304,9 +329,9 @@
   async function loadChannel(roomId) {
     if (chanLoaded) return; chanLoaded = true;
     const [s, b, f] = await Promise.all([getJson('https://7tv.io/v3/users/twitch/' + roomId), getJson(BTTV + 'users/twitch/' + roomId), getJson(BTTV + 'frankerfacez/users/twitch/' + roomId)]);
-    if (b) addBttv([...(b.channelEmotes || []), ...(b.sharedEmotes || [])]);
-    if (Array.isArray(f)) addFfz(f);
-    if (s && s.emote_set) addStv(s.emote_set.emotes);
+    if (b) addBttv([...(b.channelEmotes || []), ...(b.sharedEmotes || [])], chanEm);
+    if (Array.isArray(f)) addFfz(f, chanEm);
+    if (s && s.emote_set) addStv(s.emote_set.emotes, chanEm);
     Object.assign(emo, cfg.cem);
   }
   const twUrl = (id) => 'https://static-cdn.jtvnw.net/emoticons/v2/' + encodeURIComponent(id) + '/default/dark/3.0';
@@ -332,7 +357,12 @@
 
   // ---------- geluid (zelf gemaakt, geen bestand nodig) ----------
   let actx = null;
-  function chime() {
+  function chime(snd) {
+    const keep = cfg.sound;
+    if (snd !== undefined) cfg.sound = snd === 'none' ? '' : snd;
+    try { chime1(); } finally { cfg.sound = keep; }
+  }
+  function chime1() {
     if (!cfg.sound) return;
     try {
       actx = actx || new (window.AudioContext || window.webkitAudioContext)();
@@ -365,25 +395,56 @@
       if (!wallTag) { wallTag = document.createElement('div'); wallTag.id = 'r5wall'; wallTag.textContent = 'R5Mod'; wallBox.appendChild(wallTag); }
       wallTag.classList.add('on'); clearTimeout(wallTagT); wallTagT = setTimeout(() => wallTag.classList.remove('on'), cfg.dur * 1300 + 1000);
     } else if (wallTag && prem) wallTag.classList.remove('on');
-    list.slice(0, cfg.per).forEach((e, i) => {
-      if (wallBox.querySelectorAll('.em').length >= cfg.max) return;
-      const img = new Image();
-      img.className = 'em'; img.src = e.url; img.alt = e.name;
-      const s = cfg.size * (0.8 + Math.random() * 0.4);
-      img.style.height = s + 'px';
-      const W = wallW(), H = wallH(), d = cfg.dur * (0.8 + Math.random() * 0.4);
-      img.style.setProperty('--dx', (Math.random() * 240 - 120) + 'px');
-      img.style.setProperty('--rot', (Math.random() * 60 - 30) + 'deg');
-      if (wallBox !== stage) img.style.setProperty('--ty', (cfg.anim === 'rain' ? H + s * 2 : -(H + s * 2)) + 'px');
-      if (cfg.anim === 'bounce') { bounce(img, s, d); return; }
-      if (cfg.anim === 'rise') { img.style.left = Math.random() * (W - s) + 'px'; img.style.top = H + 'px'; }
-      else if (cfg.anim === 'rain') { img.style.left = Math.random() * (W - s) + 'px'; img.style.top = -s + 'px'; }
-      else { img.style.left = Math.random() * (W - s) + 'px'; img.style.top = Math.random() * (H - s) + 'px'; }
-      img.style.animation = (cfg.anim === 'pop' ? 'pop' : cfg.anim === 'rain' ? 'rain' : 'rise') + ' ' + d + 's ' + (i * .12) + 's linear both';
-      img.onanimationend = () => img.remove();
-      img.onerror = () => img.remove();
-      wallBox.appendChild(img);
-    });
+    list.slice(0, cfg.per).forEach((e, i) => { if (wallBox.querySelectorAll('.em').length < cfg.max) spawnEm(e, i * .12); });
+  }
+  function spawnEm(e, delay) {
+    const img = new Image();
+    img.className = 'em'; img.src = e.url; img.alt = e.name;
+    const s = cfg.size * (0.8 + Math.random() * 0.4);
+    img.style.height = s + 'px';
+    const W = wallW(), H = wallH(), d = cfg.dur * (0.8 + Math.random() * 0.4);
+    img.style.setProperty('--dx', (Math.random() * 240 - 120) + 'px');
+    img.style.setProperty('--rot', (Math.random() * 60 - 30) + 'deg');
+    if (wallBox !== stage) img.style.setProperty('--ty', (cfg.anim === 'rain' ? H + s * 2 : -(H + s * 2)) + 'px');
+    if (cfg.anim === 'bounce') { bounce(img, s, d); return; }
+    if (cfg.anim === 'rise') { img.style.left = Math.random() * (W - s) + 'px'; img.style.top = H + 'px'; }
+    else if (cfg.anim === 'rain') { img.style.left = Math.random() * (W - s) + 'px'; img.style.top = -s + 'px'; }
+    else { img.style.left = Math.random() * (W - s) + 'px'; img.style.top = Math.random() * (H - s) + 'px'; }
+    img.style.animation = (cfg.anim === 'pop' ? 'pop' : cfg.anim === 'rain' ? 'rain' : 'rise') + ' ' + d + 's ' + delay + 's linear both';
+    img.onanimationend = () => img.remove();
+    img.onerror = () => img.remove();
+    wallBox.appendChild(img);
+  }
+  // emotes voor alerts: eerst die uit het bericht, dan van het kanaal (of de eigen lijst), eigen emotes en wat er net in de chat gebruikt is
+  function alertPool(extra) {
+    const out = [], seen = new Set(), add = (n, u) => { if (n && u && !seen.has(n) && !cfg.off.has(n)) { seen.add(n); out.push({ name: n, url: u }); } };
+    (extra || []).forEach((e) => add(e.name, e.url));
+    if (cfg.boomsrc === 'list' && cfg.type === 'alert') cfg.boomlist.forEach((n) => add(n, emo[n] || (recentEm.get(n) || {}).url));
+    else { chanEm.forEach((n) => add(n, emo[n])); Object.entries(cfg.cem).forEach(([n, u]) => add(n, u)); recentEm.forEach((e, n) => add(n, e.url)); }
+    if (!out.length) Object.keys(TW_BASE).forEach((n) => add(n, emo[n]));
+    return out;
+  }
+  // emote-wall: een regen van emotes bij een alert
+  function wallBurst(extra) {
+    const pool = alertPool(extra);
+    if (!pool.length) return;
+    for (let i = 0; i < cfg.alertn; i++) { if (wallBox.querySelectorAll('.em').length >= Math.max(cfg.max, 200)) break; spawnEm(pool[Math.floor(Math.random() * pool.length)], i * .06); }
+  }
+  // alerts: emote-explosie vanuit het midden van de melding
+  function boom(extra) {
+    const pool = alertPool(extra);
+    if (!pool.length) return;
+    const [x, y, w, h] = cfg.box, cx = x + w / 2, cy = y + h / 2;
+    for (let i = 0; i < cfg.boomn; i++) {
+      const e = pool[Math.floor(Math.random() * pool.length)], img = new Image(), s = cfg.boomsize * (0.7 + Math.random() * 0.6);
+      const a = Math.random() * Math.PI * 2, dist = 280 + Math.random() * 700;
+      img.className = 'boom'; img.src = e.url; img.alt = e.name;
+      Object.assign(img.style, { height: s + 'px', left: cx - s / 2 + 'px', top: cy - s / 2 + 'px', animationDelay: (i % 12) * .05 + 's' });
+      img.style.setProperty('--dx', Math.cos(a) * dist + 'px'); img.style.setProperty('--dy', Math.sin(a) * dist * .75 + 'px');
+      img.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg'); img.style.setProperty('--d', 1.6 + Math.random() * 1.2 + 's');
+      img.onanimationend = () => img.remove(); img.onerror = () => img.remove();
+      stage.appendChild(img);
+    }
   }
   // stuiteren tegen de randen van het beeld, zoals een dvd-logo
   function bounce(img, s, d) {
@@ -456,7 +517,7 @@
   }
 
   // ---------- meldingen (raid, bits, donatie): zelfde opmaak, elk met eigen teksten ----------
-  const ALERT = ['raid', 'bits', 'donation'].includes(cfg.type);
+  const ALERT = ['raid', 'bits', 'donation', 'alert'].includes(cfg.type);
   const DECO = { raid: '🚀', bits: '💎', donation: '💰' }[cfg.type];
   // voorlezen via de Google-voorleesstem (gewoon een mp3, werkt ook in OBS); geeft een Promise die klaar is na het voorlezen
   function speak(text) {
@@ -490,16 +551,18 @@
     el.className = 's-' + cfg.style + ' a-' + cfg.ranim;
     Object.assign(el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
     el.style.setProperty('--u', h / 100 + 'px');
+    if (r.color) el.style.setProperty('--accent', r.color);
     const vars = Object.assign({ name: r.name }, r.vars || { viewers: (r.viewers || 0).toLocaleString('nl-NL') });
-    const sub = cfg.text.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+    const title = r.title != null ? r.title : cfg.title;
+    const sub = (r.text != null ? r.text : cfg.text).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
     const msg = cfg.showmsg && r.msg ? r.msg : '';
     const pic = cfg.imgmode === 'none' ? '' : cfg.imgmode === 'custom' && cfg.img ? cfg.img : r.avatar;
-    el.innerHTML = (cfg.rocket ? '<span class="rocket">' + DECO + '</span>' : '') + (pic ? '<img src="' + esc(pic) + '" alt=""' + (cfg.imgmode === 'custom' ? ' class="custom"' : '') + '>' : '') +
-      '<div class="txt">' + (cfg.title ? '<div class="top">' + esc(cfg.title) + '</div>' : '') + '<div class="name">' + esc(r.name) + '</div>' + (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') + (msg ? '<div class="msg">' + esc(msg) + '</div>' : '') + '</div>' + (prem ? '' : '<span class="r5tag">R5Mod</span>');
+    el.innerHTML = (cfg.rocket ? '<span class="rocket">' + (r.deco || DECO) + '</span>' : '') + (pic ? '<img src="' + esc(pic) + '" alt=""' + (cfg.imgmode === 'custom' ? ' class="custom"' : '') + '>' : '') +
+      '<div class="txt">' + (title ? '<div class="top">' + esc(title) + '</div>' : '') + '<div class="name">' + esc(r.name) + '</div>' + (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') + (msg ? '<div class="msg">' + esc(msg) + '</div>' : '') + '</div>' + (prem ? '' : '<span class="r5tag">R5Mod</span>');
     document.body.appendChild(el);
     el.getBoundingClientRect();
     requestAnimationFrame(() => el.classList.add('on'));
-    if (!cfg.hold) chime();
+    if (!cfg.hold) { chime(r.sound); if (r.boom && cfg.boom) setTimeout(() => boom(r.emotes), 250); }
     const clipMs = cfg.clip && cfg.type === 'raid' ? showClip(r) : 0;
     if (cfg.hold) return;
     const ms = Math.max(cfg.dur * 1000, clipMs);
@@ -678,22 +741,45 @@
   // ---------- binnenkomende gebeurtenissen ----------
   function onChat(text, emotesTag, user) {
     const list = emotesIn(text, emotesTag);
+    list.forEach((e) => { recentEm.delete(e.name); recentEm.set(e.name, e); });
+    while (recentEm.size > 40) recentEm.delete(recentEm.keys().next().value);
     if (cfg.type === 'wall') wall(list);
     else if (cfg.type === 'combo') comboMsg(list, user);
   }
-  function onRaid(name, viewers, avatar, login, test) { if (cfg.type === 'raid') raid({ name, viewers, avatar: (avatar || '').replace('%s', '300x300'), login: login || '', test }); }
+  function onRaid(name, viewers, avatar, login, test) {
+    if (cfg.type === 'raid') raid({ name, viewers, avatar: (avatar || '').replace('%s', '300x300'), login: login || '', test });
+    else alertEv('raid', { name, login, avatar: (avatar || '').replace('%s', '300x300'), n: viewers, vars: { viewers: (viewers || 0).toLocaleString('nl-NL') }, test });
+  }
+  // alle alerts (follow, sub, resub, cadeau-subs, bits, raid, donatie): voor de alert-overlay en de emote-regen in de emote-wall
+  async function alertEv(kind, d) {
+    if (cfg.type === 'wall') { if (cfg.onalert && cfg.wk.has(kind)) wallBurst(d.emotes); return; }
+    if (cfg.type !== 'alert' || !prem) return;
+    const e = cfg.ev[kind];
+    if (!e || !e.on || (d.n != null && d.n < e.min)) return;
+    const avatar = d.avatar || (d.test ? TEST_AV : cfg.imgmode === 'avatar' && d.login ? await avatarOf(String(d.login).toLowerCase()) : '');
+    raid({ name: d.name, login: d.login || '', msg: d.msg || '', test: d.test, avatar, vars: Object.assign({ name: d.name }, d.vars || {}), title: e.title, text: e.text, deco: e.deco, color: e.color, sound: e.sound, boom: e.boom, emotes: d.emotes });
+  }
+  const giftIds = new Set();
+  function onNotice(m) {
+    const t = m.tags, id = t['msg-id'], name = t['display-name'] || t.login || '', msg = m.params[1] || '';
+    if (id === 'sub' || id === 'resub') alertEv(id, { name, login: t.login, msg, vars: { months: +t['msg-param-cumulative-months'] || 1 }, emotes: emotesIn(msg, t.emotes || '') });
+    else if (id === 'submysterygift') { const n = +t['msg-param-mass-gift-count'] || 1; if (t['msg-param-origin-id']) giftIds.add(t['msg-param-origin-id']); alertEv('gift', { name, login: t.login, n, vars: { count: n } }); }
+    else if (id === 'subgift' && !giftIds.has(t['msg-param-origin-id'])) alertEv('gift', { name, login: t.login, n: 1, vars: { count: 1 } });
+  }
   // profielfoto van een Twitch-naam (openbaar via api.ivr.fi), voor bits en donaties
   async function avatarOf(login) {
     if (!/^\w{2,25}$/.test(login || '')) return '';
     try { const r = await fetch('https://api.ivr.fi/v2/twitch/user?login=' + encodeURIComponent(login)); const j = await r.json(); return ((Array.isArray(j) ? j[0] : j) || {}).logo || ''; } catch { return ''; }
   }
-  async function onBits(name, login, bits, msg, test) {
-    if (cfg.type !== 'bits' || bits < cfg.minamt) return;
+  async function onBits(name, login, bits, msg, test, emotes) {
+    if (cfg.type !== 'bits') return alertEv('bits', { name, login, msg, n: bits, vars: { bits: bits.toLocaleString('nl-NL') }, emotes, test });
+    if (bits < cfg.minamt) return;
     raid({ name, login, msg, test, avatar: test ? TEST_AV : cfg.imgmode === 'avatar' ? await avatarOf(login) : '', vars: { bits: bits.toLocaleString('nl-NL') } });
   }
   async function onDonation(d, test) {
-    if (cfg.type !== 'donation' || d.amount < cfg.minamt || !prem) return;
     const amount = (() => { try { return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: d.cur || 'EUR' }).format(d.amount); } catch { return d.amount + ' ' + (d.cur || ''); } })();
+    if (cfg.type !== 'donation') return alertEv('donation', { name: d.name, login: d.name, msg: d.msg, n: d.amount, vars: { amount }, test });
+    if (d.amount < cfg.minamt || !prem) return;
     raid({ name: d.name, login: d.name, msg: d.msg, test, avatar: test ? TEST_AV : cfg.imgmode === 'avatar' ? await avatarOf(String(d.name).toLowerCase()) : '', vars: { amount } });
   }
   // donaties komen van StreamElements/TipeeeStream via de Windows-app op deze pc (de sleutels blijven in de app)
@@ -747,10 +833,10 @@
         let text = m.params[1] || '';
         if (text.startsWith('\u0001ACTION ')) text = text.slice(8, -1);
         onChat(text, m.tags.emotes || '', m.prefix.split('!')[0]);
-        if (+m.tags.bits > 0) onBits(m.tags['display-name'] || m.prefix.split('!')[0], m.prefix.split('!')[0], +m.tags.bits, text);
+        if (+m.tags.bits > 0) onBits(m.tags['display-name'] || m.prefix.split('!')[0], m.prefix.split('!')[0], +m.tags.bits, text, false, emotesIn(text, m.tags.emotes || ''));
       } else if (m.command === 'USERNOTICE' && m.tags['msg-id'] === 'raid') {
         onRaid(m.tags['msg-param-displayName'] || m.tags['display-name'] || '', +m.tags['msg-param-viewerCount'] || 0, m.tags['msg-param-profileImageURL'] || '', m.tags['msg-param-login'] || m.tags.login || '');
-      }
+      } else if (m.command === 'USERNOTICE') onNotice(m);
     });
     ws.onclose = () => { setTimeout(connect, retry); retry = Math.min(retry * 2, 30000); };
   }
@@ -766,7 +852,19 @@
   }
   // testplaatje: het R5-schild, zodat je ziet waar de profielfoto komt
   const TEST_AV = new URL('icons/icon-192.png', location.href).href;
+  let testKindI = 0;
+  function testAlert(kind) {
+    const r = DEMO_RAIDERS[Math.floor(Math.random() * DEMO_RAIDERS.length)], base = { name: r[0], login: r[0].toLowerCase(), test: true };
+    const T = {
+      follow: {}, sub: { msg: 'Dit is een test van de sub-melding!', vars: { months: 1 } }, resub: { msg: 'Al een tijdje hier!', vars: { months: 12 } },
+      gift: { n: 5, vars: { count: 5 } }, bits: { n: 500, msg: 'Dit is een test van de bits-melding!', vars: { bits: '500' } },
+      raid: { n: r[1], vars: { viewers: String(r[1]) } }, donation: { n: 5, msg: 'Dit is een test van de donatie-melding!', vars: { amount: '€ 5,00' } },
+    };
+    if (!kind) { const on = Object.keys(T).filter((k) => cfg.ev[k].on); if (!on.length) return; kind = on[testKindI++ % on.length]; }
+    alertEv(kind, Object.assign(base, T[kind], T[kind].n != null ? { n: Math.max(T[kind].n, cfg.ev[kind].min) } : {}));
+  }
   function testRaid() {
+    if (cfg.type === 'alert') return testAlert();
     const r = DEMO_RAIDERS[Math.floor(Math.random() * DEMO_RAIDERS.length)];
     if (cfg.type === 'raid') onRaid(r[0], r[1], TEST_AV, r[0].toLowerCase(), true);
     if (cfg.type === 'bits') onBits(r[0], r[0].toLowerCase(), Math.max(cfg.minamt, [100, 500, 1000][Math.floor(Math.random() * 3)]), 'Dit is een test van de bits-melding!', true);
@@ -777,12 +875,19 @@
     if (cfg.type === 'raid') onRaid('PixelPiet', 42, TEST_AV, 'pixelpiet', true);
     if (cfg.type === 'bits') raid({ name: 'PixelPiet', login: 'pixelpiet', msg: 'Dit is een test van de bits-melding!', test: true, avatar: TEST_AV, vars: { bits: '500' } });
     if (cfg.type === 'donation' && prem) raid({ name: 'PixelPiet', login: 'pixelpiet', msg: 'Dit is een test van de donatie-melding!', test: true, avatar: TEST_AV, vars: { amount: '€ 5,00' } });
+    if (cfg.type === 'alert' && prem) testAlert(Object.keys(AK).find((k) => cfg.ev[k].on) || 'sub');
+  }
+  // emote-wall: test met daarna een alert-regen
+  function wallTest() {
+    const n = cfg.type === 'combo' ? cfg.min + 2 : 8;
+    for (let i = 0; i < n; i++) setTimeout(fakeChat, i * 350);
+    if (cfg.type === 'wall' && cfg.onalert) setTimeout(() => wallBurst(), n * 350 + 600);
   }
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data || e.data.r5 !== 'test') return;
     if (GAMBLE) { if (cfg.hold) { cfg.hold = false; gQ.length = 0; gBusy = false; } gTest(); }
     else if (ALERT) { if (cfg.hold) { cfg.hold = false; raidQ.length = 0; raidBusy = false; } testRaid(); }
-    else for (let i = 0; i < (cfg.type === 'combo' ? cfg.min + 2 : 8); i++) setTimeout(fakeChat, i * 350);
+    else wallTest();
   });
 
   const hint = document.getElementById('hint');
@@ -795,7 +900,7 @@
     if (ALERT) testRaid();
   }
   if (cfg.ch) connect();
-  if (cfg.ch && cfg.type === 'donation' && !cfg.test) pollDonations();
+  if (cfg.ch && (cfg.type === 'donation' || cfg.type === 'alert' || (cfg.type === 'wall' && cfg.onalert)) && !cfg.test) pollDonations();
   // 📡 Test live en ▶ opnieuw afspelen: opdrachten van de Windows-app op deze pc (niet in het voorbeeld van de editor)
   if (cfg.ch && !cfg.preview && P.get('ed') !== '1') {
     let after = null;
@@ -805,8 +910,15 @@
         const list = r.ok ? await r.json() : [];
         if (after != null) list.filter((c) => c.n > after).forEach((c) => {
           if (c.kind === 'live' && GAMBLE) { const d = c.data || {}; if (c.type === 'gamble') gamble({ kind: String(d.kind || ''), name: String(d.name || ''), login: String(d.login || ''), bet: +d.bet || 0, win: +d.win || 0, mult: +d.mult || 0, bal: +d.bal || 0, bank: d.bank == null ? null : +d.bank, toBank: d.toBank == null ? null : +d.toBank, rob: !!d.rob, pname: String(d.pname || 'punten') }); else if (c.type === 'bank' && prem && +d.bank !== gBankVal) gBank(+d.bank); }
+          if (c.kind === 'live' && c.type === 'follow') { const d = c.data || {}; alertEv('follow', { name: String(d.name || ''), login: String(d.login || '') }); }
           if (c.kind === 'test' && (c.type === cfg.type || c.type === 'all')) {
-            if (GAMBLE) gTest(); else if (ALERT) testRaid(); else for (let i = 0; i < (cfg.type === 'combo' ? cfg.min + 2 : 8); i++) setTimeout(fakeChat, i * 350);
+            if (GAMBLE) gTest(); else if (ALERT) testRaid(); else wallTest();
+          }
+          if (c.kind === 'replay' && cfg.type === 'alert') {
+            const d = c.data || {};
+            if (c.type === 'raid') onRaid(d.name || '', +d.viewers || 0, d.avatar || '', d.login || '');
+            if (c.type === 'bits') onBits(d.name || '', d.login || '', +d.bits || 0, d.msg || '');
+            if (c.type === 'donation') onDonation({ name: d.name || 'iemand', amount: +d.amount || 0, cur: d.cur || 'EUR', msg: d.msg || '' });
           }
           if (c.kind === 'replay' && c.type === cfg.type) {
             const d = c.data || {};
