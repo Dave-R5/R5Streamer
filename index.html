@@ -273,6 +273,7 @@
   .obs { font-size: 13px; color: var(--muted); }
   .obs ol { margin: 6px 0 0; padding-left: 20px; }
   /* emotes beheren */
+  .esrc { display: flex; gap: 6px 14px; flex-wrap: wrap; align-items: center; margin: 10px 0 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; } .esrc .chk { margin: 0; } .esrc .hint { flex-basis: 100%; }
   .emtools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
   .emtools input { width: 220px; }
   .emgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; max-height: 520px; overflow-y: auto; padding: 2px; }
@@ -815,6 +816,8 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
+            <li><b>Emotes: bronnen kiezen</b>: bij 😀 Emotes vink je aan welke bronnen de overlays gebruiken (Twitch, 7TV, BTTV, FFZ) en of globale emotes meedoen. Eerder waren de knoppen daar alleen een filter voor de lijst, waardoor er toch alle emotes in OBS kwamen.</li>
+            <li><b>Melding helemaal verbergen</b>: bij de raid-, bits-, donatie- en alerts-overlay kun je de melding (tekst, plaatje en banner) uitzetten; geluid, voorlezen en de emote-explosie blijven.</li>
             <li><b>Banner uitzetten</b>: bij Uitstraling van de raid-, bits-, donatie-, alerts- en gamble-overlay zet je met één vinkje de banner (achtergrond) uit; dan staat alleen de tekst en afbeelding op beeld.</li>
             <li><b>Overlays: inklapbare kopjes</b>: in de editor van elke overlay klap je de onderdelen (Uitstraling, Tekst, Geluid, per alert …) open en dicht, zodat het geen lange lijst meer is. Welke open staan, wordt onthouden.</li>
             <li><b>🔔 Alerts-overlay</b> (⭐ Premium): één melding voor follow, sub, resub, cadeau-subs, bits, raid en donatie, per alert met eigen kop, tekst, kleur, geluid en minimum, en een <b>💥 emote-explosie</b> met de emotes van je kanaal of je eigen lijst.</li>
@@ -3171,7 +3174,7 @@
   const PREM_PILL = '<span class="prempill">⭐ Premium</span>';
   const ALERT_FIELDS = (t) => [
     ['@', 'Uitstraling'],
-    ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]], ['bg', 'Banner (achtergrond) tonen', 'check', true],
+    ['show', 'Melding tonen (uit: geen tekst, plaatje of banner, wel geluid en emotes)', 'check', true], ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]], ['bg', 'Banner (achtergrond) tonen', 'check', true],
     ['color', 'Kleur', 'color', t === 'bits' ? '#1f9cff' : '#00b87a'], ['tcolor', 'Tekstkleur', 'color', '#ffffff'], FONT_FIELD,
     ['rocket', 'Versiering (' + (t === 'bits' ? '💎' : '💰') + ')', 'check', true],
     ['@', 'Tekst'],
@@ -3221,7 +3224,7 @@
       ['sound', 'Geluidje bij een nieuwe combo', 'check', false], ['vol', 'Volume', 'range', 50, [5, 100, 5, '%']]] },
     { type: 'raid', name: '🚀 Raid melding', desc: 'Helemaal zelf in te stellen: uitstraling, tekst, afbeelding, binnenkomst, geluid en een clip van de raider. Plek en grootte sleep je in het voorbeeld.', fields: [
       ['@', 'Uitstraling'],
-      ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]], ['bg', 'Banner (achtergrond) tonen', 'check', true],
+      ['show', 'Melding tonen (uit: geen tekst, plaatje of banner, wel geluid en emotes)', 'check', true], ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]], ['bg', 'Banner (achtergrond) tonen', 'check', true],
       ['color', 'Kleur', 'color', '#9147ff'], ['tcolor', 'Tekstkleur', 'color', '#ffffff'], FONT_FIELD,
       ['rocket', 'Raket als versiering', 'check', true],
       ['@', 'Tekst'],
@@ -3241,7 +3244,7 @@
     { type: 'donation', name: '💰 Donatie melding', desc: 'Een melding bij een donatie via StreamElements of TipeeeStream (Koppelingen in ⚙ Instellingen), met voorlezen (TTS). Werkt via de Windows-app: die moet open staan.', fields: ALERT_FIELDS('donation') },
     { type: 'alert', name: '🔔 Alerts', desc: 'Eén melding voor follow, sub, cadeau-subs, bits, raid en donatie, per alert helemaal aan te passen, met emote-explosie. Follows en donaties gaan via de Windows-app.', fields: [
       ['@', 'Uitstraling'],
-      ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]], ['bg', 'Banner (achtergrond) tonen', 'check', true],
+      ['show', 'Melding tonen (uit: geen tekst, plaatje of banner, wel geluid en emotes)', 'check', true], ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]], ['bg', 'Banner (achtergrond) tonen', 'check', true],
       ['tcolor', 'Tekstkleur', 'color', '#ffffff'], FONT_FIELD,
       ['rocket', 'Versiering (💜 ⭐ 🎁 💎 🚀 💰)', 'check', true],
       ['imgmode', 'Afbeelding', 'select', 'avatar', [['avatar', 'Profielfoto'], ['custom', 'Eigen afbeelding'], ['none', 'Geen afbeelding']]],
@@ -3284,7 +3287,11 @@
   OVERLAYS.forEach((o) => { ovCfg[o.type] = Object.assign(Object.fromEntries(o.fields.filter((f) => f[0] !== '@').map((f) => [f[0], f[3]])), ovCfg[o.type] || {}); });
   Object.values(ovCfg).forEach((c) => { if (c && typeof c === 'object' && !Array.isArray(c)) delete c['@']; });
   if (!Array.isArray(ovCfg.off)) ovCfg.off = [];   // emotes die uit staan voor de overlays
-  if (!Array.isArray(ovCfg.cem)) ovCfg.cem = [];   // eigen emotes: [{name, url}] (url = https of de Windows-app op 127.0.0.1:17565)
+  if (!Array.isArray(ovCfg.cem)) ovCfg.cem = [];
+  // welke emote-bronnen de overlays gebruiken (eigen emotes doen altijd mee)
+  ovCfg.esrc = Object.assign({ twitch: true, '7tv': true, bttv: true, ffz: true, glob: true }, ovCfg.esrc || {});
+  // id's van de Twitch-emotes van je kanaal (uit de geladen emotes), zodat de overlay globale Twitch-emotes kan weglaten
+  const twChanIds = () => Object.values(emo).filter((e) => e.src === 'twitch' && e.ch).map((e) => (/\/v2\/([^/]+)\//.exec(e.url) || [])[1]).filter(Boolean);   // eigen emotes: [{name, url}] (url = https of de Windows-app op 127.0.0.1:17565)
   const appEmotes = !!(window.r5app && window.r5app.emotes);
   if (appEmotes) window.r5app.emotes('list').then((list) => { ovCfg.cem = ovCfg.cem.filter((c) => !c.url.startsWith('http://127.0.0.1:')).concat(list.map((x) => ({ name: x.name, url: x.url }))); store.set('ov', ovCfg); if (ovSel === 'emotes' && state.page === 'overlays') renderOvEditor(); }).catch(() => {});
   // raid: plek en grootte (x,y,b,h op 1920x1080); oude aan/uit-geluid omzetten
@@ -3315,6 +3322,11 @@
     Object.entries(ovCfg[o.type]).forEach(([k, v]) => { const c = ovCfg[o.type]; if ((k === 'img' && c.imgmode !== 'custom') || (k === 'area' && c.zone !== 'free') || (k === 'cbx' && c.pos !== 'free')) return; p.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : /^(t?color|c_\w+)$/.test(k) ? String(v).replace('#', '') : v); });
     if (!NO_EMOTES.includes(o.type) && ovCfg.off.length) p.set('off', ovCfg.off.join(' '));
     if (!NO_EMOTES.includes(o.type) && ovCfg.cem.length) p.set('cem', ovCfg.cem.map((c) => c.name + '|' + c.url).join(' '));
+    if (!NO_EMOTES.includes(o.type)) {
+      const es = ovCfg.esrc, srcs = ['twitch', '7tv', 'bttv', 'ffz'].filter((k) => es[k]);
+      if (srcs.length < 4) p.set('esrc', srcs.join(' ') || 'none');
+      if (!es.glob) { p.set('glob', '0'); const ids = twChanIds(); if (es.twitch && ids.length) p.set('twch', ids.join(',')); }
+    }
     Object.entries(extra || {}).forEach(([k, v]) => p.set(k, v));
     return base + 'overlay.html?' + p.toString();
   }
@@ -3575,6 +3587,8 @@
     let card = box.querySelector('.emcard');
     if (!card) {
       box.innerHTML = '<div class="card emcard"><h3 style="margin:0 0 4px">😀 Emotes voor de overlays</h3><div class="hint">Klik op een emote om hem uit (grijs) of weer aan te zetten. Uitgezette emotes verschijnen niet in de emote-wall en de combo. Na een wijziging kopieer je de OBS-link opnieuw.</div>' +
+        '<div class="esrc"><b>In de overlays gebruiken:</b>' + [['twitch', 'Twitch'], ['7tv', '7TV'], ['bttv', 'BTTV'], ['ffz', 'FFZ'], ['glob', 'Ook globale emotes']].map(([k, l]) => '<label class="chk"><input type="checkbox" data-es="' + k + '"' + (ovCfg.esrc[k] ? ' checked' : '') + '> ' + l + '</label>').join('') +
+          '<span class="hint">Je eigen emotes doen altijd mee. Na een wijziging kopieer je de OBS-link opnieuw (de vaste link in de app past zich vanzelf aan).</span></div>' +
         '<div class="emtools"><input data-e="q" placeholder="Zoek emote…" autocomplete="off"><div class="filters" data-e="scope" style="margin:0"></div><div class="filters" data-e="src" style="margin:0"></div>' +
         '<span style="margin-left:auto" class="hint" data-e="count"></span><button data-e="allon">Alles aan</button><button data-e="alloff">Getoonde uit</button></div><div class="emgrid" data-e="grid"></div>' +
         '<div class="drop" data-e="drop"><b>⬆ Eigen emotes</b><br>' + (appEmotes
@@ -3585,6 +3599,7 @@
         '<div class="cemlist" data-e="cem"></div></div></div>';
       card = box.querySelector('.emcard');
       $('[data-e=q]', card).oninput = (e) => { emState.q = e.target.value.trim().toLowerCase(); drawEmotes(card); };
+      card.addEventListener('change', (e) => { const k = e.target.dataset.es; if (!k) return; ovCfg.esrc[k] = e.target.checked; store.set('ov', ovCfg); drawEmotes(card); });
       card.onclick = (e) => {
         const f = e.target.closest('[data-fs]'), em = e.target.closest('[data-em]'), a = e.target.closest('[data-e]');
         if (f) { emState[f.dataset.fs] = f.dataset.v; drawEmotes(card); return; }
@@ -3624,8 +3639,8 @@
   function drawEmotes(card) {
     $('[data-e=scope]', card).innerHTML = [['chan', 'Van je kanaal'], ['all', 'Ook globaal']].map(([v, l]) => '<button data-fs="scope" data-v="' + v + '" class="' + (emState.scope === v ? 'on' : '') + '">' + l + '</button>').join('');
     $('[data-e=src]', card).innerHTML = [['all', 'Alle bronnen'], ['twitch', 'Twitch'], ['7tv', '7TV'], ['bttv', 'BTTV'], ['ffz', 'FFZ']].map(([v, l]) => '<button data-fs="src" data-v="' + v + '" class="' + (emState.src === v ? 'on' : '') + '">' + l + '</button>').join('');
-    const list = visibleEmotes(), off = new Set(ovCfg.off);
-    $('[data-e=grid]', card).innerHTML = list.length ? list.slice(0, 600).map(([n, e]) => '<div class="em' + (off.has(n) ? ' off' : '') + '" data-em="' + esc(n) + '" title="' + esc(n) + ' (' + SRC_LABEL[e.src] + (e.ch ? ', kanaal' : ', globaal') + ')"><img loading="lazy" src="' + esc(e.url) + '" alt=""><span>' + esc(n) + '</span><small>' + SRC_LABEL[e.src] + '</small></div>').join('')
+    const list = visibleEmotes(), off = new Set(ovCfg.off), srcOff = (e) => !ovCfg.esrc[e.src] || (!ovCfg.esrc.glob && !e.ch);
+    $('[data-e=grid]', card).innerHTML = list.length ? list.slice(0, 600).map(([n, e]) => '<div class="em' + (off.has(n) || srcOff(e) ? ' off' : '') + '" data-em="' + esc(n) + '" title="' + esc(n) + ' (' + SRC_LABEL[e.src] + (e.ch ? ', kanaal' : ', globaal') + ')"><img loading="lazy" src="' + esc(e.url) + '" alt=""><span>' + esc(n) + '</span><small>' + SRC_LABEL[e.src] + '</small></div>').join('')
       : '<div class="empty">' + (!emotesLoaded ? 'Emotes laden…' : !state.me && !state.demo && emState.scope === 'chan' ? 'Log in om de emotes van je kanaal te zien, of kies "Ook globaal".' : 'Geen emotes gevonden.') + '</div>';
     countEm(card);
   }

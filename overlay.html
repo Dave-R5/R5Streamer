@@ -216,6 +216,10 @@
     img: /^https:\/\//.test(P.get('img') || '') ? P.get('img') : '',
     font: FONTS.includes(P.get('font')) ? P.get('font') : '',   // lettertype (Premium)
     bankpos: ['bl', 'br', 'tl', 'tr', 'off'].includes(P.get('bankpos')) ? P.get('bankpos') : 'bl',   // gamble: plek van de bank-teller
+    show: P.get('show') !== '0',                       // melding: tekst, plaatje en banner tonen (uit = alleen geluid en emotes)
+    esrc: new Set((P.get('esrc') || 'twitch 7tv bttv ffz').split(' ')),   // emote-bronnen die meedoen
+    glob: P.get('glob') !== '0',                       // ook globale emotes
+    twch: P.get('twch') ? new Set(P.get('twch').split(',')) : null,   // id's van de Twitch-emotes van het kanaal
     bg: P.get('bg') !== '0',                           // melding/gamble: banner (achtergrond) tonen
     feed: P.get('feed') !== '0',                       // gamble: laatste uitslagen tonen
     onalert: P.get('onalert') === '1',                  // emote-wall: emote-regen bij alerts
@@ -316,7 +320,7 @@
   // een paar vaste Twitch-emotes, zodat testen ook werkt voordat de rest geladen is
   const TW_BASE = { Kappa: '25', LUL: '425618', PogChamp: '305954156', '<3': '9', SeemsGood: '64138', BibleThump: '86', HeyGuys: '30259', VoHiYo: '81274' };
   const emo = {};
-  Object.entries(TW_BASE).forEach(([n, id]) => { emo[n] = 'https://static-cdn.jtvnw.net/emoticons/v2/' + id + '/default/dark/3.0'; });
+  if (cfg.esrc.has('twitch') && cfg.glob) Object.entries(TW_BASE).forEach(([n, id]) => { emo[n] = 'https://static-cdn.jtvnw.net/emoticons/v2/' + id + '/default/dark/3.0'; });
   const getJson = (u) => fetch(u).then((r) => r.ok ? r.json() : null).catch(() => null);
   const BTTV = 'https://api.betterttv.net/3/cached/';
   Object.assign(emo, cfg.cem);
@@ -325,14 +329,16 @@
   function addBttv(list, set) { (list || []).forEach((e) => { emo[e.code] = 'https://cdn.betterttv.net/emote/' + e.id + '/3x'; if (set) set.add(e.code); }); }
   function addFfz(list, set) { (list || []).forEach((e) => { const i = e.images || {}; const u = i['4x'] || i['2x'] || i['1x']; if (u) { emo[e.code] = u; if (set) set.add(e.code); } }); }
   async function loadGlobal() {
-    const [s, b, f] = await Promise.all([getJson('https://7tv.io/v3/emote-sets/global'), getJson(BTTV + 'emotes/global'), getJson(BTTV + 'frankerfacez/emotes/global')]);
+    const ok = (k) => cfg.glob && cfg.esrc.has(k);
+    const [s, b, f] = await Promise.all([ok('7tv') ? getJson('https://7tv.io/v3/emote-sets/global') : null, ok('bttv') ? getJson(BTTV + 'emotes/global') : null, ok('ffz') ? getJson(BTTV + 'frankerfacez/emotes/global') : null]);
     if (s) addStv(s.emotes); if (Array.isArray(b)) addBttv(b); if (Array.isArray(f)) addFfz(f);
     Object.assign(emo, cfg.cem);   // eigen emotes gaan voor
   }
   let chanLoaded = false;
   async function loadChannel(roomId) {
     if (chanLoaded) return; chanLoaded = true;
-    const [s, b, f] = await Promise.all([getJson('https://7tv.io/v3/users/twitch/' + roomId), getJson(BTTV + 'users/twitch/' + roomId), getJson(BTTV + 'frankerfacez/users/twitch/' + roomId)]);
+    const ok = (k) => cfg.esrc.has(k);
+    const [s, b, f] = await Promise.all([ok('7tv') ? getJson('https://7tv.io/v3/users/twitch/' + roomId) : null, ok('bttv') ? getJson(BTTV + 'users/twitch/' + roomId) : null, ok('ffz') ? getJson(BTTV + 'frankerfacez/users/twitch/' + roomId) : null]);
     if (b) addBttv([...(b.channelEmotes || []), ...(b.sharedEmotes || [])], chanEm);
     if (Array.isArray(f)) addFfz(f, chanEm);
     if (s && s.emote_set) addStv(s.emote_set.emotes, chanEm);
@@ -340,6 +346,8 @@
   }
   const twUrl = (id) => 'https://static-cdn.jtvnw.net/emoticons/v2/' + encodeURIComponent(id) + '/default/dark/3.0';
 
+  // Twitch-emote uit de chat: alleen als Twitch aan staat, en zonder globale emotes alleen die van het kanaal
+  const twOk = (id) => cfg.esrc.has('twitch') && (cfg.glob || !cfg.twch || cfg.twch.has(String(id)));
   // alle emotes in een bericht, op volgorde: [{name, url}]
   function emotesIn(text, tag) {
     const chars = Array.from(text), found = [], twAt = {};
@@ -350,7 +358,7 @@
     let word = '', start = 0;
     const flush = () => { if (word && emo[word]) found.push({ name: word, url: emo[word], at: start }); word = ''; };
     for (let i = 0; i < chars.length; i++) {
-      if (twAt[i]) { flush(); const t = twAt[i]; found.push({ name: chars.slice(i, t.b + 1).join(''), url: twUrl(t.id), at: i }); i = t.b; continue; }
+      if (twAt[i]) { flush(); const t = twAt[i]; if (twOk(t.id)) found.push({ name: chars.slice(i, t.b + 1).join(''), url: twUrl(t.id), at: i }); i = t.b; continue; }
       if (/\s/.test(chars[i])) { flush(); continue; }
       if (!word) start = i;
       word += chars[i];
@@ -553,6 +561,7 @@
     el = document.createElement('div'); el.id = 'raid';
     const [x, y, w, h] = cfg.box;
     el.className = 's-' + cfg.style + ' a-' + cfg.ranim + (cfg.bg ? '' : ' nobg');
+    if (!cfg.show) el.style.visibility = 'hidden';   // alleen geluid, voorlezen en emotes
     Object.assign(el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
     el.style.setProperty('--u', h / 100 + 'px');
     if (r.color) el.style.setProperty('--accent', r.color);
