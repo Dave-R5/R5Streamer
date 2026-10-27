@@ -258,6 +258,14 @@
   .vline.vx { top: 0; bottom: 0; width: 1px; } .vline.vy { left: 0; right: 0; height: 1px; }
   .f .fsec { margin: 16px 0 2px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
   .f .fsec:first-of-type { border-top: 0; padding-top: 0; margin-top: 8px; }
+  /* inklapbare kopjes in de overlay-editor */
+  .f .fgrp { border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 0 10px; }
+  .f .fgrp > summary.fsec { margin: 0; padding: 9px 0; border-top: 0; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
+  .f .fgrp > summary.fsec::-webkit-details-marker { display: none; }
+  .f .fgrp > summary.fsec::before { content: '▸'; font-size: 12px; transition: transform .15s; }
+  .f .fgrp[open] > summary.fsec::before { transform: rotate(90deg); }
+  .f .fgrp[open] { padding-bottom: 10px; }
+  .f .fgrp > summary.fsec:hover { color: var(--text, #fff); }
   .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
   .link { font: 12px ui-monospace, Consolas, monospace; color: var(--muted); word-break: break-all; margin-top: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
   .ovchan { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -807,6 +815,7 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
+            <li><b>Overlays: inklapbare kopjes</b>: in de editor van elke overlay klap je de onderdelen (Uitstraling, Tekst, Geluid, per alert …) open en dicht, zodat het geen lange lijst meer is. Welke open staan, wordt onthouden.</li>
             <li><b>🔔 Alerts-overlay</b> (⭐ Premium): één melding voor follow, sub, resub, cadeau-subs, bits, raid en donatie, per alert met eigen kop, tekst, kleur, geluid en minimum, en een <b>💥 emote-explosie</b> met de emotes van je kanaal of je eigen lijst.</li>
             <li><b>🧱 Emote-wall bij alerts</b>: zet een emote-regen aan bij alerts en kies per alert (follow, sub, bits, raid …) of de wall erop reageert.</li>
             <li><b>⏱ Timers</b> in 🧩 Modules: berichten die elke zoveel minuten vanzelf in je chat terugkomen, alleen als je live bent en pas na genoeg chatberichten.</li>
@@ -3327,7 +3336,7 @@
     const o = OVERLAYS.find((x) => x.type === ovSel) || OVERLAYS[0];
     if (edFor !== o.type || !box.querySelector('.ov')) {
       edFor = o.type;
-      box.innerHTML = '<div class="card ov" data-type="' + o.type + '"><div class="f"><h3>' + o.name + '</h3><div class="hint">' + o.desc + '</div>' + premOvNote(o) + o.fields.map((f) => fieldHtml(o, f)).join('') + '</div>' +
+      box.innerHTML = '<div class="card ov" data-type="' + o.type + '"><div class="f"><h3>' + o.name + '</h3><div class="hint">' + o.desc + '</div>' + premOvNote(o) + fieldsHtml(o) + '</div>' +
         '<div><div class="pv"><iframe title="Voorbeeld" allow="autoplay; fullscreen"></iframe><div class="vedit"></div></div>' +
         '<p class="hint" data-vhint style="margin:6px 0 0"></p>' + '<div class="acts"><button data-a="test">▶ Test</button><button data-a="live" title="Speelt de test af in OBS (via de Windows-app)">📡 Test live</button><label class="hint" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" data-a="loop"> doorlopend testen</label>' +
         '<button class="primary" data-a="copy" style="margin-left:auto">📋 Kopieer OBS-link</button></div><div class="link"></div>' +
@@ -3342,6 +3351,20 @@
     if (PREM_OV.includes(o.type)) return '<div class="premnote">⭐ ' + ({ combo: 'De emote-combo', donation: 'De donatie-melding', gamble: 'De gamble-overlay', alert: 'De alert-overlay' }[o.type]) + ' is <b>Premium</b>: zonder Premium blijft hij leeg in OBS. ' + get + '.</div>';
     return '<div class="premnote">Gratis: standaardstijl met een klein R5Mod-label. Eigen kleuren, lettertypes en animaties, en geen label, met ⭐ <b>Premium</b>. ' + get + '.</div>';
   }
+  // elk kopje ('@') wordt een inklapbaar vak; welke open staan, onthouden we per overlay
+  const fgOpen = store.get('fgOpen', {});
+  function fieldsHtml(o) {
+    let out = '', inGrp = false;
+    o.fields.forEach((f) => {
+      if (f[0] !== '@') { out += fieldHtml(o, f); return; }
+      if (inGrp) out += '</details>';
+      const id = o.type + ':' + f[1];
+      out += '<details class="fgrp" data-fg="' + esc(id) + '"' + (fgOpen[id] ? ' open' : '') + '><summary class="fsec">' + f[1] + '</summary>';
+      inGrp = true;
+    });
+    return out + (inGrp ? '</details>' : '');
+  }
+  document.addEventListener('toggle', (e) => { const d = e.target; if (d.dataset && d.dataset.fg) { fgOpen[d.dataset.fg] = d.open; store.set('fgOpen', fgOpen); } }, true);
   function fieldHtml(o, [k, l, t, , x], free) {
     if (k === '@') return '<div class="fsec">' + l + '</div>';
     const id = 'f-' + o.type + '-' + k, v = ovCfg[o.type][k];
