@@ -103,12 +103,28 @@
   #gfeed div { background: rgba(0,0,0,.72); border-radius: 10px; padding: 6px 12px; margin-top: 6px; transition: opacity .6s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #gfeed .w { color: #ffd54a; } #gfeed .l { color: #ff6b6b; } #gfeed .b { color: #39d98a; }
 
+  /* aftiteling (Premium): rolt van onder naar boven over het hele scherm; --s = grootte van de namen */
+  #cred { position: fixed; inset: 0; overflow: hidden; color: var(--tc); font-family: var(--font, "Segoe UI", system-ui, sans-serif); text-align: center; opacity: 0; transition: opacity .8s; }
+  #cred.on { opacity: 1; }
+  #cred .cbg { position: absolute; inset: 0; background-size: cover; background-position: center; }
+  #cred .cdim { position: absolute; inset: 0; background: #000; }
+  #cred .roll { position: absolute; left: 8%; right: 8%; top: 0; will-change: transform; transform: translateY(100vh); }
+  #cred.shadow .roll { text-shadow: 0 0 10px rgba(0,0,0,.95), 0 3px 0 rgba(0,0,0,.7); }
+  #cred h1 { margin: 0; font-size: calc(var(--s) * 2.1); line-height: 1.1; color: var(--accent); font-weight: 900; }
+  #cred .csub { margin-top: calc(var(--s) * .35); font-size: calc(var(--s) * .85); opacity: .85; }
+  #cred section { margin-top: calc(var(--s) * 1.7); }
+  #cred h2 { margin: 0 0 calc(var(--s) * .55); font-size: calc(var(--s) * 1.05); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); font-weight: 800; }
+  #cred .names { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(var(--s) * .3) calc(var(--s) * 1.3); font-size: var(--s); font-weight: 700; line-height: 1.2; }
+  #cred .names.rows { flex-direction: column; align-items: center; }
+  #cred .names small { margin-left: .45em; font-size: .72em; font-weight: 600; opacity: .75; }
+  #cred .cend { margin-top: calc(var(--s) * 3); font-size: calc(var(--s) * 1.5); font-weight: 800; }
+
   /* lettertype (Premium) en R5Mod-label (gratis) */
   #raid, #combo { font-family: var(--font, inherit); }
   .r5tag { position: absolute; right: calc(var(--u, 1px) * 6); bottom: calc(var(--u, 1px) * 4); font: 700 calc(var(--u, 1px) * 8)/1 "Segoe UI", system-ui, sans-serif; letter-spacing: .06em; color: #fff; opacity: .7; text-shadow: 0 1px 3px rgba(0,0,0,.8); pointer-events: none; }
   #r5wall { position: absolute; right: 12px; bottom: 10px; font: 700 14px/1 "Segoe UI", system-ui, sans-serif; letter-spacing: .06em; color: #fff; opacity: 0; text-shadow: 0 1px 3px rgba(0,0,0,.8); background: rgba(14,14,16,.45); padding: 4px 8px; border-radius: 6px; transition: opacity .4s; }
   #r5wall.on { opacity: .75; }
-  #lock { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); font: 600 30px/1.4 "Segoe UI", system-ui, sans-serif; color: #fff; background: rgba(14,14,16,.85); border: 2px solid #f5c542; border-radius: 16px; padding: 22px 34px; text-align: center; max-width: 70%; }
+  #lock { position: fixed; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%); font: 600 30px/1.4 "Segoe UI", system-ui, sans-serif; color: #fff; background: rgba(14,14,16,.85); border: 2px solid #f5c542; border-radius: 16px; padding: 22px 34px; text-align: center; max-width: 70%; }
   #lock b { color: #f5c542; }
   #hint { position: fixed; left: 10px; bottom: 8px; font: 12px system-ui, sans-serif; color: #a0a0ab; background: rgba(14,14,16,.8); padding: 4px 8px; border-radius: 6px; display: none; }
   body.preview #hint { display: block; }
@@ -285,7 +301,7 @@
   }
   const ORIG = { color: cfg.color, tcolor: cfg.tcolor, style: cfg.style, ranim: cfg.ranim, anim: cfg.anim, font: cfg.font };
   const STD = { color: { bits: '#1f9cff', donation: '#00b87a' }[cfg.type] || '#9147ff', tcolor: '#ffffff', style: 'card', ranim: 'pop', anim: 'rise', font: '' };
-  const PREM_ONLY = { combo: 'De emote-combo', donation: 'De donatie-melding', gamble: 'De gamble-overlay', alert: 'De alert-overlay' }[cfg.type];
+  const PREM_ONLY = { combo: 'De emote-combo', donation: 'De donatie-melding', gamble: 'De gamble-overlay', alert: 'De alert-overlay', credits: 'De aftiteling' }[cfg.type];
   let prem = false, premId = '';
   function applyTier() {
     Object.assign(cfg, prem ? ORIG : STD);
@@ -310,7 +326,7 @@
     try { localStorage.setItem('r5s.premid.' + cfg.ch, premId); } catch {}
     const r = await premFetch(premId);
     const on = !!(r && r.premium && r.expires_at && r.expires_at > Date.now() / 1000);
-    if (on !== prem) { prem = on; applyTier(); if (cfg.hold && ALERT) { raidQ.length = 0; raidBusy = false; sampleAlert(); } if (cfg.hold && GAMBLE && prem) { gQ.length = 0; gBusy = false; gTest(); } }
+    if (on !== prem) { prem = on; applyTier(); if (cfg.hold && ALERT) { raidQ.length = 0; raidBusy = false; sampleAlert(); } if (cfg.hold && GAMBLE && prem) { gQ.length = 0; gBusy = false; gTest(); } if (CREDITS) crRun(); }
   }
   applyTier();
   if (cfg.ch) { let id = ''; try { id = localStorage.getItem('r5s.premid.' + cfg.ch) || ''; } catch {} checkPrem(id); }
@@ -809,6 +825,67 @@
     go(); setInterval(go, 3000);
   }
 
+  // ---------- aftiteling (Premium): bedankje aan het einde van de stream ----------
+  // Wie er deze stream was komt van de R5 StreamerHub-app op deze pc (/cr/<naam>); in het voorbeeld en bij een test voorbeeldnamen.
+  const CREDITS = cfg.type === 'credits';
+  const cr = {
+    on: Object.fromEntries(['don', 'bits', 'sub', 'gift', 'fol', 'raid', 'view'].map((k) => [k, P.get('s_' + k) !== '0'])),
+    lab: { don: P.get('l_don') ?? '💰 Donaties', bits: P.get('l_bits') ?? '💎 Bits', sub: P.get('l_sub') ?? '⭐ Nieuwe abonnees', gift: P.get('l_gift') ?? '🎁 Cadeau-subs',
+      fol: P.get('l_fol') ?? '💜 Nieuwe volgers', raid: P.get('l_raid') ?? '🚀 Raids', view: P.get('l_view') ?? '🙋 Kijkers' },
+    amt: P.get('showamt') !== '0',
+    title: P.get('title') ?? 'Bedankt voor het kijken!',
+    sub: P.get('subt') ?? '{game}',
+    endt: P.get('endt') ?? 'Tot de volgende keer! 💜',
+    bgmode: ['none', 'color', 'grad', 'image'].includes(P.get('bgmode')) ? P.get('bgmode') : 'grad',
+    bgc: hex('bgcolor') || '#0e0e10', bgc2: hex('bgcolor2') || '#3a1d6e', bgimg: /^https:\/\//.test(P.get('bgimg') || '') ? P.get('bgimg') : '', dim: num('bgdim', 40, 0, 90),
+    speed: num('speed', 70, 10, 400), loop: P.get('crend') !== 'stop', wait: num('wait', 3, 0, 60),
+    data: null, anim: null, t: null,
+  };
+  const CR_SAMPLE = { title: 'Zaterdagstream!', game: 'Minecraft',
+    don: [['Bram', '€ 10,00'], ['GamerGirl_NL', '€ 5,00'], ['Henk_de_Tank', '€ 2,50']], bits: [['PixelPiet', '1.000 bits'], ['kaaskop99', '250 bits']],
+    sub: [['Sjoerd', ''], ['mia_plays', ''], ['Ellie_NL', '']], gift: [['luna_moon', '5 subs']], fol: ['tomtom', 'koffiekop', 'Robin_R5', 'NoobMaster', 'Fleur', 'Daan_speelt'].map((n) => [n, '']),
+    raid: [['luna_moon', '54 kijkers']], view: ['Anouk', 'Bram', 'Daan_speelt', 'Ellie_NL', 'Fleur', 'GamerGirl_NL', 'Henk_de_Tank', 'kaaskop99', 'koffiekop', 'luna_moon', 'mia_plays', 'NoobMaster', 'PixelPiet', 'Robin_R5', 'Sjoerd', 'tomtom'].map((n) => [n, '']) };
+  const crSample = cfg.preview || cfg.test;
+  function crBuild(d) {
+    let el = document.getElementById('cred');
+    if (!el) { el = document.createElement('div'); el.id = 'cred'; document.body.appendChild(el); }
+    el.style.setProperty('--s', cfg.size + 'px');
+    el.className = cr.bgmode === 'none' || cr.bgmode === 'image' ? 'shadow' : '';
+    const bg = cr.bgmode === 'color' ? 'background:' + cr.bgc : cr.bgmode === 'grad' ? 'background:linear-gradient(160deg,' + cr.bgc + ',' + cr.bgc2 + ')' : cr.bgmode === 'image' && cr.bgimg ? 'background-image:url("' + esc(cr.bgimg) + '")' : '';
+    const vars = { title: d.title || '', game: d.game || '' };
+    const fill = (t) => String(t || '').replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)).trim();
+    const sec = (k) => {
+      const list = (cr.on[k] && Array.isArray(d[k]) ? d[k] : []).slice(0, 1500);
+      if (!list.length) return '';
+      const rows = cr.amt && list.some((x) => x[1]);
+      return '<section>' + (cr.lab[k] ? '<h2>' + esc(cr.lab[k]) + '</h2>' : '') + '<div class="names' + (rows ? ' rows' : '') + '">' +
+        list.map((x) => '<span>' + esc(x[0]) + (rows && x[1] ? '<small>' + esc(x[1]) + '</small>' : '') + '</span>').join('') + '</div></section>';
+    };
+    el.innerHTML = (bg ? '<div class="cbg" style="' + bg + '"></div>' : '') + (cr.bgmode === 'image' && cr.bgimg && cr.dim ? '<div class="cdim" style="opacity:' + cr.dim / 100 + '"></div>' : '') +
+      '<div class="roll">' + (cr.title ? '<h1>' + esc(fill(cr.title)) + '</h1>' : '') + (fill(cr.sub) ? '<div class="csub">' + esc(fill(cr.sub)) + '</div>' : '') +
+      ['don', 'bits', 'gift', 'sub', 'raid', 'fol', 'view'].map(sec).join('') + (cr.endt ? '<div class="cend">' + esc(fill(cr.endt)) + '</div>' : '<div class="cend"></div>') + '</div>';
+    return el;
+  }
+  // van onder het scherm naar boven rollen; bij 'stop' blijft de laatste tekst in het midden staan
+  function crRun() {
+    clearTimeout(cr.t);
+    if (cr.anim) { cr.anim.cancel(); cr.anim = null; }
+    if (!prem && !cfg.preview) { const el = document.getElementById('cred'); if (el) el.remove(); cr.t = setTimeout(crRun, 5000); return; }
+    const el = crBuild(crSample ? CR_SAMPLE : cr.data || {}), roll = el.querySelector('.roll'), end = el.querySelector('.cend'), H = innerHeight;
+    requestAnimationFrame(() => el.classList.add('on'));
+    const stop = !cr.loop ? H / 2 - (end.offsetTop + end.offsetHeight / 2) : -roll.offsetHeight;
+    cr.anim = roll.animate([{ transform: 'translateY(' + H + 'px)' }, { transform: 'translateY(' + stop + 'px)' }], { duration: (H - stop) / cr.speed * 1000, easing: 'linear', fill: 'forwards' });
+    cr.anim.onfinish = () => { if (cr.loop || cfg.preview) cr.t = setTimeout(crRun, (cr.loop ? cr.wait : 4) * 1000); };
+  }
+  async function crPoll() {
+    try { const r = await fetch('http://127.0.0.1:17565/cr/' + cfg.ch, { cache: 'no-store' }); if (r.ok) cr.data = await r.json(); } catch {}
+  }
+  if (CREDITS) {
+    document.documentElement.style.setProperty('--accent', cfg.color);
+    if (crSample || !cfg.ch) setTimeout(crRun, 300);
+    else { crPoll().finally(() => setTimeout(crRun, 300)); setInterval(crPoll, 5000); }   // nieuwe namen komen mee bij de volgende ronde
+  }
+
   // ---------- chat lezen (anoniem, geen login nodig) ----------
   function parseLine(line) {
     const m = { tags: {}, prefix: '', command: '', params: [] };
@@ -899,6 +976,7 @@
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data || e.data.r5 !== 'test') return;
     if (GAMBLE) { if (cfg.hold) { cfg.hold = false; gQ.length = 0; gBusy = false; } gTest(); }
+    else if (CREDITS) crRun();
     else if (ALERT) { if (cfg.hold) { cfg.hold = false; raidQ.length = 0; raidBusy = false; } testRaid(); }
     else wallTest();
   });
@@ -908,7 +986,7 @@
   if (cfg.hold && ALERT) sampleAlert();
   else if (cfg.hold && GAMBLE) gTest();
   else if (cfg.test && GAMBLE) { setInterval(() => { if (!gBusy) gTest(); }, (cfg.dur + 3) * 1000); gTest(); }
-  else if (cfg.test) {
+  else if (cfg.test && !CREDITS) {
     setInterval(() => { if (ALERT) { if (!raidBusy) testRaid(); } else fakeChat(); }, ALERT ? (cfg.dur + 3) * 1000 : 900);
     if (ALERT) testRaid();
   }
@@ -925,7 +1003,7 @@
           if (c.kind === 'live' && GAMBLE) { const d = c.data || {}; if (c.type === 'gamble') gamble({ kind: String(d.kind || ''), name: String(d.name || ''), login: String(d.login || ''), bet: +d.bet || 0, win: +d.win || 0, mult: +d.mult || 0, bal: +d.bal || 0, bank: d.bank == null ? null : +d.bank, toBank: d.toBank == null ? null : +d.toBank, rob: !!d.rob, pname: String(d.pname || 'punten') }); else if (c.type === 'bank' && prem && +d.bank !== gBankVal) gBank(+d.bank); }
           if (c.kind === 'live' && c.type === 'follow') { const d = c.data || {}; alertEv('follow', { name: String(d.name || ''), login: String(d.login || '') }); }
           if (c.kind === 'test' && (c.type === cfg.type || c.type === 'all')) {
-            if (GAMBLE) gTest(); else if (ALERT) testRaid(); else wallTest();
+            if (GAMBLE) gTest(); else if (CREDITS) crPoll().finally(crRun); else if (ALERT) testRaid(); else wallTest();
           }
           if (c.kind === 'replay' && cfg.type === 'alert') {
             const d = c.data || {};

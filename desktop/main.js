@@ -402,6 +402,17 @@ ipcMain.handle('r5:points', async (e, action, id, data) => {
   if (action === 'clear') { fs.rmSync(f, { force: true }); return true; }
   return null;
 });
+// Aftiteling (credits-overlay): de site geeft door wie er deze stream was, de overlay haalt het op via /cr/<naam>.
+const credits = {}; // naam -> JSON-tekst
+ipcMain.handle('r5:credits', async (e, user, data) => {
+  if (!fromSite(e)) return false;
+  user = String(user || '').toLowerCase();
+  if (!/^\w{2,25}$/.test(user) || !data || typeof data !== 'object') return false;
+  const txt = JSON.stringify(data);
+  if (txt.length > 500000) return false;
+  credits[user] = txt;
+  return true;
+});
 function startEmoteServer() {
   const srv = http.createServer((req, res) => {
     // https-pagina (OBS) die deze pc vraagt: Chrome wil daar een extra toestemming voor (Private Network Access)
@@ -417,6 +428,8 @@ function startEmoteServer() {
     if (cm) { res.writeHead(200, { ...head, 'Content-Type': 'application/json' }); return res.end(JSON.stringify((cmds[cm[1]] || []).filter((c) => Date.now() - c.t < 60000))); }
     const em = /^\/ev\/(\w{2,25})$/.exec((req.url || '').split('?')[0].toLowerCase());
     if (em) { res.writeHead(200, { ...head, 'Content-Type': 'application/json' }); return res.end(JSON.stringify(donations[em[1]] || [])); }
+    const crm = /^\/cr\/(\w{2,25})$/.exec((req.url || '').split('?')[0].toLowerCase());
+    if (crm) { res.writeHead(credits[crm[1]] ? 200 : 404, { ...head, 'Content-Type': 'application/json' }); return res.end(credits[crm[1]] || '{}'); }
     const m = /^\/emotes\/([^/?]+)/.exec(req.url || '');
     const f = m && decodeURIComponent(m[1]), ext = f && (/\.(\w+)$/.exec(f) || [])[1];
     if (!f || !/^\w{2,25}\.(png|jpe?g|gif|webp)$/i.test(f)) { res.writeHead(404); return res.end(); }

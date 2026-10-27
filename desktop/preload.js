@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('r5app', {
   cmd: (user, cmd) => ipcRenderer.invoke('r5:cmd', user, cmd),
   // kijkerspunten op deze pc: action = 'load' | 'save' (tekst) | 'clear', per kanaal-ID
   points: (action, id, data) => ipcRenderer.invoke('r5:points', String(action || ''), String(id || ''), data == null ? '' : String(data)),
+  // aftiteling: wie er deze stream was (donaties, bits, subs, volgers, kijkers) voor de credits-overlay in OBS
+  credits: (user, data) => ipcRenderer.invoke('r5:credits', user, data),
   prompt: (message, value) => ipcRenderer.sendSync('r5:prompt', String(message ?? ''), value == null ? '' : String(value)),
 });
 
