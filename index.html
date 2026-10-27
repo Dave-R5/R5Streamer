@@ -92,11 +92,23 @@
   nav button.on { color: var(--text); background: var(--panel2); border-color: var(--accent); }
   nav button .ldot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--live); margin-left: 4px; vertical-align: 1px; }
   nav button .ldot[hidden] { display: none; }
-  #account { color: var(--muted); font-size: 12px; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
-  #account img { width: 26px; height: 26px; border-radius: 50%; }
   #helpBtn { font-size: 15px; padding: 3px 9px; }
-  #layBtns { margin-left: auto; display: flex; gap: 6px; } #layBtns button { font-size: 12.5px; padding: 3px 9px; }
-  body:not(.pg-dash) #layBtns { display: none; }
+  #layDdBtn { margin-left: auto; font-size: 12.5px; padding: 3px 9px; white-space: nowrap; }
+  body:not(.pg-dash) #layDdBtn { display: none; }
+  #layDdBtn.on, #accBtn.on { border-color: var(--accent); }
+  #accBtn { padding: 2px; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  #accBtn img { width: 28px; height: 28px; border-radius: 50%; display: block; }
+  .hdd { position: fixed; z-index: 30; width: 280px; max-width: calc(100vw - 16px); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.5); padding: 6px 0; }
+  .hdd[hidden] { display: none; }
+  .hdd .bn { display: block; width: 100%; text-align: left; border: 0; border-radius: 0; background: transparent; padding: 8px 12px; font-size: 13px; color: var(--text); text-decoration: none; }
+  .hdd .bn:hover { background: var(--panel2); }
+  .hdd .bn small { color: var(--muted); display: block; }
+  .hdd .bn[hidden] { display: none; }
+  .hdd .acc-h { display: flex; align-items: center; gap: 8px; padding: 6px 12px 8px; border-bottom: 1px solid var(--line); margin-bottom: 4px; font-weight: 600; }
+  .hdd .acc-h img { width: 32px; height: 32px; border-radius: 50%; }
+  .hdd .sep { border-top: 1px solid var(--line); margin: 4px 0; }
+  #premBadge.on { color: var(--gold); } #premBadge.off { color: var(--text); }
   #demoBadge { background: #3d2a00; color: var(--gold); border: 1px solid #6b4a00; border-radius: 10px; font-size: 11px; font-weight: 700; padding: 1px 8px; }
 
   main { padding: 14px; max-width: 1500px; margin: 0 auto; }
@@ -271,9 +283,6 @@
   .cem small { color: var(--muted); }
   .cem button { padding: 0 6px; min-height: 0; line-height: 20px; }
   .prempill { display: inline-block; font-size: 10.5px; font-weight: 700; color: var(--gold); background: #3d2a00; border: 1px solid #6b4a00; border-radius: 10px; padding: 0 7px; margin-left: 6px; vertical-align: 1px; white-space: nowrap; }
-  #premBadge { font-size: 11.5px; font-weight: 700; border-radius: 10px; padding: 2px 9px; text-decoration: none; white-space: nowrap; }
-  #premBadge.on { color: #1a1300; background: linear-gradient(135deg, #ffd76a, #f5a623); }
-  #premBadge.off { color: var(--gold); background: #3d2a00; border: 1px solid #6b4a00; }
   .premnote { border: 1px solid #6b4a00; background: rgba(245,197,66,.08); border-radius: 8px; padding: 8px 10px; font-size: 13px; margin: 8px 0; }
   .premnote a { color: var(--gold); }
   .premcols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .premcols ul { margin: 4px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
@@ -442,14 +451,14 @@
     <button data-page="live">🔴 Live<span class="ldot" id="navLive" hidden></span></button>
     <button data-page="overlays">🎨 Overlays</button>
     <button data-page="commands">🧩 Modules</button>
-    <button data-page="settings">⚙ Instellingen</button>
   </nav>
-  <span id="layBtns" data-need-dash><button id="hdrTidy" title="Alle blokken netjes naast en onder elkaar zetten, zonder gaten">▦ Netjes schikken</button><button id="hdrLay" title="Blokken en tegels aan- of uitzetten">✎ Indeling</button><button id="hdrCustom" title="Je eigen vaste indeling ontwerpen; ▦ Netjes schikken gaat daarna altijd terug naar deze indeling">▣ Eigen indeling</button></span>
+  <button id="layDdBtn" data-need-dash title="Indeling van deze pagina: netjes schikken, blokken aan/uit of je eigen indeling">🖌 Personaliseer ▾</button>
   <span id="demoBadge" hidden>DEMO</span>
-  <a id="premBadge" hidden target="_blank" rel="noopener"></a>
   <button id="helpBtn" title="Hulp: wat kan R5 StreamerHub?">❓</button>
-  <span id="account"></span>
+  <button id="accBtn" title="Account, instellingen en Premium">👤</button>
 </header>
+<div id="layDd" class="hdd" hidden><button class="bn" id="hdrTidy">▦ Netjes schikken<small>Alle blokken netjes naast en onder elkaar, zonder gaten (of terug naar je eigen indeling)</small></button><button class="bn" id="hdrLay">✎ Indeling<small>Blokken en tegels aan- of uitzetten</small></button><button class="bn" id="hdrCustom">▣ Eigen indeling<small>Je eigen vaste indeling ontwerpen</small></button></div>
+<div id="accDd" class="hdd" hidden><div class="acc-h" id="accHead"></div><button class="bn" data-acc="settings">⚙ Instellingen<small>Koppelingen, overlays-opties, cloud-sync en gegevens</small></button><a class="bn" id="premBadge" hidden target="_blank" rel="noopener"></a><div class="sep"></div><button class="bn" data-acc="login">🟣 Inloggen met Twitch</button><button class="bn" data-acc="demo">⏹ Demo stoppen</button><button class="bn" data-acc="logout">🚪 Uitloggen</button></div>
 
 <main>
   <div id="welcome" class="card welcome" hidden>
@@ -786,6 +795,7 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
+            <li><b>Rustigere bovenbalk</b>: ▦ Netjes schikken, ✎ Indeling en ▣ Eigen indeling zitten samen in <b>🖌 Personaliseer</b>. Je naam staat niet meer in de balk: klik op je <b>profielfoto</b> voor ⚙ Instellingen, ⭐ Premium en Uitloggen.</li>
             <li><b>☁ Cloud-sync via je Twitch-account</b>: indeling, instellingen, overlays, commands, kijkersnotities en streamgeschiedenis zijn op elke pc en in elke browser hetzelfde zodra je inlogt. Staat standaard aan, uitzetten kan bij ⚙ Instellingen → Gegevens. Je inlog en de sleutels van StreamElements en TipeeeStream gaan nooit mee; streams ouder dan 90 dagen worden opgeschoond.</li>
             <li><b>Verplichte update</b> in de Windows-app: staat er bij het opstarten een nieuwe versie klaar, dan wordt die eerst gedownload en geïnstalleerd voordat je verder kunt.</li>
             <li>Kijkerspunten: nieuw <b>!bank</b> (ook !pot) laat zien hoeveel er in de bank zit.</li>
@@ -1826,7 +1836,7 @@
     const b = $('#premBadge'), on = isPrem();
     b.hidden = !state.me || state.demo || !prem.checked;
     b.className = on ? 'on' : 'off';
-    b.textContent = on ? '⭐ Premium' : '⭐ Gratis';
+    b.innerHTML = on ? '⭐ Premium<small>Actief, bedankt!</small>' : '⭐ Premium<small>Je gebruikt de gratis versie. Klik voor Premium op r5mod.nl</small>';
     b.href = PREM_URL;
     b.title = on ? 'R5 StreamerHub Premium is actief' : 'Je gebruikt de gratis versie. Klik voor Premium op r5mod.nl';
     const exp = prem.r && prem.r.expires_at;
@@ -2613,10 +2623,13 @@
   // ---------- tekenen ----------
   function render() {
     $('#demoBadge').hidden = !state.demo;
-    const a = $('#account');
-    if (state.demo) a.innerHTML = '<span>demo</span>';
-    else if (state.me) a.innerHTML = (state.user ? '<img src="' + esc(state.user.profile_image_url) + '" alt="">' : '') + '<span style="color:var(--text)">' + esc(state.user ? state.user.display_name : state.me.login) + '</span>';
-    else a.innerHTML = '<button class="primary" data-act="login">Inloggen</button>';
+    // account: alleen de profielfoto in de balk; naam, instellingen, Premium en uitloggen in het menu eronder
+    const img = state.me && !state.demo && state.user && state.user.profile_image_url;
+    $('#accBtn').innerHTML = img ? '<img src="' + esc(img) + '" alt="">' : '👤';
+    $('#accHead').innerHTML = state.demo ? '🎬 Demo' : state.me ? (img ? '<img src="' + esc(img) + '" alt="">' : '') + esc(state.user ? state.user.display_name : state.me.login) : '<span class="hint">Niet ingelogd</span>';
+    $('#accDd [data-acc=login]').hidden = !!(state.me || state.demo);
+    $('#accDd [data-acc=demo]').hidden = !state.demo;
+    $('#accDd [data-acc=logout]').hidden = !state.me || state.demo;
     const on = !!(state.me || state.demo);
     $('#welcome').hidden = on || !['overview', 'live'].includes(state.page);
     document.querySelectorAll('[data-need-dash]').forEach((el) => { el.hidden = !on; });
@@ -3791,13 +3804,38 @@
     if (p === 'commands') renderCmds();
   }
   $('#nav').onclick = (e) => { const b = e.target.closest('[data-page]'); if (b) showPage(b.dataset.page); };
+  // uitklapmenu's in de kop: 🖌 Personaliseer en de profielfoto
+  function hddToggle(btn, dd, alignLeft) {
+    const open = dd.hidden;
+    hddClose();
+    if (!open) return;
+    dd.hidden = false; btn.classList.add('on');
+    const r = btn.getBoundingClientRect(), w = dd.offsetWidth;
+    dd.style.left = Math.max(8, Math.min(alignLeft ? r.left : r.right - w, innerWidth - w - 8)) + 'px';
+    dd.style.top = (r.bottom + 6) + 'px';
+  }
+  function hddClose() { document.querySelectorAll('.hdd').forEach((d) => { d.hidden = true; }); $('#layDdBtn').classList.remove('on'); $('#accBtn').classList.remove('on'); }
+  $('#layDdBtn').onclick = () => hddToggle($('#layDdBtn'), $('#layDd'));
+  $('#accBtn').onclick = () => hddToggle($('#accBtn'), $('#accDd'));
+  $('#layDd').addEventListener('click', (e) => { if (e.target.closest('.bn')) hddClose(); });
+  $('#accDd').onclick = (e) => {
+    const b = e.target.closest('.bn');
+    if (!b) return;
+    hddClose();
+    const a = b.dataset.acc;
+    if (a === 'settings') showPage('settings');
+    else if (a === 'login') login();
+    else if (a === 'demo') { stopDemo(); $('#demoOn').checked = false; }
+    else if (a === 'logout') logout();
+  };
+  document.addEventListener('mousedown', (e) => { if (!e.target.closest('.hdd') && !e.target.closest('#layDdBtn') && !e.target.closest('#accBtn')) hddClose(); });
   document.addEventListener('click', (e) => {
     const a = e.target.closest('[data-act]');
     if (a && a.dataset.act === 'login') login();
     if (a && a.dataset.act === 'demo') { startDemo(); showPage('overview'); }
     if (e.target.matches('[data-close]') || e.target.classList.contains('modal-bg')) e.target.closest('.modal-bg').classList.remove('open');
   });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.modal-bg.open:not(.must)').forEach((m) => m.classList.remove('open')); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hddClose(); if (e.key === 'Escape') document.querySelectorAll('.modal-bg.open:not(.must)').forEach((m) => m.classList.remove('open')); });
   $('#helpBtn').onclick = () => { if (state.me && !$('#hfName').value) $('#hfName').value = state.me.login; $('#helpModal').classList.add('open'); };
   // Contactformulier via Web3Forms (zelfde ontvanger als R5 ModHub); de access key is openbaar bedoeld.
   const WEB3FORMS_KEY = 'a7b33e40-de12-4617-9b49-4505b8f349bd';
