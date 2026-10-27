@@ -3502,7 +3502,9 @@
   const SYNC_SLOW = { sessions: 10 * 60e3 };   // streamcijfers veranderen tijdens live steeds: hooguit elke 10 minuten
   const SYNC_MERGE = ['notes', 'sessions'];
   const syncOff = () => { try { return localStorage.getItem('r5sync.off') === '1'; } catch { return false; } };
-  const syncActive = () => !syncOff() && !!state.me && !!state.token;
+  // telefoons en tablets doen niet mee: daar is synchroniseren niet nodig (Dave)
+  const SYNC_DEVICE = !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  const syncActive = () => SYNC_DEVICE && !syncOff() && !!state.me && !!state.token;
   const syncVers = () => { try { return JSON.parse(localStorage.getItem('r5sync.vers') || 'null'); } catch { return null; } };
   const setSyncVers = (v) => { try { localStorage.setItem('r5sync.vers', JSON.stringify({ ...v, user: state.me.user_id })); } catch {} };
   const rawGet = (k) => { try { return localStorage.getItem('r5s.' + k); } catch { return null; } };
@@ -3555,7 +3557,7 @@
     const at = +(localStorage.getItem('r5sync.at') || 0);
     $('#syncOn').checked = !syncOff();
     $('#syncNow').disabled = $('#syncWipe').disabled = !syncActive();
-    $('#syncState').textContent = syncOff() ? 'Uit op dit apparaat.'
+    $('#syncState').textContent = !SYNC_DEVICE ? 'Op een telefoon of tablet wordt niet gesynchroniseerd.' : syncOff() ? 'Uit op dit apparaat.'
       : !state.me ? 'Log in met Twitch om te synchroniseren.'
       : twSync.st === 'err' ? 'Synchroniseren is niet gelukt: ' + (twSync.err || '')
       : twSync.st === 'wait' ? 'Wijziging wacht om gesynchroniseerd te worden…'
