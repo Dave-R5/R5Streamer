@@ -49,6 +49,9 @@
   #raid img { height: calc(var(--u) * 78); width: calc(var(--u) * 78); border-radius: 50%; border: calc(var(--u) * 3) solid #fff; background: #000; flex-shrink: 0; object-fit: cover; }
   #raid img.custom { width: auto; max-width: 45%; height: calc(var(--u) * 84); border-radius: calc(var(--u) * 6); border: 0; background: none; object-fit: contain; }
   #raid .txt { min-width: 0; }
+  /* banner uit: geen achtergrond, rand of schaduw; alleen tekst (met schaduw) en afbeelding */
+  #raid.nobg, #gcard.nobg { background: none !important; box-shadow: none !important; border-color: transparent !important; backdrop-filter: none !important; text-shadow: 0 0 10px rgba(0,0,0,.95), 0 3px 0 rgba(0,0,0,.7); }
+  #gcard.nobg .reel { background: rgba(14,14,16,.6); }
   #raid .top { font-size: calc(var(--u) * 12); letter-spacing: .14em; text-transform: uppercase; opacity: .85; font-weight: 700; }
   #raid .name { font-size: calc(var(--u) * 26); font-weight: 800; line-height: 1.05; overflow-wrap: anywhere; }
   #raid .sub { font-size: calc(var(--u) * 13); margin-top: calc(var(--u) * 2); }
@@ -213,6 +216,7 @@
     img: /^https:\/\//.test(P.get('img') || '') ? P.get('img') : '',
     font: FONTS.includes(P.get('font')) ? P.get('font') : '',   // lettertype (Premium)
     bankpos: ['bl', 'br', 'tl', 'tr', 'off'].includes(P.get('bankpos')) ? P.get('bankpos') : 'bl',   // gamble: plek van de bank-teller
+    bg: P.get('bg') !== '0',                           // melding/gamble: banner (achtergrond) tonen
     feed: P.get('feed') !== '0',                       // gamble: laatste uitslagen tonen
     onalert: P.get('onalert') === '1',                  // emote-wall: emote-regen bij alerts
     alertn: num('alertn', 30, 5, 150),                  // emote-wall: aantal emotes per alert
@@ -548,7 +552,7 @@
     if (el) el.remove();
     el = document.createElement('div'); el.id = 'raid';
     const [x, y, w, h] = cfg.box;
-    el.className = 's-' + cfg.style + ' a-' + cfg.ranim;
+    el.className = 's-' + cfg.style + ' a-' + cfg.ranim + (cfg.bg ? '' : ' nobg');
     Object.assign(el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
     el.style.setProperty('--u', h / 100 + 'px');
     if (r.color) el.style.setProperty('--accent', r.color);
@@ -694,7 +698,7 @@
     gBusy = true;
     let el = document.getElementById('gcard');
     if (el) el.remove();
-    el = document.createElement('div'); el.id = 'gcard';
+    el = document.createElement('div'); el.id = 'gcard'; if (!cfg.bg) el.classList.add('nobg');
     const [x, y, w, h] = cfg.box;
     Object.assign(el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
     el.style.setProperty('--u', h / 100 + 'px');

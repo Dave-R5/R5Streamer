@@ -815,6 +815,7 @@
         <details class="cl-ver" open>
           <summary>Nieuw sinds 1.0 <small>26 okt 2026</small></summary>
           <ul>
+            <li><b>Banner uitzetten</b>: bij Uitstraling van de raid-, bits-, donatie-, alerts- en gamble-overlay zet je met één vinkje de banner (achtergrond) uit; dan staat alleen de tekst en afbeelding op beeld.</li>
             <li><b>Overlays: inklapbare kopjes</b>: in de editor van elke overlay klap je de onderdelen (Uitstraling, Tekst, Geluid, per alert …) open en dicht, zodat het geen lange lijst meer is. Welke open staan, wordt onthouden.</li>
             <li><b>🔔 Alerts-overlay</b> (⭐ Premium): één melding voor follow, sub, resub, cadeau-subs, bits, raid en donatie, per alert met eigen kop, tekst, kleur, geluid en minimum, en een <b>💥 emote-explosie</b> met de emotes van je kanaal of je eigen lijst.</li>
             <li><b>🧱 Emote-wall bij alerts</b>: zet een emote-regen aan bij alerts en kies per alert (follow, sub, bits, raid …) of de wall erop reageert.</li>
@@ -3170,7 +3171,7 @@
   const PREM_PILL = '<span class="prempill">⭐ Premium</span>';
   const ALERT_FIELDS = (t) => [
     ['@', 'Uitstraling'],
-    ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]],
+    ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]], ['bg', 'Banner (achtergrond) tonen', 'check', true],
     ['color', 'Kleur', 'color', t === 'bits' ? '#1f9cff' : '#00b87a'], ['tcolor', 'Tekstkleur', 'color', '#ffffff'], FONT_FIELD,
     ['rocket', 'Versiering (' + (t === 'bits' ? '💎' : '💰') + ')', 'check', true],
     ['@', 'Tekst'],
@@ -3220,7 +3221,7 @@
       ['sound', 'Geluidje bij een nieuwe combo', 'check', false], ['vol', 'Volume', 'range', 50, [5, 100, 5, '%']]] },
     { type: 'raid', name: '🚀 Raid melding', desc: 'Helemaal zelf in te stellen: uitstraling, tekst, afbeelding, binnenkomst, geluid en een clip van de raider. Plek en grootte sleep je in het voorbeeld.', fields: [
       ['@', 'Uitstraling'],
-      ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]],
+      ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]], ['bg', 'Banner (achtergrond) tonen', 'check', true],
       ['color', 'Kleur', 'color', '#9147ff'], ['tcolor', 'Tekstkleur', 'color', '#ffffff'], FONT_FIELD,
       ['rocket', 'Raket als versiering', 'check', true],
       ['@', 'Tekst'],
@@ -3240,7 +3241,7 @@
     { type: 'donation', name: '💰 Donatie melding', desc: 'Een melding bij een donatie via StreamElements of TipeeeStream (Koppelingen in ⚙ Instellingen), met voorlezen (TTS). Werkt via de Windows-app: die moet open staan.', fields: ALERT_FIELDS('donation') },
     { type: 'alert', name: '🔔 Alerts', desc: 'Eén melding voor follow, sub, cadeau-subs, bits, raid en donatie, per alert helemaal aan te passen, met emote-explosie. Follows en donaties gaan via de Windows-app.', fields: [
       ['@', 'Uitstraling'],
-      ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]],
+      ['style', 'Soort melding', 'select', 'card', [['card', 'Kaart met kleurverloop'], ['banner', 'Brede banner'], ['glass', 'Glas (half doorzichtig)'], ['text', 'Alleen tekst']]], ['bg', 'Banner (achtergrond) tonen', 'check', true],
       ['tcolor', 'Tekstkleur', 'color', '#ffffff'], FONT_FIELD,
       ['rocket', 'Versiering (💜 ⭐ 🎁 💎 🚀 💰)', 'check', true],
       ['imgmode', 'Afbeelding', 'select', 'avatar', [['avatar', 'Profielfoto'], ['custom', 'Eigen afbeelding'], ['none', 'Geen afbeelding']]],
@@ -3270,6 +3271,7 @@
       ])] },
     { type: 'gamble', name: '🎰 Gamble', desc: 'De uitslag van !gamble op je scherm: winst met munten-regen, verlies, bankroet bij all-in en de bank kraken, met een bank-teller. Zet de kijkerspunten aan bij 🧩 Modules. Werkt via de Windows-app: die moet open staan.', fields: [
       ['@', 'Uitstraling'],
+      ['bg', 'Banner (achtergrond) tonen', 'check', true],
       ['color', 'Randkleur tijdens het draaien', 'color', '#9147ff'], FONT_FIELD,
       ['@', 'Bank en uitslagen'],
       ['bankpos', 'Bank-teller', 'select', 'bl', [['bl', 'Linksonder'], ['br', 'Rechtsonder'], ['tl', 'Linksboven'], ['tr', 'Rechtsboven'], ['off', 'Niet tonen']]],
